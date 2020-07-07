@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
 
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
@@ -30,6 +31,8 @@ public class HDMapNoIndexLossAfterSplitBrainHealTest extends NoIndexLossAfterSpl
 
     @Override
     protected Config config() {
-        return getHDConfig(super.config());
+        Config config = getHDConfig(super.config());
+        config.getNativeMemoryConfig().setAllocatorType(POOLED);
+        return config;
     }
 }

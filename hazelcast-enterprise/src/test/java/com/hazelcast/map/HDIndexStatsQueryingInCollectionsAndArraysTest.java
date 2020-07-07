@@ -5,12 +5,13 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import java.util.Collection;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static com.hazelcast.HDTestSupport.getHDConfig;
+import java.util.Collection;
+
+import static com.hazelcast.HDTestSupport.getHDIndexConfig;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
@@ -25,6 +26,6 @@ public class HDIndexStatsQueryingInCollectionsAndArraysTest extends IndexStatsQu
 
     @Override
     protected Config getConfig() {
-        return getHDConfig();
+        return getHDIndexConfig();
     }
 }

@@ -49,10 +49,6 @@ public final class GlobalIndexPoolingAllocator implements MemoryAllocator {
 
     private final AtomicBoolean destroyed = new AtomicBoolean();
 
-    public GlobalIndexPoolingAllocator(LibMalloc malloc, PooledNativeMemoryStats memoryStats) {
-        this(malloc, memoryStats, DEFAULT_BTREE_INDEX_NODE_SIZE);
-    }
-
     public GlobalIndexPoolingAllocator(LibMalloc malloc, PooledNativeMemoryStats memoryStats, int nodeSize) {
         this.nodeSize = nodeSize;
         this.memoryStats = memoryStats;

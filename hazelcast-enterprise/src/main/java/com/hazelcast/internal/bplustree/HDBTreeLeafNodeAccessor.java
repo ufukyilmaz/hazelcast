@@ -23,11 +23,12 @@ final class HDBTreeLeafNodeAccessor extends HDBTreeNodeBaseAccessor {
                             EnterpriseSerializationService ess,
                             BPlusTreeKeyComparator keyComparator,
                             BPlusTreeKeyAccessor keyAccessor,
-                            MemoryAllocator defaultAllocator,
+                            MemoryAllocator keyAllocator,
                             MemoryAllocator indexAllocator,
                             int nodeSize,
                             NodeSplitStrategy nodeSplitStrategy) {
-        super(lockManager, ess, keyComparator, keyAccessor, defaultAllocator, indexAllocator, nodeSize, nodeSplitStrategy);
+        super(lockManager, ess, keyComparator, keyAccessor, keyAllocator, indexAllocator,
+                nodeSize, nodeSplitStrategy);
     }
 
     @Override
@@ -195,7 +196,7 @@ final class HDBTreeLeafNodeAccessor extends HDBTreeNodeBaseAccessor {
             assert mid <= keysCount;
             oldValue = getValue(nodeAddr, mid);
             long oldIndexKeyAddr = getIndexKeyAddr(nodeAddr, mid);
-            keyAccessor.disposeNativeData(oldIndexKeyAddr);
+            keyAccessor.disposeNativeData(oldIndexKeyAddr, getKeyAllocator());
             AMEM.copyMemory(getSlotAddr(nodeAddr, mid + 1), getSlotAddr(nodeAddr, mid),
                     (keysCount - mid - 1) * SLOT_ENTRY_SIZE);
             setKeysCount(nodeAddr, keysCount - 1);
@@ -246,8 +247,11 @@ final class HDBTreeLeafNodeAccessor extends HDBTreeNodeBaseAccessor {
 
         for (int slot = 0; slot < keysCount; ++slot) {
             long indexKeyAddr = getIndexKeyAddr(nodeAddr, slot);
-            keyAccessor.disposeNativeData(indexKeyAddr);
+            keyAccessor.disposeNativeData(indexKeyAddr, getKeyAllocator());
         }
     }
 
+    private long clonedIndexKeyAddr(Comparable indexKey) {
+        return keyAccessor.convertToNativeData(indexKey, getKeyAllocator());
+    }
 }

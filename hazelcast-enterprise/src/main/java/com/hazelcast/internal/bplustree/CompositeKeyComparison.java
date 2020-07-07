@@ -51,14 +51,14 @@ enum CompositeKeyComparison {
      */
     INDEX_KEY_GREATER(2);
 
-    private final int id;
+    private final int value;
 
-    CompositeKeyComparison(int id) {
-        this.id = id;
+    CompositeKeyComparison(int value) {
+        this.value = value;
     }
 
-    public int getId() {
-        return id;
+    public int getValue() {
+        return value;
     }
 
     /**
@@ -86,7 +86,7 @@ enum CompositeKeyComparison {
      * {@code false} otherwise.
      */
     public static boolean less(CompositeKeyComparison cmp) {
-        return cmp == INDEX_KEY_LESS || cmp == INDEX_KEY_EQUAL_ENTRY_KEY_LESS;
+        return cmp.getValue() < 0;
     }
 
     /**
@@ -95,7 +95,7 @@ enum CompositeKeyComparison {
      * {@code false} otherwise.
      */
     public static boolean lessOrEqual(CompositeKeyComparison cmp) {
-        return less(cmp) || cmp == KEYS_EQUAL;
+        return cmp.getValue() <= 0;
     }
 
     /**
@@ -104,7 +104,7 @@ enum CompositeKeyComparison {
      * {@code false} otherwise.
      */
     public static boolean greater(CompositeKeyComparison cmp) {
-        return cmp == INDEX_KEY_GREATER || cmp == INDEX_KEY_EQUAL_ENTRY_KEY_GREATER;
+        return cmp.getValue() > 0;
     }
 
     /**
@@ -113,6 +113,6 @@ enum CompositeKeyComparison {
      * {@code false} otherwise.
      */
     public static boolean greaterOrEqual(CompositeKeyComparison cmp) {
-        return greater(cmp) || cmp == KEYS_EQUAL;
+        return cmp.getValue() >= 0;
     }
 }

@@ -14,29 +14,40 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 
-import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.HDTestSupport.getHDIndexConfig;
+import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_INDEX_ENABLED;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HDLocalIndexStatsTest extends LocalIndexStatsTest {
 
-    @Parameterized.Parameters(name = "format:{0}")
+    @Parameterized.Parameter(1)
+    public String globalIndex;
+
+    @Parameterized.Parameters(name = "format:{0} globalIndex:{1}")
     public static Collection<Object[]> parameters() {
-        return asList(new Object[][]{{InMemoryFormat.NATIVE}});
+        return asList(new Object[][]{
+                {InMemoryFormat.NATIVE, "true"},
+                {InMemoryFormat.NATIVE, "false"},
+
+        });
     }
 
     @Override
     protected Config getConfig() {
-        return getHDConfig();
+        return getHDIndexConfig()
+                .setProperty(PROPERTY_GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex);
     }
 
     @SuppressWarnings("unchecked")
     @Test
     @Override
     public void testQueryCounting_WhenPartitionPredicateIsUsed() {
+        assumeTrue(globalIndex.equals("false"));
         addIndex(map, "this", false);
 
         for (int i = 0; i < 100; ++i) {

@@ -33,16 +33,16 @@ public class BPlusTreeLimitsTest extends BPlusTreeTestSupport {
     @Test
     public void testOverflowNodeSize() {
         BPlusTreeKeyComparator keyComparator = new DefaultBPlusTreeKeyComparator(ess);
-        BPlusTreeKeyAccessor keyAccessor = new DefaultBPlusTreeKeyAccessor(ess, defaultAllocator);
+        BPlusTreeKeyAccessor keyAccessor = new DefaultBPlusTreeKeyAccessor(ess);
         LockManager lockManager = newLockManager();
         MapEntryFactory factory = new OnHeapEntryFactory(ess, null);
         assertThrows(IllegalArgumentException.class, () -> {
-            btree = HDBPlusTree.newHDBTree(ess, defaultAllocator, delegatingIndexAllocator, lockManager,
+            btree = HDBPlusTree.newHDBTree(ess, keyAllocator, delegatingIndexAllocator, lockManager,
                     keyComparator, keyAccessor, factory, MAX_NODE_SIZE + 1);
         });
 
         assertThrows(IllegalArgumentException.class, () -> {
-            btree = HDBPlusTree.newHDBTree(ess, defaultAllocator, delegatingIndexAllocator, lockManager,
+            btree = HDBPlusTree.newHDBTree(ess, keyAllocator, delegatingIndexAllocator, lockManager,
                     keyComparator, keyAccessor, factory, MIN_NODE_SIZE / 2);
         });
 

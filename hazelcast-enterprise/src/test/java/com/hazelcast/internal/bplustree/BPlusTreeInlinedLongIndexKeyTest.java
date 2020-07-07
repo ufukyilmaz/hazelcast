@@ -1,22 +1,29 @@
 package com.hazelcast.internal.bplustree;
 
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.test.annotation.ParallelJVMTest;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class BPlusTreeHashIndexKeyTest extends BPlusTreeTestSupport {
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category({QuickTest.class, ParallelJVMTest.class})
+public class BPlusTreeInlinedLongIndexKeyTest extends BPlusTreeTestSupport {
 
     @Override
     BPlusTreeKeyComparator newBPlusTreeKeyComparator() {
-        return new BPlusTreeHashKeyComparator();
+        return new BPlusTreeInlinedLongComparator();
     }
 
     @Override
     BPlusTreeKeyAccessor newBPlusTreeKeyAccessor() {
-        return new BPlusTreeHashKeyAccessor(ess);
+        return new BPlusTreeInlinedLongAccessor(ess);
     }
 
     @Test

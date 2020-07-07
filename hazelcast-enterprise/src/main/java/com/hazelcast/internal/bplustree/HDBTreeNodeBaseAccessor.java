@@ -1,7 +1,5 @@
 package com.hazelcast.internal.bplustree;
 
-import com.hazelcast.core.HazelcastException;
-import com.hazelcast.internal.elastic.util.DisposalUtil;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.serialization.Data;
@@ -15,7 +13,6 @@ import static com.hazelcast.internal.bplustree.CompositeKeyComparison.INDEX_KEY_
 import static com.hazelcast.internal.bplustree.CompositeKeyComparison.KEYS_EQUAL;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.internal.serialization.DataType.HEAP;
 
 /**
  * An utility class to support for the B+Tree node access operations common for both leaf and inner nodes.
@@ -41,20 +38,20 @@ abstract class HDBTreeNodeBaseAccessor {
     final EnterpriseSerializationService ess;
     final BPlusTreeKeyComparator keyComparator;
     final BPlusTreeKeyAccessor keyAccessor;
-    final MemoryAllocator defaultMemoryAllocator;
-    final MemoryAllocator indexMemoryAllocator;
+    final MemoryAllocator keyAllocator;
+    final MemoryAllocator indexAllocator;
     final int nodeSize;
     NodeSplitStrategy nodeSplitStrategy;
 
     HDBTreeNodeBaseAccessor(LockManager lockManager, EnterpriseSerializationService ess, BPlusTreeKeyComparator keyComparator,
-                            BPlusTreeKeyAccessor keyAccessor, MemoryAllocator defaultAllocator, MemoryAllocator indexAllocator,
+                            BPlusTreeKeyAccessor keyAccessor, MemoryAllocator keyAllocator, MemoryAllocator indexAllocator,
                             int nodeSize, NodeSplitStrategy nodeSplitStrategy) {
         this.lockManager = lockManager;
         this.ess = ess;
         this.keyComparator = keyComparator;
         this.keyAccessor = keyAccessor;
-        this.defaultMemoryAllocator = defaultAllocator;
-        this.indexMemoryAllocator = indexAllocator;
+        this.keyAllocator = keyAllocator;
+        this.indexAllocator = indexAllocator;
         this.nodeSize = nodeSize;
         this.nodeSplitStrategy = nodeSplitStrategy;
     }
@@ -66,7 +63,7 @@ abstract class HDBTreeNodeBaseAccessor {
      * @return the write locked node's address
      */
     long newNodeLocked(LockingContext lockingContext) {
-        long address = indexMemoryAllocator.allocate(nodeSize);
+        long address = getIndexAllocator().allocate(nodeSize);
         // Don't initialize lockState and sequence number fields to avoid race condition with lookup operations
         lockManager.writeLock(address);
         lockingContext.addLock(address);
@@ -82,29 +79,7 @@ abstract class HDBTreeNodeBaseAccessor {
      */
     void disposeNode(long nodeAddr) {
         if (nodeAddr != NULL_ADDRESS) {
-            indexMemoryAllocator.free(nodeAddr, nodeSize);
-        }
-    }
-
-    /**
-     * Disposes all addresses to the default allocator
-     *
-     * @param addresses the addresses to dispose
-     */
-    void disposeAddresses(Long... addresses) {
-        HazelcastException caught = null;
-
-        for (Long address : addresses) {
-            NativeMemoryData data = new NativeMemoryData().reset(address);
-            try {
-                DisposalUtil.dispose(ess, defaultMemoryAllocator, data);
-            } catch (HazelcastException exception) {
-                caught = exception;
-            }
-
-            if (caught != null) {
-                throw caught;
-            }
+            getIndexAllocator().free(nodeAddr, nodeSize);
         }
     }
 
@@ -280,18 +255,11 @@ abstract class HDBTreeNodeBaseAccessor {
         AMEM.copyMemory(srcNodeAddr + OFFSET_NODE_CONTENT, destNodeAddr + OFFSET_NODE_CONTENT, contentSize);
     }
 
-    long clonedIndexKeyAddr(Comparable indexKey) {
-        return keyAccessor.convertToNativeData(indexKey);
+    MemoryAllocator getKeyAllocator() {
+        return keyAllocator;
     }
 
-    long clonedIndexKeyAddr(long indexKeyAddr) {
-        return keyAccessor.convertToNativeData(indexKeyAddr);
-    }
-
-    long clonedEntryKeyAddr(long entryKeyAddr) {
-        Data entryKeyData = new NativeMemoryData().reset(entryKeyAddr);
-        Data entryKeyCopyHeapData = ess.toData(entryKeyData, HEAP);
-        NativeMemoryData nativeData = ess.toNativeData(entryKeyCopyHeapData, defaultMemoryAllocator);
-        return nativeData.address();
+    MemoryAllocator getIndexAllocator() {
+        return indexAllocator;
     }
 }

@@ -15,7 +15,7 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 
-import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.HDTestSupport.getHDIndexConfig;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -32,7 +32,7 @@ public class HDIndexStatsChangingNumberOfMembersTest extends IndexStatsChangingN
 
     @Override
     protected Config getConfig() {
-        return getHDConfig();
+        return getHDIndexConfig();
     }
 
     @Override

@@ -10,7 +10,7 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 
-import static com.hazelcast.HDTestSupport.getSmallInstanceHDConfig;
+import static com.hazelcast.HDTestSupport.getSmallInstanceHDIndexConfig;
 import static com.hazelcast.config.IndexType.SORTED;
 import static java.util.Arrays.asList;
 
@@ -31,6 +31,6 @@ public class HDIndexConcurrencyTest extends AbstractIndexConcurrencyTest {
 
     @Override
     protected Config getConfig() {
-        return getSmallInstanceHDConfig();
+        return getSmallInstanceHDIndexConfig();
     }
 }

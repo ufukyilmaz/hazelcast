@@ -76,9 +76,9 @@ public class LockingContextTest extends BPlusTreeTestSupport {
 
         assertTrue(lockingContext.hasNoLocks());
         assertTrue(CollectionUtils.isEqualCollection(releasedLocks, Arrays.asList(lock1, lock2, lock3)));
-        defaultAllocator.free(lock1, 8);
-        defaultAllocator.free(lock2, 8);
-        defaultAllocator.free(lock3, 8);
+        keyAllocator.free(lock1, 8);
+        keyAllocator.free(lock2, 8);
+        keyAllocator.free(lock3, 8);
     }
 
     @Test

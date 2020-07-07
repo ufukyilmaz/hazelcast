@@ -1,5 +1,6 @@
 package com.hazelcast.internal.bplustree;
 
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.Data;
 
 /**
@@ -24,22 +25,24 @@ public interface BPlusTreeKeyAccessor {
 
     /**
      * @param indexKey the index key
+     * @param memoryAllocator the memory allocator to use for conversion
      * @return the 8 bytes value which can be interpreted as off-heap key address or any other meaning.
      */
-    long convertToNativeData(Comparable indexKey);
+    long convertToNativeData(Comparable indexKey, MemoryAllocator memoryAllocator);
 
     /**
      *
      * @param address the index key address
-     * DataType type the data type to convert to
+     * @param memoryAllocator the memory allocator to use for conversion
      * @return the address of the cloned off-heap data
      */
-    long convertToNativeData(long address);
+    long convertToNativeData(long address, MemoryAllocator memoryAllocator);
 
     /**
      * Disposes the address to the pooled memory manager.
      * @param address the address
+     * @param memoryAllocator the memory allocator to dispose the address to
      */
-    void disposeNativeData(long address);
+    void disposeNativeData(long address, MemoryAllocator memoryAllocator);
 
 }

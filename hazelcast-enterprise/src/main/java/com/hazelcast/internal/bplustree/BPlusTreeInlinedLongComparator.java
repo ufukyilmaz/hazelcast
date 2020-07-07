@@ -1,6 +1,9 @@
 package com.hazelcast.internal.bplustree;
 
-public final class BPlusTreeHashKeyComparator implements BPlusTreeKeyComparator {
+/**
+ * The B+tree keys comparator interpreting the index key address as inlined long value.
+ */
+public final class BPlusTreeInlinedLongComparator implements BPlusTreeKeyComparator {
 
     @Override
     public int compare(Comparable left, long rightAddress) {

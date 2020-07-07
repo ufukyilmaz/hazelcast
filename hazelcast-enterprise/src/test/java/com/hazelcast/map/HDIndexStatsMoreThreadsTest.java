@@ -10,7 +10,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.HDTestSupport.getHDIndexConfig;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
@@ -25,6 +25,6 @@ public class HDIndexStatsMoreThreadsTest extends IndexStatsMoreThreadsTest {
 
     @Override
     protected Config getConfig() {
-        return getHDConfig();
+        return getHDIndexConfig();
     }
 }

@@ -50,7 +50,7 @@ public class GlobalIndexAllocatorTest extends ParameterizedMemoryTest {
     public void setup() {
         checkPlatform();
         malloc = newLibMalloc(persistentMemory);
-        memoryAllocator = new GlobalIndexPoolingAllocator(malloc, stats);
+        memoryAllocator = new GlobalIndexPoolingAllocator(malloc, stats, DEFAULT_BTREE_INDEX_NODE_SIZE);
         delegatingAllocator = new DelegatingMemoryAllocator(memoryAllocator);
         nodeSize = memoryAllocator.getNodeSize();
     }

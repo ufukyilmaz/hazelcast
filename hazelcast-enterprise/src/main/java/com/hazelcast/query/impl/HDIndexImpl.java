@@ -22,11 +22,11 @@ public class HDIndexImpl extends AbstractIndex {
     private int indexedPartition = UNINDEXED;
 
     public HDIndexImpl(
-        IndexConfig config,
-        EnterpriseSerializationService ss,
-        Extractors extractors,
-        PerIndexStats stats,
-        StoreAdapter partitionStoreAdapter
+            IndexConfig config,
+            EnterpriseSerializationService ss,
+            Extractors extractors,
+            PerIndexStats stats,
+            StoreAdapter partitionStoreAdapter
     ) {
         // HD index does not use do any result set copying, thus we may pass NEVER here
         super(config, ss, extractors, IndexCopyBehavior.NEVER, stats, partitionStoreAdapter);
@@ -86,7 +86,7 @@ public class HDIndexImpl extends AbstractIndex {
     /**
      * Converts off-heap key-value pairs back to on-heap queryable entries.
      */
-    private static class OnHeapEntryFactory implements MapEntryFactory<QueryableEntry> {
+    static class OnHeapEntryFactory implements MapEntryFactory<QueryableEntry> {
 
         private final EnterpriseSerializationService ess;
         private final Extractors extractors;

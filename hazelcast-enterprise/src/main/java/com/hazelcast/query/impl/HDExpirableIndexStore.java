@@ -15,7 +15,7 @@ abstract class HDExpirableIndexStore extends BaseSingleValueIndexStore {
     private final StoreAdapter partitionStoreAdapter;
 
     HDExpirableIndexStore(IndexCopyBehavior copyOn, StoreAdapter partitionStoreAdapter) {
-        super(copyOn);
+        super(copyOn, false);
         this.partitionStoreAdapter = partitionStoreAdapter;
     }
 

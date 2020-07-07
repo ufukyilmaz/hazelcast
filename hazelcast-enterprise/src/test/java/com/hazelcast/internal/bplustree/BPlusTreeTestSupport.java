@@ -2,15 +2,10 @@ package com.hazelcast.internal.bplustree;
 
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.internal.elastic.tree.MapEntryFactory;
-import com.hazelcast.internal.memory.FreeMemoryChecker;
 import com.hazelcast.internal.memory.GlobalIndexPoolingAllocator;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.internal.memory.PooledNativeMemoryStats;
-import com.hazelcast.internal.memory.StandardMemoryManager;
-import com.hazelcast.internal.memory.impl.LibMalloc;
-import com.hazelcast.internal.memory.impl.LibMallocFactory;
-import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
+import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
@@ -61,18 +56,15 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
     protected VersionedLong maFreeAddr = new VersionedLong();
     protected VersionedLong maSize = new VersionedLong();
 
-    HazelcastMemoryManager defaultAllocator;
-    EnterpriseSerializationService ess;
+    protected HazelcastMemoryManager keyAllocator;
+    protected EnterpriseSerializationService ess;
 
     @Before
     public void setUp() {
-        this.defaultAllocator = newDefaultMemoryAllocator();
-        LibMallocFactory libMallocFactory = new UnsafeMallocFactory(new FreeMemoryChecker());
-        MemorySize memorySize = new MemorySize(1, MemoryUnit.GIGABYTES);
-        LibMalloc indexMalloc = libMallocFactory.create(memorySize.bytes());
-        PooledNativeMemoryStats memoryStats = new PooledNativeMemoryStats((long) (memorySize.bytes() * 0.85f), (long) (memorySize.bytes() * 0.15f));
-
-        MemoryAllocator indexAllocator = new GlobalIndexPoolingAllocator(indexMalloc, memoryStats, getNodeSize());
+        PoolingMemoryManager poolingMemoryManager = new PoolingMemoryManager(
+                new MemorySize(1300, MemoryUnit.MEGABYTES), getNodeSize());
+        this.keyAllocator = newKeyAllocator(poolingMemoryManager);
+        MemoryAllocator indexAllocator = poolingMemoryManager.getGlobalIndexAllocator();
         this.ess = getSerializationService();
         MapEntryFactory factory = new OnHeapEntryFactory(ess, null);
         BPlusTreeKeyComparator keyComparator = newBPlusTreeKeyComparator();
@@ -81,10 +73,10 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
         allocatorCallback = new AllocatorCallback(maAllocateAddr, maFreeAddr, maSize);
         delegatingIndexAllocator = newDelegatingIndexMemoryAllocator(indexAllocator, allocatorCallback);
         LockManager lockManager = newLockManager();
-        btree = HDBPlusTree.newHDBTree(ess, defaultAllocator, delegatingIndexAllocator, lockManager, keyComparator, keyAccessor, factory, getNodeSize());
+        btree = HDBPlusTree.newHDBTree(ess, keyAllocator, delegatingIndexAllocator, lockManager, keyComparator, keyAccessor, factory, getNodeSize());
         rootAddr = btree.getRoot();
-        this.innerNodeAccessor = new HDBTreeInnerNodeAccessor(lockManager, ess, keyComparator, keyAccessor, defaultAllocator, delegatingIndexAllocator, getNodeSize(), splitStrategy);
-        this.leafNodeAccessor = new HDBTreeLeafNodeAccessor(lockManager, ess, keyComparator, keyAccessor, defaultAllocator, delegatingIndexAllocator, getNodeSize(), splitStrategy);
+        this.innerNodeAccessor = new HDBTreeInnerNodeAccessor(lockManager, ess, keyComparator, keyAccessor, keyAllocator, delegatingIndexAllocator, getNodeSize(), splitStrategy);
+        this.leafNodeAccessor = new HDBTreeLeafNodeAccessor(lockManager, ess, keyComparator, keyAccessor, keyAllocator, delegatingIndexAllocator, getNodeSize(), splitStrategy);
     }
 
     int getNodeSize() {
@@ -95,8 +87,8 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
         return new DelegatingMemoryAllocator(indexAllocator, callback);
     }
 
-    HazelcastMemoryManager newDefaultMemoryAllocator() {
-        return new StandardMemoryManager(new MemorySize(1300, MemoryUnit.MEGABYTES));
+    HazelcastMemoryManager newKeyAllocator(PoolingMemoryManager poolingMemoryManager) {
+        return poolingMemoryManager.getGlobalMemoryManager();
     }
 
     BPlusTreeKeyComparator newBPlusTreeKeyComparator() {
@@ -104,7 +96,7 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
     }
 
     BPlusTreeKeyAccessor newBPlusTreeKeyAccessor() {
-        return new DefaultBPlusTreeKeyAccessor(ess, defaultAllocator);
+        return new DefaultBPlusTreeKeyAccessor(ess);
     }
 
     @After
@@ -135,7 +127,7 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
 
     protected EnterpriseSerializationService getSerializationService() {
         return new EnterpriseSerializationServiceBuilder()
-                .setMemoryManager(defaultAllocator)
+                .setMemoryManager(keyAllocator)
                 .setAllowUnsafe(true)
                 .setUseNativeByteOrder(true)
                 .build();
@@ -297,7 +289,7 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
     }
 
     long allocateZeroed(int size) {
-        long address = defaultAllocator.allocate(size);
+        long address = keyAllocator.allocate(size);
         AMEM.setMemory(address, size, (byte) 0);
         return address;
     }

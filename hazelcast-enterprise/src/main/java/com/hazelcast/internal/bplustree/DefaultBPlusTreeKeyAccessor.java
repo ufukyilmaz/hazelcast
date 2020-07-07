@@ -12,11 +12,9 @@ import static com.hazelcast.internal.serialization.DataType.HEAP;
  */
 public final class DefaultBPlusTreeKeyAccessor implements BPlusTreeKeyAccessor {
 
-    private final MemoryAllocator memoryAllocator;
     private final EnterpriseSerializationService ess;
 
-    public DefaultBPlusTreeKeyAccessor(EnterpriseSerializationService ess, MemoryAllocator allocator) {
-        this.memoryAllocator = allocator;
+    public DefaultBPlusTreeKeyAccessor(EnterpriseSerializationService ess) {
         this.ess = ess;
     }
 
@@ -24,11 +22,12 @@ public final class DefaultBPlusTreeKeyAccessor implements BPlusTreeKeyAccessor {
      * Converts the indexKey into the off-heap Data. It is a caller's responsibility to free the allocated
      * the off-heap memory.
      *
-     * @param indexKey the index key
+     * @param indexKey        the index key
+     * @param memoryAllocator the memory allocator to use for conversion
      * @return the address of the off-heap data
      */
     @Override
-    public long convertToNativeData(Comparable indexKey) {
+    public long convertToNativeData(Comparable indexKey, MemoryAllocator memoryAllocator) {
         NativeMemoryData data = ess.toNativeData(indexKey, memoryAllocator);
         return data.address();
     }
@@ -55,17 +54,18 @@ public final class DefaultBPlusTreeKeyAccessor implements BPlusTreeKeyAccessor {
      * Converts the off-heap data identified by the address into either on-heap data or a new copy
      * of the off-heap data.
      *
-     * @param address the index key address
+     * @param address         the index key address
+     * @param memoryAllocator the memory allocator to use for conversion
      * @return the new data address
      */
     @Override
-    public long convertToNativeData(long address) {
+    public long convertToNativeData(long address, MemoryAllocator memoryAllocator) {
         NativeMemoryData indexKeyData = new NativeMemoryData().reset(address);
-        return cloneNativeMemory(indexKeyData).address();
+        return cloneNativeMemory(indexKeyData, memoryAllocator).address();
     }
 
     @Override
-    public void disposeNativeData(long address) {
+    public void disposeNativeData(long address, MemoryAllocator memoryAllocator) {
         NativeMemoryData data = new NativeMemoryData().reset(address);
         ess.disposeData(data, memoryAllocator);
     }
@@ -73,10 +73,11 @@ public final class DefaultBPlusTreeKeyAccessor implements BPlusTreeKeyAccessor {
     /**
      * Creates a new copy of the native data
      *
-     * @param data the source data
+     * @param data            the source data
+     * @param memoryAllocator the memory allocator to use for the cloned data
      * @return a cloned native memory
      */
-    private NativeMemoryData cloneNativeMemory(NativeMemoryData data) {
+    static NativeMemoryData cloneNativeMemory(NativeMemoryData data, MemoryAllocator memoryAllocator) {
         long address = memoryAllocator.allocate(data.size());
         data.copyTo(0, null, address, data.size());
         return new NativeMemoryData(address, data.size());

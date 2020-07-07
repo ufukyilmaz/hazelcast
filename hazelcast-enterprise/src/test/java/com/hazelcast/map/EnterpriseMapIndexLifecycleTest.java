@@ -9,7 +9,6 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Arrays;
@@ -19,31 +18,44 @@ import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
+import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
+import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_INDEX_ENABLED;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class EnterpriseMapIndexLifecycleTest extends MapIndexLifecycleTest {
 
-    @Parameters(name = "{0}")
+    @Parameterized.Parameters(name = "format:{0} globalIndex:{1}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][]{
-                {BINARY},
-                {OBJECT},
-                {NATIVE},
+                {BINARY, "true"},
+                {OBJECT, "true"},
+                {NATIVE, "true"},
+                {NATIVE, "false"},
         });
     }
 
     @Parameter
     public InMemoryFormat inMemoryFormat;
 
+    @Parameterized.Parameter(1)
+    public String globalIndex;
+
     @Override
     protected Config getConfig() {
         if (inMemoryFormat == NATIVE) {
-            return getHDConfig(super.getConfig());
+            Config config = getHDConfig(super.getConfig());
+            config.getNativeMemoryConfig().setAllocatorType(POOLED);
+            config.setProperty(PROPERTY_GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex);
+            return config;
         } else {
             return super.getConfig();
         }
     }
 
+    @Override
+    boolean globalIndex() {
+        return globalIndex.equals("true");
+    }
 }

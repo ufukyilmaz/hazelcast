@@ -12,23 +12,35 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 
+import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
+import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_INDEX_ENABLED;
 import static java.util.Arrays.asList;
 
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+
+
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HDPartitionIndexingTest extends PartitionIndexingTest {
 
-    @Parameterized.Parameters(name = "format:{0}")
+    @Parameterized.Parameter(1)
+    public String globalIndex;
+
+    @Parameterized.Parameters(name = "format:{0} globalIndex:{1}")
     public static Collection<Object[]> parameters() {
-        return asList(new Object[][]{{InMemoryFormat.OBJECT}, {InMemoryFormat.BINARY}, {InMemoryFormat.NATIVE}});
+        return asList(new Object[][]{
+                {InMemoryFormat.NATIVE, "true"},
+                {InMemoryFormat.NATIVE, "false"},
+
+        });
     }
 
     @Override
     protected Config getConfig() {
         Config config = super.getConfig();
-        config.getNativeMemoryConfig().setEnabled(true);
+        config.getNativeMemoryConfig().setEnabled(true).setAllocatorType(POOLED);
+        config.setProperty(PROPERTY_GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex);
         return config;
     }
-
 }

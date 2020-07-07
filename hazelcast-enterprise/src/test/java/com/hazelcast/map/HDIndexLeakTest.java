@@ -5,7 +5,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.IndexConfig;
 import com.hazelcast.config.IndexType;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.instance.impl.HazelcastInstanceProxy;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.internal.memory.MemoryStats;
@@ -20,24 +20,42 @@ import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.util.Collection;
 
-import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.HDTestSupport.getHDIndexConfig;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_INDEX_ENABLED;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HDIndexLeakTest
         extends HazelcastTestSupport {
+
+    @Parameterized.Parameters(name = "globalIndex:{0}")
+    public static Collection<Object[]> data() {
+        return asList(new Object[][]{
+                {"true"},
+                {"false"},
+        });
+    }
+
+    @Parameterized.Parameter
+    public String globalIndex;
 
     private static final int PERSON_COUNT = 1000;
 
     @Override
     protected Config getConfig() {
-        return getHDConfig();
+        Config config = getHDIndexConfig();
+        config.setProperty(PROPERTY_GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex);
+        return config;
     }
 
     @Test

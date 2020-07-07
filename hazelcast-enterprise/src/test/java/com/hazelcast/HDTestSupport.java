@@ -12,6 +12,7 @@ import com.hazelcast.memory.MemoryUnit;
 import javax.cache.CacheManager;
 
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
+import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.STANDARD;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
@@ -21,10 +22,14 @@ import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
  */
 public final class HDTestSupport {
 
-    public static final MemorySize NATIVE_MEMORY_SIZE = new MemorySize(32, MemoryUnit.MEGABYTES);
+    public static final MemorySize NATIVE_MEMORY_SIZE = new MemorySize(128, MemoryUnit.MEGABYTES);
 
     public static Config getHDConfig() {
         return getHDConfig(new Config(), STANDARD);
+    }
+
+    public static Config getHDIndexConfig() {
+        return getHDConfig(new Config(), POOLED);
     }
 
     public static Config getHDConfig(String persistentMemoryDirectory) {
@@ -36,6 +41,13 @@ public final class HDTestSupport {
     public static Config getSmallInstanceHDConfig() {
         return getHDConfig(smallInstanceConfig(), STANDARD);
     }
+
+    public static Config getSmallInstanceHDIndexConfig() {
+        Config config = getHDConfig(smallInstanceConfig(), STANDARD);
+        config.getNativeMemoryConfig().setAllocatorType(POOLED);
+        return config;
+    }
+
 
     public static Config getHDConfig(Config config) {
         return getHDConfig(config, STANDARD);

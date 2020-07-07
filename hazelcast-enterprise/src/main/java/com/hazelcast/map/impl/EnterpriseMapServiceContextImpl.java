@@ -33,6 +33,7 @@ import com.hazelcast.map.impl.recordstore.DefaultRecordStore;
 import com.hazelcast.map.impl.recordstore.EnterpriseRecordStore;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.map.impl.wan.MapFilterProvider;
+import com.hazelcast.query.impl.HDGlobalIndexProvider;
 import com.hazelcast.query.impl.HDIndexProvider;
 import com.hazelcast.query.impl.IndexProvider;
 import com.hazelcast.query.impl.predicates.QueryOptimizer;
@@ -51,6 +52,7 @@ import java.util.concurrent.TimeUnit;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.internal.metrics.MetricDescriptorConstants.MAP_DISCRIMINATOR_NAME;
 import static com.hazelcast.internal.metrics.MetricDescriptorConstants.MAP_PREFIX;
+import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_INDEX_ENABLED;
 import static java.lang.Thread.currentThread;
 
 /**
@@ -66,17 +68,19 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     private static final int MAP_PARTITION_CLEAR_OPERATION_AWAIT_SECONDS = 10;
 
     private final QueryRunner hdMapQueryRunner;
-    private final HDIndexProvider hdIndexProvider;
+    private final IndexProvider hdIndexProvider;
     private final MapFilterProvider mapFilterProvider;
 
     private HotRestartIntegrationService hotRestartService;
+    private final boolean globalIndexEnabled;
 
     EnterpriseMapServiceContextImpl(NodeEngine nodeEngine) {
         super(nodeEngine);
         this.mapFilterProvider = new MapFilterProvider(nodeEngine);
         this.hdMapQueryRunner = createHDMapQueryRunner(new HDPartitionScanRunner(this),
                 getQueryOptimizer(), getResultProcessorRegistry());
-        this.hdIndexProvider = new HDIndexProvider();
+        this.globalIndexEnabled = getNodeEngine().getProperties().getBoolean(PROPERTY_GLOBAL_HD_INDEX_ENABLED);
+        this.hdIndexProvider = globalIndexEnabled() ? new HDGlobalIndexProvider() : new HDIndexProvider();
 
         Node node = ((NodeEngineImpl) nodeEngine).getNode();
         EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) node.getNodeExtension();
@@ -275,10 +279,15 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
             for (MapContainer mapContainer : mapContainers.values()) {
                 if (mapContainer instanceof EnterpriseMapContainer) {
                     context.collect(descriptor.copy()
-                                              .withDiscriminator(MAP_DISCRIMINATOR_NAME, mapContainer.name),
+                                    .withDiscriminator(MAP_DISCRIMINATOR_NAME, mapContainer.name),
                             ((EnterpriseMapContainer) mapContainer).getHdStorageInfo());
                 }
             }
         }
+    }
+
+    @Override
+    public boolean globalIndexEnabled() {
+        return globalIndexEnabled;
     }
 }

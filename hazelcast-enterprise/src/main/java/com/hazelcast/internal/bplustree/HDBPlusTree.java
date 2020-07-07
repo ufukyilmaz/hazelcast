@@ -1,5 +1,6 @@
 package com.hazelcast.internal.bplustree;
 
+import com.hazelcast.core.HazelcastException;
 import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.MemoryBlock;
@@ -134,20 +135,25 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
     private volatile boolean isDisposed;
 
     /**
-     * Constructs new B+tree.
+     * Constructs new B+tree. Both the keyAllocator and the indexAllocator must be thread-safe.
      *
-     * @param ess              the serialization service
-     * @param defaultAllocator the default memory allocator
-     * @param indexAllocator   the index allocator to accomodate B+tree nodes
-     * @param lockManager      the lock manager
-     * @param keyComparator    the off-heap keys comparator
-     * @param keyAccessor      the index key component accessor
-     * @param entryFactory     The factory to build lookup result entries. Must produce the entries on-heap
-     * @param nodeSize         the B+tree node size
+     * @param ess            the serialization service
+     * @param keyAllocator   the memory allocator for leaf and inner keys on the node
+     * @param indexAllocator the memory allocator for B+tree node
+     * @param lockManager    the lock manager
+     * @param keyComparator  the off-heap keys comparator
+     * @param keyAccessor    the index key component accessor
+     * @param entryFactory   The factory to build lookup result entries. Must produce the entries on-heap
+     * @param nodeSize       the B+tree node size
      */
-    private HDBPlusTree(EnterpriseSerializationService ess, MemoryAllocator defaultAllocator, MemoryAllocator indexAllocator,
-                        LockManager lockManager, BPlusTreeKeyComparator keyComparator, BPlusTreeKeyAccessor keyAccessor,
-                        MapEntryFactory<T> entryFactory, int nodeSize) {
+    private HDBPlusTree(EnterpriseSerializationService ess,
+                        MemoryAllocator keyAllocator,
+                        MemoryAllocator indexAllocator,
+                        LockManager lockManager,
+                        BPlusTreeKeyComparator keyComparator,
+                        BPlusTreeKeyAccessor keyAccessor,
+                        MapEntryFactory<T> entryFactory,
+                        int nodeSize) {
         if (nodeSize <= 0 || !isPowerOfTwo(nodeSize)) {
             throw new IllegalArgumentException("Illegal node size " + nodeSize
                     + ". Node size must be a power of two");
@@ -160,10 +166,11 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
         this.ess = ess;
         this.lockManager = lockManager;
         NodeSplitStrategy splitStrategy = new DefaultNodeSplitStrategy();
+
         this.innerNodeAccessor = new HDBTreeInnerNodeAccessor(lockManager, ess, keyComparator,
-                keyAccessor, defaultAllocator, indexAllocator, nodeSize, splitStrategy);
+                keyAccessor, keyAllocator, indexAllocator, nodeSize, splitStrategy);
         this.leafNodeAccessor = new HDBTreeLeafNodeAccessor(lockManager, ess, keyComparator,
-                keyAccessor, defaultAllocator, indexAllocator, nodeSize, splitStrategy);
+                keyAccessor, keyAllocator, indexAllocator, nodeSize, splitStrategy);
         LockingContext lockingContext = getLockingContext();
         rootAddr = innerNodeAccessor.newNodeLocked(lockingContext);
         createEmptyTree(lockingContext);
@@ -172,7 +179,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
 
     @SuppressWarnings("checkstyle:magicnumber")
     public static <T extends Map.Entry> HDBPlusTree newHDBTree(EnterpriseSerializationService ess,
-                                                               MemoryAllocator defaultAllocator,
+                                                               MemoryAllocator keyAllocator,
                                                                MemoryAllocator indexAllocator,
                                                                BPlusTreeKeyComparator keyComparator,
                                                                BPlusTreeKeyAccessor keyAccessor,
@@ -180,19 +187,18 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
                                                                int nodeSize) {
         int stripesCount = nextPowerOfTwo(Runtime.getRuntime().availableProcessors() * 4);
         LockManager lockManager = new HDLockManager(stripesCount);
-        return new HDBPlusTree(ess, defaultAllocator, indexAllocator, lockManager, keyComparator,
+        return new HDBPlusTree(ess, keyAllocator, indexAllocator, lockManager, keyComparator,
                 keyAccessor, entryFactory, nodeSize);
     }
 
     public static <T extends Map.Entry> HDBPlusTree newHDBTree(EnterpriseSerializationService ess,
-                                                               MemoryAllocator defaultAllocator,
-                                                               MemoryAllocator indexAllocator,
-                                                               LockManager lockManager,
+                                                               MemoryAllocator keyAllocator,
+                                                               MemoryAllocator indexAllocator, LockManager lockManager,
                                                                BPlusTreeKeyComparator keyComparator,
                                                                BPlusTreeKeyAccessor keyAccessor,
                                                                MapEntryFactory<T> entryFactory,
                                                                int nodeSize) {
-        return new HDBPlusTree(ess, defaultAllocator, indexAllocator, lockManager, keyComparator,
+        return new HDBPlusTree(ess, keyAllocator, indexAllocator, lockManager, keyComparator,
                 keyAccessor, entryFactory, nodeSize);
     }
 
@@ -447,13 +453,13 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
         long newLeafAddr = NULL_ADDRESS;
 
         try {
-            clonedSepIndexKeyAddr = leafNodeAccessor.clonedIndexKeyAddr(sepIndexKeyAddr);
-            clonedSepEntryKeyAddr = leafNodeAccessor.clonedEntryKeyAddr(sepEntryKeyAddr);
+            clonedSepIndexKeyAddr = innerNodeAccessor.clonedIndexKeyAddr(sepIndexKeyAddr);
+            clonedSepEntryKeyAddr = innerNodeAccessor.clonedEntryKeyAddr(sepEntryKeyAddr);
 
             newLeafAddr = leafNodeAccessor.split(childAddr, lockingContext);
         } catch (NativeOutOfMemoryError oom) {
             try {
-                leafNodeAccessor.disposeAddresses(clonedSepIndexKeyAddr, clonedSepEntryKeyAddr);
+                innerNodeAccessor.disposeAddresses(clonedSepIndexKeyAddr, clonedSepEntryKeyAddr);
             } finally {
                 leafNodeAccessor.disposeNode(newLeafAddr);
             }
@@ -1191,9 +1197,10 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
             // Dispose all indexKey/entryKey components "owned" by the B+Tree
             disposeOwnedData(nodes);
 
+            // Set isDisposed to true before releasing the locks
+            isDisposed = true;
             nodes.forEach(addr -> releaseLock(addr, lockingContext));
             nodes.forEach(addr -> nodeBaseAccessor.disposeNode(addr));
-            isDisposed = true;
         }
     }
 
@@ -1238,6 +1245,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
         long lockAddr = getLockStateAddr(nodeAddr);
         lockManager.readLock(lockAddr);
         lockingContext.addLock(lockAddr);
+        checkIfDisposed();
     }
 
     private void releaseLock(long nodeAddr, LockingContext lockingContext) {
@@ -1250,6 +1258,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
         long lockAddr = getLockStateAddr(nodeAddr);
         lockManager.writeLock(lockAddr);
         lockingContext.addLock(lockAddr);
+        checkIfDisposed();
     }
 
     private boolean upgradeToWriteLock(long nodeAddr) {
@@ -1287,6 +1296,12 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
             }
         }
         return true;
+    }
+
+    private void checkIfDisposed() {
+        if (isDisposed) {
+            throw new HazelcastException("Disposed index cannot be accessed.");
+        }
     }
 
     // For unit testing only

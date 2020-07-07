@@ -1,21 +1,41 @@
 package com.hazelcast.map.impl.query;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.map.PagingPredicateTest;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-import static com.hazelcast.HDTestSupport.getHDConfig;
+import java.util.Collection;
 
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+import static com.hazelcast.HDTestSupport.getSmallInstanceHDIndexConfig;
+import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_INDEX_ENABLED;
+import static java.util.Arrays.asList;
+
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HDPagingPredicateTest extends PagingPredicateTest {
 
+    @Parameterized.Parameter(0)
+    public String globalIndex;
+
+    @Parameterized.Parameters(name = "globalIndex:{0}")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{
+                {"true"},
+                {"false"},
+        });
+    }
+
     @Override
     protected Config getConfig() {
-        return getHDConfig();
+        Config config = getSmallInstanceHDIndexConfig();
+        config.setProperty(PROPERTY_GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex);
+        return config;
     }
+
 }

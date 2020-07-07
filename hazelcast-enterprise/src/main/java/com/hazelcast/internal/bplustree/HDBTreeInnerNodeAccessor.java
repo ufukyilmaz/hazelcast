@@ -1,5 +1,6 @@
 package com.hazelcast.internal.bplustree;
 
+import com.hazelcast.core.HazelcastException;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
@@ -7,6 +8,7 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 import static com.hazelcast.internal.bplustree.CompositeKeyComparison.greater;
 import static com.hazelcast.internal.bplustree.CompositeKeyComparison.less;
+import static com.hazelcast.internal.bplustree.DefaultBPlusTreeKeyAccessor.cloneNativeMemory;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
@@ -16,9 +18,10 @@ import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 final class HDBTreeInnerNodeAccessor extends HDBTreeNodeBaseAccessor {
 
     HDBTreeInnerNodeAccessor(LockManager lockManager, EnterpriseSerializationService ess, BPlusTreeKeyComparator keyComparator,
-                             BPlusTreeKeyAccessor keyAccessor, MemoryAllocator defaultAllocator, MemoryAllocator indexAllocator,
+                             BPlusTreeKeyAccessor keyAccessor, MemoryAllocator keyAllocator,
+                             MemoryAllocator indexAllocator,
                              int nodeSize, NodeSplitStrategy nodeSplitStrategy) {
-        super(lockManager, ess, keyComparator, keyAccessor, defaultAllocator, indexAllocator, nodeSize, nodeSplitStrategy);
+        super(lockManager, ess, keyComparator, keyAccessor, keyAllocator, indexAllocator, nodeSize, nodeSplitStrategy);
     }
 
     @Override
@@ -50,7 +53,7 @@ final class HDBTreeInnerNodeAccessor extends HDBTreeNodeBaseAccessor {
      *
      * @param nodeAddr the inner node address
      * @param indexKey the index key
-     * @param entryKey   the entry key
+     * @param entryKey the entry key
      * @return the lower bound slot
      */
     int lowerBound(long nodeAddr, Comparable indexKey, Data entryKey) {
@@ -159,6 +162,11 @@ final class HDBTreeInnerNodeAccessor extends HDBTreeNodeBaseAccessor {
         // Dispose indexKey/entryKey components, if that is not the trailing slot without keys
         if (slot < keysCount) {
             disposeSlotData(nodeAddr, slot);
+        } else {
+            assert slot == keysCount;
+            // Dispose the indexKey/entryKey of the previous slot;
+            // Tt will be trailing slot after update.
+            disposeSlotData(nodeAddr, slot - 1);
         }
 
         AMEM.copyMemory(getSlotAddr(nodeAddr, slot + 1), getSlotAddr(nodeAddr, slot), (keysCount - slot) * SLOT_ENTRY_SIZE);
@@ -169,10 +177,10 @@ final class HDBTreeInnerNodeAccessor extends HDBTreeNodeBaseAccessor {
 
     private void disposeSlotData(long nodeAddr, int slot) {
         long oldIndexKeyAddr = getIndexKeyAddr(nodeAddr, slot);
-        keyAccessor.disposeNativeData(oldIndexKeyAddr);
+        keyAccessor.disposeNativeData(oldIndexKeyAddr, getKeyAllocator());
         long oldEntryKeyAddr = getEntryKeyAddr(nodeAddr, slot);
         NativeMemoryData oldEntryKeyData = new NativeMemoryData().reset(oldEntryKeyAddr);
-        ess.disposeData(oldEntryKeyData, defaultMemoryAllocator);
+        ess.disposeData(oldEntryKeyData, getKeyAllocator());
         setIndexKey(nodeAddr, slot, NULL_ADDRESS);
         setEntryKey(nodeAddr, slot, NULL_ADDRESS);
     }
@@ -188,10 +196,39 @@ final class HDBTreeInnerNodeAccessor extends HDBTreeNodeBaseAccessor {
             long indexKeyAddr = getIndexKeyAddr(nodeAddr, slot);
             long entryKeyAddr = getEntryKeyAddr(nodeAddr, slot);
 
-            keyAccessor.disposeNativeData(indexKeyAddr);
+            keyAccessor.disposeNativeData(indexKeyAddr, getKeyAllocator());
 
             NativeMemoryData entryKeyData = new NativeMemoryData().reset(entryKeyAddr);
-            ess.disposeData(entryKeyData, defaultMemoryAllocator);
+            ess.disposeData(entryKeyData, getKeyAllocator());
         }
+    }
+
+    /**
+     * Disposes all addresses to the inner node's key allocator
+     *
+     * @param addresses the addresses to dispose
+     */
+    void disposeAddresses(Long... addresses) {
+        HazelcastException caught = null;
+
+        for (Long address : addresses) {
+            try {
+                keyAccessor.disposeNativeData(address, getKeyAllocator());
+            } catch (HazelcastException exception) {
+                caught = exception;
+            }
+        }
+        if (caught != null) {
+            throw caught;
+        }
+    }
+
+    long clonedIndexKeyAddr(long indexKeyAddr) {
+        return keyAccessor.convertToNativeData(indexKeyAddr, getKeyAllocator());
+    }
+
+    long clonedEntryKeyAddr(long entryKeyAddr) {
+        NativeMemoryData entryKeyData = new NativeMemoryData().reset(entryKeyAddr);
+        return cloneNativeMemory(entryKeyData, getKeyAllocator()).address();
     }
 }

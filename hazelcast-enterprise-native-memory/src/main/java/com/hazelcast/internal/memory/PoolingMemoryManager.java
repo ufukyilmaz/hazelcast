@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_MIN_BLOCK_SIZE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_PAGE_SIZE;
+import static com.hazelcast.internal.memory.GlobalIndexPoolingAllocator.DEFAULT_BTREE_INDEX_NODE_SIZE;
 import static com.hazelcast.internal.metrics.MetricDescriptorConstants.MEMORY_MANAGER_PREFIX_STATS;
 import static com.hazelcast.internal.util.QuickMath.isPowerOfTwo;
 
@@ -64,7 +65,7 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
     private final LibMalloc malloc;
     private final PooledNativeMemoryStats memoryStats;
     private final GlobalPoolingMemoryManager globalMemoryManager;
-    private final MemoryAllocator globalIndexAllocator;
+    private final GlobalIndexPoolingAllocator globalIndexAllocator;
     private final Map<Thread, HazelcastMemoryManager> threadLocalManagers
             = new ConcurrentHashMap<Thread, HazelcastMemoryManager>(32, .75f, 1);
 
@@ -72,25 +73,37 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
 
     public PoolingMemoryManager(MemorySize cap) {
         this(cap, DEFAULT_MIN_BLOCK_SIZE, DEFAULT_PAGE_SIZE, DEFAULT_METADATA_SPACE_PERCENTAGE,
-                DEFAULT_LIB_MALLOC_FACTORY);
+                DEFAULT_BTREE_INDEX_NODE_SIZE, DEFAULT_LIB_MALLOC_FACTORY);
+    }
+
+    public PoolingMemoryManager(MemorySize cap, int indexNodeSize) {
+        this(cap, DEFAULT_MIN_BLOCK_SIZE, DEFAULT_PAGE_SIZE, DEFAULT_METADATA_SPACE_PERCENTAGE,
+                indexNodeSize, DEFAULT_LIB_MALLOC_FACTORY);
     }
 
     public PoolingMemoryManager(MemorySize size, int minBlockSize, int pageSize) {
         this(size, minBlockSize, pageSize, DEFAULT_METADATA_SPACE_PERCENTAGE,
-                DEFAULT_LIB_MALLOC_FACTORY);
+                DEFAULT_BTREE_INDEX_NODE_SIZE, DEFAULT_LIB_MALLOC_FACTORY);
     }
 
     public PoolingMemoryManager(MemorySize size, int minBlockSize, int pageSize, float metadataSpacePercentage) {
-        this(size, minBlockSize, pageSize, metadataSpacePercentage, DEFAULT_LIB_MALLOC_FACTORY);
+        this(size, minBlockSize, pageSize, metadataSpacePercentage, DEFAULT_BTREE_INDEX_NODE_SIZE, DEFAULT_LIB_MALLOC_FACTORY);
     }
 
-    public PoolingMemoryManager(MemorySize size, int minBlockSize, int pageSize,  LibMallocFactory libMallocFactory) {
-        this(size, minBlockSize, pageSize, DEFAULT_METADATA_SPACE_PERCENTAGE,
+    public PoolingMemoryManager(MemorySize size, int minBlockSize, int pageSize, LibMallocFactory libMallocFactory) {
+        this(size, minBlockSize, pageSize, DEFAULT_METADATA_SPACE_PERCENTAGE, DEFAULT_BTREE_INDEX_NODE_SIZE,
                 libMallocFactory);
     }
 
     public PoolingMemoryManager(MemorySize cap, int minBlockSize,
                                 int pageSize, float metadataSpacePercentage,
+                                LibMallocFactory libMallocFactory) {
+        this(cap, minBlockSize, pageSize, metadataSpacePercentage, DEFAULT_BTREE_INDEX_NODE_SIZE, libMallocFactory);
+    }
+
+    public PoolingMemoryManager(MemorySize cap, int minBlockSize,
+                                int pageSize, float metadataSpacePercentage,
+                                int indexNodeSize,
                                 LibMallocFactory libMallocFactory) {
         long totalSize = cap.bytes();
         if (totalSize <= 0) {
@@ -104,7 +117,7 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
 
         memoryStats = new PooledNativeMemoryStats(maxNative, maxMetadata);
         globalMemoryManager = new GlobalPoolingMemoryManager(minBlockSize, pageSize, malloc, memoryStats, gc);
-        globalIndexAllocator = new GlobalIndexPoolingAllocator(malloc, memoryStats);
+        globalIndexAllocator = new GlobalIndexPoolingAllocator(malloc, memoryStats, indexNodeSize);
 
         gc.registerGarbageCollectable(this);
         gc.start();
@@ -169,7 +182,7 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
      * freed using this method.
      *
      * @param address address of memory block
-     * @param size size of memory block
+     * @param size    size of memory block
      */
     @Override
     public void free(long address, long size) {
@@ -222,7 +235,7 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
         return globalMemoryManager;
     }
 
-    public MemoryAllocator getGlobalIndexAllocator() {
+    public GlobalIndexPoolingAllocator getGlobalIndexAllocator() {
         return globalIndexAllocator;
     }
 

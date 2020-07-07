@@ -402,4 +402,31 @@ public class BPlusTreeConcurrencyTest extends BPlusTreeTestSupport {
         assertEquals(keysCount, queryKeysCount());
     }
 
+    @Test
+    public void testRemoveInnerKeysFromOtherThread() {
+        int keysCount = 50000;
+        insertKeys(keysCount);
+        AtomicReference<Throwable> exception = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+
+        executor.submit(() -> {
+            try {
+                for (int i = 0; i < keysCount; ++i) {
+                    removeKey(i);
+                }
+            } catch (Throwable t) {
+                exception.compareAndSet(null, t);
+                t.printStackTrace(System.err);
+            } finally {
+                latch.countDown();
+            }
+        });
+
+        assertOpenEventually(latch);
+
+        assertNull(exception.get());
+
+        assertEquals(0, queryKeysCount());
+    }
+
 }

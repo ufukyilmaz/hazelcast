@@ -8,7 +8,7 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.properties.ClusterProperty;
@@ -21,7 +21,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -33,18 +35,32 @@ import static com.hazelcast.NativeMemoryTestUtil.assertFreeNativeMemory;
 import static com.hazelcast.NativeMemoryTestUtil.disableNativeMemoryDebugging;
 import static com.hazelcast.NativeMemoryTestUtil.enableNativeMemoryDebugging;
 import static com.hazelcast.config.EvictionPolicy.LRU;
-import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.STANDARD;
+import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
+import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_INDEX_ENABLED;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HDIndexMemoryLeakTest extends HazelcastTestSupport {
 
     private static final int PARTITION_COUNT = 111;
     private static final int TIMEOUT_SECONDS = 30;
     private static final String MAP_NAME = "hd-map-with-index";
-    private static final NativeMemoryConfig.MemoryAllocatorType ALLOCATOR_TYPE = STANDARD;
-    private static final MemorySize MEMORY_SIZE = new MemorySize(2, MemoryUnit.MEGABYTES);
+    private static final NativeMemoryConfig.MemoryAllocatorType ALLOCATOR_TYPE = POOLED;
+    private static final MemorySize MEMORY_SIZE = new MemorySize(30, MemoryUnit.MEGABYTES);
+
+    @Parameterized.Parameter
+    public String globalIndex;
+
+    @Parameterized.Parameters(name = "globalIndex:{0}")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{
+                {"true"},
+                {"false"},
+        });
+    }
 
     @BeforeClass
     public static void setupClass() {
@@ -58,7 +74,7 @@ public class HDIndexMemoryLeakTest extends HazelcastTestSupport {
 
     @Test
     public void smoke() {
-        Config config = createConfig();
+        Config config = createConfig(new MemorySize(60, MemoryUnit.MEGABYTES));
 
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
         HazelcastInstance hz = factory.newHazelcastInstance(config);
@@ -83,7 +99,7 @@ public class HDIndexMemoryLeakTest extends HazelcastTestSupport {
 
     @Test
     public void index_addition_does_not_leak_hd_memory() throws InterruptedException {
-        Config config = createConfig();
+        Config config = createConfig(MEMORY_SIZE);
 
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
@@ -121,9 +137,7 @@ public class HDIndexMemoryLeakTest extends HazelcastTestSupport {
         }
         executorService.submit(indexPersonField);
 
-        sleepSeconds(TIMEOUT_SECONDS);
-
-        stop.set(true);
+        sleepAndStop(stop, TIMEOUT_SECONDS);
 
         executorService.shutdown();
         if (!executorService.awaitTermination(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
@@ -147,7 +161,7 @@ public class HDIndexMemoryLeakTest extends HazelcastTestSupport {
         return new IndexPerson(id, id, "first" + id, "last" + id, id);
     }
 
-    private Config createConfig() {
+    private Config createConfig(MemorySize memorySize) {
         MapConfig mapConfig = new MapConfig(MAP_NAME)
                 .setBackupCount(1)
                 .setInMemoryFormat(InMemoryFormat.NATIVE)
@@ -163,12 +177,13 @@ public class HDIndexMemoryLeakTest extends HazelcastTestSupport {
                 .setEnabled(true)
                 .setMetadataSpacePercentage(60)
                 .setAllocatorType(ALLOCATOR_TYPE)
-                .setSize(MEMORY_SIZE);
+                .setSize(memorySize);
 
         Config config = new Config();
         config.getMetricsConfig().setEnabled(false);
         return config
                 .setProperty(ClusterProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
+                .setProperty(PROPERTY_GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex)
                 .setProperty(ClusterProperty.PARTITION_COUNT.getName(), String.valueOf(PARTITION_COUNT))
                 .addMapConfig(mapConfig)
                 .setNativeMemoryConfig(memoryConfig);

@@ -7,7 +7,7 @@ import com.hazelcast.config.IndexType;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.memory.MemorySize;
@@ -23,30 +23,54 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.util.Collection;
 
-import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.HDTestSupport.getHDIndexConfig;
 import static com.hazelcast.config.EvictionPolicy.LFU;
+import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.STANDARD;
 import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_TASK_PERIOD_SECONDS;
 import static com.hazelcast.memory.MemoryUnit.KILOBYTES;
+import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_INDEX_ENABLED;
 import static com.hazelcast.test.Accessors.getNode;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Math.max;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HDEvictionTest extends EvictionTest {
 
+    @Parameterized.Parameter
+    public String globalIndex;
+
+    @Parameterized.Parameters(name = "globalIndex:{0}")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{
+                {"true"},
+                {"false"},
+        });
+    }
+
+    @Override
+    boolean updateRecordAccessTime() {
+        return globalIndex.equals("false");
+    }
+
     @Override
     protected Config getConfig() {
-        return getHDConfig();
+        Config config = getHDIndexConfig();
+        config.setProperty(PROPERTY_GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex);
+        return config;
     }
 
     @Override
@@ -99,6 +123,7 @@ public class HDEvictionTest extends EvictionTest {
 
     @Test
     public void testForceEviction_withIndexes() {
+        assumeTrue(globalIndex.equals("false"));
         // never run an explicit eviction -> rely on forced eviction instead
         int mapMaxSize = MAX_VALUE;
         String mapName = randomMapName();
@@ -110,6 +135,7 @@ public class HDEvictionTest extends EvictionTest {
         mapConfig.getEvictionConfig().setEvictionPolicy(LFU).setSize(mapMaxSize);
         mapConfig.addIndexConfig(new IndexConfig().addAttribute("age").setType(IndexType.SORTED));
 
+        config.getNativeMemoryConfig().setAllocatorType(STANDARD);
         // 640K ought to be enough for anybody
         config.getNativeMemoryConfig()
                 .setSize(new MemorySize(640, KILOBYTES));
@@ -129,11 +155,13 @@ public class HDEvictionTest extends EvictionTest {
 
     @Test
     public void testEviction_withOrderedIndexes() {
+        assumeTrue(globalIndex.equals("false"));
         testEviction_withIndexes(true);
     }
 
     @Test
     public void testEviction_withUnorderedIndexes() {
+        assumeTrue(globalIndex.equals("false"));
         testEviction_withIndexes(false);
     }
 

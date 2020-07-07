@@ -9,6 +9,7 @@ import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -136,6 +137,7 @@ public class HDEvictionCheckerTest extends HazelcastTestSupport {
 
     private Config newConfig(MaxSizePolicy maxSizePolicy, int maxSize) {
         Config config = getHDConfig();
+        config.getNativeMemoryConfig().setSize(new MemorySize(32, MemoryUnit.MEGABYTES));
 
         MapConfig mapConfig = config.getMapConfig("default");
         EvictionConfig evictionConfig = mapConfig.getEvictionConfig();

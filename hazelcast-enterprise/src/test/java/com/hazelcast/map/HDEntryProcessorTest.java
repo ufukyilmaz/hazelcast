@@ -11,13 +11,14 @@ import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
+import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_INDEX_ENABLED;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
@@ -25,12 +26,16 @@ import static java.util.Arrays.asList;
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HDEntryProcessorTest extends EntryProcessorTest {
 
-    @Parameters(name = "format:{0}")
+    @Parameterized.Parameters(name = "format:{0} globalIndex:{1}")
     public static Collection<Object[]> data() {
         return asList(new Object[][]{
-                {NATIVE},
+                {NATIVE, "true"},
+                {NATIVE, "false"},
         });
     }
+
+    @Parameterized.Parameter(1)
+    public String globalIndex;
 
     @BeforeClass
     public static void setupClass() {
@@ -47,8 +52,16 @@ public class HDEntryProcessorTest extends EntryProcessorTest {
         MapConfig mapConfig = new MapConfig(MAP_NAME)
                 .setInMemoryFormat(inMemoryFormat);
 
-        return getHDConfig()
+        Config config = getHDConfig()
                 .addMapConfig(mapConfig);
+        config.getNativeMemoryConfig().setAllocatorType(POOLED);
+        config.setProperty(PROPERTY_GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex);
+        return config;
+    }
+
+    @Override
+    boolean globalIndex() {
+        return globalIndex.equals("true");
     }
 
     @Override

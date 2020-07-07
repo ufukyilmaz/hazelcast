@@ -1,13 +1,12 @@
 package com.hazelcast.internal.bplustree;
 
+import com.hazelcast.core.HazelcastException;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.MemoryStats;
-import com.hazelcast.internal.memory.StandardMemoryManager;
+import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -16,7 +15,12 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.getKeysCount;
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.getNodeLevel;
@@ -24,6 +28,7 @@ import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -37,9 +42,9 @@ public class BPlusTreeMemoryTest extends BPlusTreeTestSupport {
     private boolean freedMemory;
 
     @Override
-    HazelcastMemoryManager newDefaultMemoryAllocator() {
-        HazelcastMemoryManager defaultAllocator = new StandardMemoryManager(new MemorySize(1300, MemoryUnit.MEGABYTES));
-        return new DelegatingDefaultMemoryAllocator(defaultAllocator);
+    HazelcastMemoryManager newKeyAllocator(PoolingMemoryManager poolingMemoryManager) {
+        HazelcastMemoryManager memoryAllocator = poolingMemoryManager.getGlobalMemoryManager();
+        return new DelegatingDefaultMemoryAllocator(memoryAllocator);
     }
 
     DelegatingMemoryAllocator newDelegatingIndexMemoryAllocator(MemoryAllocator indexAllocator, AllocatorCallback callback) {
@@ -130,6 +135,79 @@ public class BPlusTreeMemoryTest extends BPlusTreeTestSupport {
         btree.dispose();
         assertFalse(freedMemory);
         assertTrue(btree.isDisposed());
+    }
+
+    @Test
+    public void testDisposeWhileIterating() {
+        insertKeysCompact(1000);
+        assertEquals(3, getNodeLevel(rootAddr));
+
+        Iterator it = btree.lookup(null, true, null, true);
+        // Consume some elements
+        for (int i = 0; i < 300; ++i) {
+            assertTrue(it.hasNext());
+            it.next();
+        }
+
+        btree.dispose();
+        assertThrows(HazelcastException.class, () -> it.hasNext());
+    }
+
+    @Test
+    public void testDisposeWhileConcurrentlyAccessing() {
+        final int keysCount = 10000;
+        insertKeysCompact(keysCount);
+
+        int threadsCount = Runtime.getRuntime().availableProcessors();
+        ExecutorService executor = Executors.newFixedThreadPool(threadsCount);
+        final AtomicReference<Throwable>[] exceptions = new AtomicReference[threadsCount];
+        for (int i = 0; i < threadsCount; ++i) {
+            exceptions[i] = new AtomicReference<>();
+        }
+
+        CountDownLatch latch = new CountDownLatch(threadsCount);
+
+        for (int i = 0; i < threadsCount; ++i) {
+            final int threadIndex = i;
+
+            executor.submit(() -> {
+                try {
+                    for (; ; ) {
+                        boolean update = nextBoolean();
+                        if (update) {
+                            boolean insert = nextBoolean();
+                            int index = nextInt(keysCount);
+                            if (insert) {
+                                insertKey(index);
+                            } else {
+                                btree.remove(index, nativeData("Name_" + index));
+                                insertKey(index);
+                            }
+                        } else {
+                            queryKeysCount();
+                        }
+                    }
+                } catch (Throwable t) {
+                    exceptions[threadIndex].set(t);
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        sleepSeconds(3);
+        btree.dispose();
+        assertTrue(btree.isDisposed());
+
+        assertOpenEventually(latch);
+        for (int i = 0; i < threadsCount; ++i) {
+            Throwable e = exceptions[i].get();
+            assertNotNull(e);
+            assertTrue(e instanceof HazelcastException);
+            assertTrue(e.getMessage().contains("Disposed index cannot be accessed"));
+        }
+
+        executor.shutdownNow();
     }
 
     @Test

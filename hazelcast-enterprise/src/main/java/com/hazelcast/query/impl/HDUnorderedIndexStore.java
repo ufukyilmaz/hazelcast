@@ -8,6 +8,7 @@ import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.StoreAdapter;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.query.Predicate;
 
 import java.util.Collections;
@@ -40,9 +41,13 @@ class HDUnorderedIndexStore extends HDExpirableIndexStore {
         super(IndexCopyBehavior.NEVER, partitionStoreAdapter);
         assertRunningOnPartitionThread();
         this.ess = ess;
-
         this.recordsWithNullValue = new HDIndexHashMap<>(this, ess, malloc, entryFactory);
-        this.records = new HDIndexNestedHashMap<>(this, ess, malloc, entryFactory);
+        try {
+            this.records = new HDIndexNestedHashMap<>(this, ess, malloc, entryFactory);
+        } catch (NativeOutOfMemoryError e) {
+            recordsWithNullValue.dispose();
+            throw e;
+        }
     }
 
     @Override

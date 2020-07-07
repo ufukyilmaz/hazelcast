@@ -11,7 +11,6 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.impl.operationservice.LiveOperations;
 import com.hazelcast.spi.impl.operationservice.LiveOperationsTracker;
 import com.hazelcast.spi.impl.operationservice.Operation;
-import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.wan.impl.InternalWanEvent;
 
 import java.util.Collection;
@@ -22,7 +21,6 @@ import java.util.concurrent.RejectedExecutionException;
 
 import static com.hazelcast.config.ExecutorConfig.DEFAULT_POOL_SIZE;
 import static com.hazelcast.internal.util.ThreadUtil.createThreadName;
-import static com.hazelcast.spi.properties.ClusterProperty.WAN_CONSUMER_INVOCATION_THRESHOLD;
 
 /**
  * The class responsible for processing WAN events coming from a source
@@ -47,20 +45,10 @@ class WanEventProcessor implements LiveOperationsTracker {
     private final WanAcknowledger acknowledger;
     private volatile StripedExecutor executor;
 
-    WanEventProcessor(Node node) {
+    WanEventProcessor(Node node, WanAcknowledger acknowledger) {
         this.logger = node.getLogger(WanEventProcessor.class.getName());
         this.node = node;
-        this.acknowledger = createAcknowledger();
-    }
-
-    private WanAcknowledger createAcknowledger() {
-        HazelcastProperties properties = node.getProperties();
-        int invocationThreshold = properties.getInteger(WAN_CONSUMER_INVOCATION_THRESHOLD);
-        if (invocationThreshold <= 0) {
-            return new WanNonThrottlingAcknowledger(node);
-        } else {
-            return new WanThrottlingAcknowledger(node, invocationThreshold);
-        }
+        this.acknowledger = acknowledger;
     }
 
     /**

@@ -30,11 +30,18 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import javax.cache.Caching;
 import java.util.Collection;
+import java.util.Map;
+import java.util.function.Function;
 
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.config.ConsistencyCheckStrategy.NONE;
 import static com.hazelcast.config.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_DISCRIMINATOR_REPLICATION;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_ACK_DELAY_CURRENT_MILLIS;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_ACK_DELAY_LAST_END;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_ACK_DELAY_LAST_START;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_ACK_DELAY_TOTAL_COUNT;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_ACK_DELAY_TOTAL_MILLIS;
 import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_CONSISTENCY_CHECK_LAST_DIFF_PARTITION_COUNT;
 import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_MERKLE_SYNC_AVG_ENTRIES_PER_LEAF;
 import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_MERKLE_SYNC_PARTITIONS_SYNCED;
@@ -47,12 +54,15 @@ import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_TAG_C
 import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_TAG_MAP;
 import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_TAG_PUBLISHERID;
 import static com.hazelcast.internal.metrics.ProbeUnit.COUNT;
+import static com.hazelcast.internal.metrics.ProbeUnit.MS;
 import static com.hazelcast.internal.metrics.impl.DefaultMetricDescriptorSupplier.DEFAULT_DESCRIPTOR_SUPPLIER;
+import static com.hazelcast.spi.properties.ClusterProperty.WAN_CONSUMER_INVOCATION_THRESHOLD;
 import static com.hazelcast.test.Accessors.getNodeEngineImpl;
 import static com.hazelcast.wan.fw.Cluster.clusterA;
 import static com.hazelcast.wan.fw.Cluster.clusterB;
 import static com.hazelcast.wan.fw.WanCacheTestSupport.fillCache;
 import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
+import static com.hazelcast.wan.fw.WanMapTestSupport.verifyMapReplicated;
 import static com.hazelcast.wan.fw.WanReplication.replicate;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertTrue;
@@ -95,6 +105,7 @@ public class EnterpriseWanMetricsTest extends HazelcastTestSupport {
     public void cleanup() {
         Caching.getCachingProvider().close();
         factory.shutdownAll();
+        System.clearProperty(WAN_CONSUMER_INVOCATION_THRESHOLD.getName());
     }
 
     @Before
@@ -221,13 +232,142 @@ public class EnterpriseWanMetricsTest extends HazelcastTestSupport {
                     .withTag(WAN_TAG_MAP, MAP_NAME);
 
             assertHasStatsEventually(sourceCluster, descriptorPartitionsSynced, descriptorAvgEntriesPerLeaf,
-                descriptorConsistencyCheck);
+                    descriptorConsistencyCheck);
         } else {
             assertHasStatsEventually(sourceCluster, descriptorPartitionsSynced);
         }
     }
 
+    @Test
+    public void testAcknowledgerMetricsIfDelay() {
+        System.setProperty(WAN_CONSUMER_INVOCATION_THRESHOLD.getName(), Integer.toString(1));
+        sourceCluster.startCluster();
+        targetCluster.startCluster();
+
+        sourceCluster.stopWanReplicationOnAllMembers(wanReplication);
+
+        fillMap(sourceCluster, MAP_NAME, 0, 10000);
+
+        sourceCluster.syncMap(wanReplication, MAP_NAME);
+
+        MetricDescriptor descriptorTotalCount = DEFAULT_DESCRIPTOR_SUPPLIER
+                .get()
+                .withPrefix(WAN_PREFIX)
+                .withMetric(WAN_METRIC_ACK_DELAY_TOTAL_COUNT)
+                .withUnit(COUNT);
+
+        MetricDescriptor descriptorTotalMillis = DEFAULT_DESCRIPTOR_SUPPLIER
+                .get()
+                .withPrefix(WAN_PREFIX)
+                .withMetric(WAN_METRIC_ACK_DELAY_TOTAL_MILLIS)
+                .withUnit(MS);
+
+        MetricDescriptor descriptorLastStart = DEFAULT_DESCRIPTOR_SUPPLIER
+                .get()
+                .withPrefix(WAN_PREFIX)
+                .withMetric(WAN_METRIC_ACK_DELAY_LAST_START)
+                .withUnit(MS);
+
+        MetricDescriptor descriptorLastEnd = DEFAULT_DESCRIPTOR_SUPPLIER
+                .get()
+                .withPrefix(WAN_PREFIX)
+                .withMetric(WAN_METRIC_ACK_DELAY_LAST_END)
+                .withUnit(MS);
+
+        MetricDescriptor descriptorCurrentMillis = DEFAULT_DESCRIPTOR_SUPPLIER
+                .get()
+                .withPrefix(WAN_PREFIX)
+                .withMetric(WAN_METRIC_ACK_DELAY_CURRENT_MILLIS)
+                .withUnit(MS);
+
+        verifyMapReplicated(sourceCluster, targetCluster, MAP_NAME);
+
+        assertHasStatsEventually(targetCluster, collector -> {
+            Map<MetricDescriptor, CapturingCollector.Capture> captures = collector.captures();
+            if (consistencyCheckStrategy == NONE) {
+                // NONE: a batch in this test contains typically 500 entries -> 10000 entries/500 batch size = 20 ACK delays
+                // it's possible though that the synchronization queue is not full when the publisher collects the next batch
+                // in this case it sends a smaller batch that results in more than 20 batches, hence more than 20 ACK delays
+                return captures.get(descriptorTotalCount).singleCapturedValue().intValue() >= 20
+                        && captures.get(descriptorTotalMillis).singleCapturedValue().longValue() > 0
+                        && captures.get(descriptorLastStart).singleCapturedValue().longValue() > 0
+                        && captures.get(descriptorLastEnd).singleCapturedValue().longValue() > 0
+                        && captures.get(descriptorCurrentMillis).singleCapturedValue().longValue() == -1;
+            } else {
+                // MERKLE_TREE: a batch contains MT leaves with multiple entries
+                // in this test we sync the 10000 entries only in one or a few batches
+                return captures.get(descriptorTotalCount).singleCapturedValue().intValue() > 0
+                        && captures.get(descriptorTotalMillis).singleCapturedValue().longValue() > 0
+                        && captures.get(descriptorLastStart).singleCapturedValue().longValue() > 0
+                        && captures.get(descriptorLastEnd).singleCapturedValue().longValue() > 0
+                        && captures.get(descriptorCurrentMillis).singleCapturedValue().longValue() == -1;
+            }
+        });
+    }
+
+    @Test
+    public void testAcknowledgerMetricsIfNoDelay() {
+        sourceCluster.startCluster();
+        targetCluster.startCluster();
+
+        sourceCluster.stopWanReplicationOnAllMembers(wanReplication);
+
+        fillMap(sourceCluster, MAP_NAME, 0, 10000);
+
+        sourceCluster.syncMap(wanReplication, MAP_NAME);
+
+        MetricDescriptor descriptorTotalCount = DEFAULT_DESCRIPTOR_SUPPLIER
+                .get()
+                .withPrefix(WAN_PREFIX)
+                .withMetric(WAN_METRIC_ACK_DELAY_TOTAL_COUNT)
+                .withUnit(COUNT);
+
+        MetricDescriptor descriptorTotalMillis = DEFAULT_DESCRIPTOR_SUPPLIER
+                .get()
+                .withPrefix(WAN_PREFIX)
+                .withMetric(WAN_METRIC_ACK_DELAY_TOTAL_MILLIS)
+                .withUnit(MS);
+
+        MetricDescriptor descriptorLastStart = DEFAULT_DESCRIPTOR_SUPPLIER
+                .get()
+                .withPrefix(WAN_PREFIX)
+                .withMetric(WAN_METRIC_ACK_DELAY_LAST_START)
+                .withUnit(MS);
+
+        MetricDescriptor descriptorLastEnd = DEFAULT_DESCRIPTOR_SUPPLIER
+                .get()
+                .withPrefix(WAN_PREFIX)
+                .withMetric(WAN_METRIC_ACK_DELAY_LAST_END)
+                .withUnit(MS);
+
+        MetricDescriptor descriptorCurrentMillis = DEFAULT_DESCRIPTOR_SUPPLIER
+                .get()
+                .withPrefix(WAN_PREFIX)
+                .withMetric(WAN_METRIC_ACK_DELAY_CURRENT_MILLIS)
+                .withUnit(MS);
+
+        verifyMapReplicated(sourceCluster, targetCluster, MAP_NAME);
+
+        assertHasStatsEventually(targetCluster, collector -> {
+            Map<MetricDescriptor, CapturingCollector.Capture> captures = collector.captures();
+            return captures.get(descriptorTotalCount).singleCapturedValue().intValue() == 0
+                    && captures.get(descriptorTotalMillis).singleCapturedValue().longValue() == 0
+                    && captures.get(descriptorLastStart).singleCapturedValue().longValue() == 0
+                    && captures.get(descriptorLastEnd).singleCapturedValue().longValue() == 0
+                    && captures.get(descriptorCurrentMillis).singleCapturedValue().longValue() == -1;
+        });
+    }
+
     private void assertHasStatsEventually(Cluster cluster, MetricDescriptor... expectedDescriptors) {
+        assertHasStatsEventually(cluster, collector -> {
+            for (MetricDescriptor expectedDescriptor : expectedDescriptors) {
+                return collector.captures().containsKey(expectedDescriptor);
+            }
+            return false;
+        });
+    }
+
+    private void assertHasStatsEventually(Cluster cluster, Function<CapturingCollector, Boolean> assertFn) {
         assertTrueEventually(() -> {
             boolean found = true;
             for (HazelcastInstance member : cluster.getMembers()) {
@@ -235,9 +375,7 @@ public class EnterpriseWanMetricsTest extends HazelcastTestSupport {
                 CapturingCollector collector = new CapturingCollector();
                 metricsRegistry.collect(collector);
 
-                for (MetricDescriptor expectedDescriptor : expectedDescriptors) {
-                    found &= collector.captures().containsKey(expectedDescriptor);
-                }
+                found &= assertFn.apply(collector);
             }
             assertTrue(found);
         });

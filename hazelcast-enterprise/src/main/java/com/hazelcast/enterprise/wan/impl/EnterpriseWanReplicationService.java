@@ -43,6 +43,7 @@ import com.hazelcast.spi.impl.operationservice.LiveOperations;
 import com.hazelcast.spi.impl.operationservice.LiveOperationsTracker;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
+import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.version.Version;
 import com.hazelcast.wan.WanConsumer;
 import com.hazelcast.wan.WanEvent;
@@ -83,6 +84,7 @@ import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_TAG_M
 import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_TAG_PUBLISHERID;
 import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 import static com.hazelcast.internal.util.MapUtil.createHashMap;
+import static com.hazelcast.spi.properties.ClusterProperty.WAN_CONSUMER_INVOCATION_THRESHOLD;
 import static com.hazelcast.wan.impl.WanReplicationServiceImpl.getWanPublisherId;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
@@ -125,14 +127,27 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
      */
     private final WanEventCounterRegistry sentWanEventCounters = new WanEventCounterRegistry();
 
+    private final WanAcknowledger acknowledger;
+
     public EnterpriseWanReplicationService(Node node) {
         this.node = node;
         this.logger = node.getLogger(EnterpriseWanReplicationService.class.getName());
         this.migrationAwareService = new WanMigrationAwareService(this, node);
-        this.eventProcessor = new WanEventProcessor(node);
+        this.acknowledger = createAcknowledger();
+        this.eventProcessor = new WanEventProcessor(node, acknowledger);
         this.publisherContainer = new WanSchemeContainer(node);
         this.consumerContainer = new WanConsumerContainer(node);
         this.syncManager = new WanSyncManager(this, node);
+    }
+
+    private WanAcknowledger createAcknowledger() {
+        HazelcastProperties properties = node.getProperties();
+        int invocationThreshold = properties.getInteger(WAN_CONSUMER_INVOCATION_THRESHOLD);
+        if (invocationThreshold <= 0) {
+            return new WanNonThrottlingAcknowledger(node);
+        } else {
+            return new WanThrottlingAcknowledger(node, invocationThreshold);
+        }
     }
 
     /**
@@ -624,13 +639,14 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
             return;
         }
 
+        descriptor.withPrefix(WAN_PREFIX);
+
         for (Map.Entry<String, ? extends LocalWanStats> entry : stats.entrySet()) {
             String replicationName = entry.getKey();
             LocalWanStats localWanStats = entry.getValue();
 
             MetricDescriptor rootDescriptor = descriptor
                     .copy()
-                    .withPrefix(WAN_PREFIX)
                     .withDiscriminator(WAN_DISCRIMINATOR_REPLICATION, replicationName);
 
             for (Entry<String, LocalWanPublisherStats> publisherEntry : localWanStats.getLocalWanPublisherStats().entrySet()) {
@@ -656,12 +672,17 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
                 provideConsistencyCheckMetrics(context, wanPublisherStats, publisherDescriptor);
             }
         }
+
+        // WAN acknowledger
+        if (acknowledger instanceof WanThrottlingAcknowledger) {
+            ((WanThrottlingAcknowledger) acknowledger).provideMetrics(descriptor.copy(), context);
+        }
     }
 
     private void provideConsistencyCheckMetrics(MetricsCollectionContext context, LocalWanPublisherStats wanPublisherStats,
                                                 MetricDescriptor publisherDescriptor) {
         Map<String, ConsistencyCheckResult> lastConsistencyCheckResults = wanPublisherStats
-            .getLastConsistencyCheckResults();
+                .getLastConsistencyCheckResults();
         if (lastConsistencyCheckResults != null) {
             for (Entry<String, ConsistencyCheckResult> syncStatsEntry : lastConsistencyCheckResults.entrySet()) {
                 String mapName = syncStatsEntry.getKey();

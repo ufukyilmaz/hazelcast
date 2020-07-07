@@ -1,6 +1,9 @@
 package com.hazelcast.enterprise.wan.impl;
 
 import com.hazelcast.instance.impl.Node;
+import com.hazelcast.internal.metrics.MetricDescriptor;
+import com.hazelcast.internal.metrics.MetricsCollectionContext;
+import com.hazelcast.internal.metrics.Probe;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.impl.executionservice.TaskScheduler;
 import com.hazelcast.spi.impl.operationservice.Operation;
@@ -8,12 +11,18 @@ import com.hazelcast.spi.impl.operationservice.impl.InvocationRegistry;
 import com.hazelcast.spi.properties.HazelcastProperties;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_ACK_DELAY_CURRENT_MILLIS;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_ACK_DELAY_LAST_END;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_ACK_DELAY_LAST_START;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_ACK_DELAY_TOTAL_COUNT;
+import static com.hazelcast.internal.metrics.MetricDescriptorConstants.WAN_METRIC_ACK_DELAY_TOTAL_MILLIS;
+import static com.hazelcast.internal.metrics.ProbeUnit.MS;
 import static com.hazelcast.spi.properties.ClusterProperty.WAN_CONSUMER_ACK_DELAY_BACKOFF_INIT_MS;
 import static com.hazelcast.spi.properties.ClusterProperty.WAN_CONSUMER_ACK_DELAY_BACKOFF_MAX_MS;
 import static com.hazelcast.spi.properties.ClusterProperty.WAN_CONSUMER_ACK_DELAY_BACKOFF_MULTIPLIER;
@@ -35,6 +44,7 @@ import static java.util.concurrent.TimeUnit.MICROSECONDS;
  */
 public class WanThrottlingAcknowledger implements WanAcknowledger {
     private static final int THRESHOLD_LOGGER_PERIOD_MILLIS = (int) TimeUnit.MINUTES.toMillis(5);
+    private static final int NO_CURRENT_DELAYING = -1;
 
     private final int invocationThreshold;
     private final Node node;
@@ -49,6 +59,7 @@ public class WanThrottlingAcknowledger implements WanAcknowledger {
     private InvocationRegistry invocationRegistry;
     private TaskScheduler wanScheduler;
     private volatile long lastThresholdLogMs;
+    private volatile DelayingMetrics metrics = new DelayingMetrics();
 
     public WanThrottlingAcknowledger(Node node, int invocationThreshold) {
         this.invocationThreshold = invocationThreshold;
@@ -104,6 +115,12 @@ public class WanThrottlingAcknowledger implements WanAcknowledger {
             }
 
             if (shouldScheduleTask) {
+                // the order is important: we first register scheduling and than schedule the task
+                // otherwise delayingEnded() might precede delayingStarted(), since it is called
+                // on the thread running HealthConditionCheckTask
+                // the CAS performed on delayingState guards against calling delayingStarted()
+                // multiple times without calling delayingStarted()
+                delayingStarted();
                 new HealthConditionCheckTask().schedule();
             }
         }
@@ -118,6 +135,34 @@ public class WanThrottlingAcknowledger implements WanAcknowledger {
         return invocationRegistry;
     }
 
+    private void delayingStarted() {
+        metrics = metrics.copyWith(copy -> {
+            copy.lastStartTimestamp = System.currentTimeMillis();
+            copy.totalCount++;
+        });
+    }
+
+    private void delayingEnded() {
+        metrics = metrics.copyWith(copy -> {
+            long now = System.currentTimeMillis();
+            copy.lastEndTimestamp = now;
+            copy.totalDelayMillis += now - copy.lastStartTimestamp;
+        });
+    }
+
+    void provideMetrics(MetricDescriptor descriptor, MetricsCollectionContext context) {
+        DelayingMetrics collectedMetrics = this.metrics;
+        context.collect(descriptor, collectedMetrics);
+
+        boolean ongoingDelaying = collectedMetrics.lastStartTimestamp > collectedMetrics.lastEndTimestamp;
+        long currentDelayingMillis = ongoingDelaying
+                ? System.currentTimeMillis() - metrics.lastStartTimestamp
+                : NO_CURRENT_DELAYING;
+        context.collect(descriptor
+                .withMetric(WAN_METRIC_ACK_DELAY_CURRENT_MILLIS)
+                .withUnit(MS), currentDelayingMillis);
+    }
+
     private final class HealthConditionCheckTask implements Runnable {
         private long delayMicros = -1;
 
@@ -130,11 +175,11 @@ public class WanThrottlingAcknowledger implements WanAcknowledger {
                     while ((delayedAck = delayedAcknowledgments.poll()) != null) {
                         acks.add(delayedAck);
                     }
+                    delayingEnded();
                     delayingState.set(DelayingState.NOT_DELAYING);
                 }
-                Iterator<DelayedAcknowledgment> acksIter = acks.iterator();
-                while (acksIter.hasNext()) {
-                    wanScheduler().execute(acksIter.next());
+                for (DelayedAcknowledgment ack : acks) {
+                    wanScheduler().execute(ack);
                 }
             } else {
                 schedule();
@@ -195,5 +240,58 @@ public class WanThrottlingAcknowledger implements WanAcknowledger {
          * at a later time.
          */
         DELAYING
+    }
+
+    static final class DelayingMetrics {
+        /**
+         * The total number of the triggering delaying the WAN
+         * acknowledgments (exceeding the invocation threshold).
+         */
+        @Probe(name = WAN_METRIC_ACK_DELAY_TOTAL_COUNT)
+        private int totalCount;
+        /**
+         * The total amount of milliseconds delaying the WAN
+         * acknowledgments was taking place.
+         */
+        @Probe(name = WAN_METRIC_ACK_DELAY_TOTAL_MILLIS, unit = MS)
+        private int totalDelayMillis;
+        /**
+         * The timestamp of the last start of delaying the acknowledgments.
+         */
+        @Probe(name = WAN_METRIC_ACK_DELAY_LAST_START, unit = MS)
+        private long lastStartTimestamp;
+        /**
+         * The timestamp of the last end of delaying the acknowledgments.
+         * If this value is bigger than {@link #lastStartTimestamp}, then
+         * there is no delaying.
+         */
+        @Probe(name = WAN_METRIC_ACK_DELAY_LAST_END, unit = MS)
+        private long lastEndTimestamp;
+
+        private DelayingMetrics copy() {
+            DelayingMetrics copy = new DelayingMetrics();
+            copy.totalCount = this.totalCount;
+            copy.totalDelayMillis = this.totalDelayMillis;
+            copy.lastStartTimestamp = this.lastStartTimestamp;
+            copy.lastEndTimestamp = this.lastEndTimestamp;
+
+            return copy;
+        }
+
+        private DelayingMetrics copyWith(Consumer<DelayingMetrics> mutator) {
+            DelayingMetrics copy = copy();
+            mutator.accept(copy);
+            return copy;
+        }
+
+        @Override
+        public String toString() {
+            return "DelayingMetrics{"
+                    + "totalCount=" + totalCount
+                    + ", totalDelayMillis=" + totalDelayMillis
+                    + ", lastStartTimeStamp=" + lastStartTimestamp
+                    + ", lastEndTimeStamp=" + lastEndTimestamp
+                    + '}';
+        }
     }
 }

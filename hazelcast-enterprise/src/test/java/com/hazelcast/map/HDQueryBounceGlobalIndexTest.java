@@ -8,18 +8,18 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
-import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.STANDARD;
+import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_INDEX_ENABLED;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
-public class HDQueryBounceTest extends QueryBounceTest {
+public class HDQueryBounceGlobalIndexTest extends QueryBounceTest {
 
     @Override
     protected Config getConfig() {
-        Config config = getHDConfig(super.getConfig(), STANDARD, new MemorySize(128, MEGABYTES));
-        config.setProperty(PROPERTY_GLOBAL_HD_INDEX_ENABLED.getName(), "false");
+        Config config = getHDConfig(super.getConfig(), POOLED, new MemorySize(128, MEGABYTES));
+        config.setProperty(PROPERTY_GLOBAL_HD_INDEX_ENABLED.getName(), "true");
         return config;
     }
 }

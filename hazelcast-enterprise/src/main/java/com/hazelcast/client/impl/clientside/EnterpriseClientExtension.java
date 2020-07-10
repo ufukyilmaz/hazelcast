@@ -4,6 +4,7 @@ import com.hazelcast.client.HazelcastClientNotActiveException;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.client.config.SocketOptions;
+import com.hazelcast.config.InstanceTrackingConfig.InstanceProductName;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SerializationConfig;
@@ -37,8 +38,10 @@ import com.hazelcast.spi.impl.executionservice.TaskScheduler;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.version.Version;
 
+import java.util.Map;
 import java.util.concurrent.Executor;
 
+import static com.hazelcast.config.InstanceTrackingConfig.InstanceTrackingProperties.PRODUCT;
 import static com.hazelcast.internal.metrics.MetricDescriptorConstants.CLIENT_PREFIX_MEMORY_MANAGER;
 
 /**
@@ -54,6 +57,13 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
     @Override
     public void beforeStart(HazelcastClientInstanceImpl client) {
         super.beforeStart(client);
+    }
+
+    @Override
+    protected Map<String, Object> getTrackingFileProperties(BuildInfo buildInfo) {
+        Map<String, Object> properties = super.getTrackingFileProperties(buildInfo);
+        properties.put(PRODUCT.getPropertyName(), InstanceProductName.HAZELCAST_CLIENT_EE.getProductName());
+        return properties;
     }
 
     @Override

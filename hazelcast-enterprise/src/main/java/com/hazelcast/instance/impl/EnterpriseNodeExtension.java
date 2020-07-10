@@ -6,6 +6,7 @@ import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.AdvancedNetworkConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartPersistenceConfig;
+import com.hazelcast.config.InstanceTrackingConfig.InstanceTrackingProperties;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.OnJoinPermissionOperationName;
@@ -224,6 +225,13 @@ public class EnterpriseNodeExtension
 
         createSecurityContext(node);
         createMemoryManager(node);
+    }
+
+    @Override
+    protected Map<String, Object> getTrackingFileProperties(BuildInfo buildInfo) {
+        Map<String, Object> props = super.getTrackingFileProperties(buildInfo);
+        props.put(InstanceTrackingProperties.LICENSED.getPropertyName(), license != null ? 1 : 0);
+        return props;
     }
 
     private void setLicenseInternal(License lic, String licenseKey) {

@@ -16,6 +16,7 @@ import org.junit.runner.RunWith;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -38,7 +39,8 @@ public class BPlusTreeMemoryTest extends BPlusTreeTestSupport {
 
     private Set<Long> allocatedDefaultAddressesOwnedByBPlusTree = new HashSet<>();
     private Set<Long> allocatedIndexAddresses = new HashSet<>();
-    private int throwOOMCounter = Integer.MAX_VALUE;
+    private int throwIndexMemoryManagerOOMCounter = Integer.MAX_VALUE;
+    private int throwKeyMemoryManagerOOMCounter = Integer.MAX_VALUE;
     private boolean freedMemory;
 
     @Override
@@ -82,7 +84,7 @@ public class BPlusTreeMemoryTest extends BPlusTreeTestSupport {
         assertEquals(1, getNodeLevel(rootAddr));
         assertTrue(innerNodeAccessor.isNodeFull(rootAddr));
         // One more key will cause root split, skip OOM on incrementing depth
-        throwOOMCounter = 2;
+        throwIndexMemoryManagerOOMCounter = 2;
         allocatedDefaultAddressesOwnedByBPlusTree.clear();
         allocatedIndexAddresses.clear();
         try {
@@ -101,7 +103,7 @@ public class BPlusTreeMemoryTest extends BPlusTreeTestSupport {
         insertKeysCompact(9);
         assertEquals(1, getNodeLevel(rootAddr));
         // One more key will cause leaf split
-        throwOOMCounter = 1;
+        throwIndexMemoryManagerOOMCounter = 1;
         allocatedDefaultAddressesOwnedByBPlusTree.clear();
         allocatedIndexAddresses.clear();
         try {
@@ -227,6 +229,43 @@ public class BPlusTreeMemoryTest extends BPlusTreeTestSupport {
         assertEquals(0, allocatedDefaultAddressesOwnedByBPlusTree.size());
     }
 
+    @Test
+    public void testNoMemoryLeakOnInsertOOM() {
+        int[] keys = new int[]{0, 1, 3, 4};
+        for (int i = 0; i < keys.length; ++i) {
+            insertKey(keys[i]);
+        }
+
+        for (int i = 0; i < keys.length; ++i) {
+            assertHasKey(keys[i]);
+        }
+
+        Integer indexKey = 2;
+        NativeMemoryData mapKeyData = toNativeData("Name_2");
+        NativeMemoryData valueData = toNativeData("Value_2");
+
+        try {
+            throwKeyMemoryManagerOOMCounter = 1;
+            btree.insert(indexKey, mapKeyData, valueData);
+            fail("Should throw OOME");
+        } catch (NativeOutOfMemoryError oome) {
+            // no -op
+        }
+        for (int i = 0; i < keys.length; ++i) {
+            assertHasKey(keys[i]);
+        }
+
+        assertEquals(keys.length, queryKeysCount());
+    }
+
+    private void assertHasKey(int index) {
+        Iterator<Map.Entry<String, String>> it = btree.lookup(index);
+        assertTrue(it.hasNext());
+        Map.Entry<String, String> entry = it.next();
+        assertEquals("Value_" + index, entry.getValue());
+        assertFalse("" + index, it.hasNext());
+    }
+
     class DelegatingDefaultMemoryAllocator implements HazelcastMemoryManager {
 
         private final HazelcastMemoryManager delegate;
@@ -237,6 +276,11 @@ public class BPlusTreeMemoryTest extends BPlusTreeTestSupport {
 
         @Override
         public long allocate(long size) {
+            throwKeyMemoryManagerOOMCounter--;
+            if (throwKeyMemoryManagerOOMCounter == 0) {
+                throw new NativeOutOfMemoryError();
+            }
+
             long address = delegate.allocate(size);
             allocatedDefaultAddressesOwnedByBPlusTree.add(address);
             return address;
@@ -312,8 +356,8 @@ public class BPlusTreeMemoryTest extends BPlusTreeTestSupport {
 
         @Override
         public void onAllocate(long addr, long size) {
-            throwOOMCounter--;
-            if (throwOOMCounter == 0) {
+            throwIndexMemoryManagerOOMCounter--;
+            if (throwIndexMemoryManagerOOMCounter == 0) {
                 throw new NativeOutOfMemoryError();
             }
             allocatedIndexAddresses.add(addr);

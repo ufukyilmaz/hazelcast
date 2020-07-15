@@ -2,10 +2,12 @@ package com.hazelcast.internal.bplustree;
 
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.internal.elastic.tree.MapEntryFactory;
+import com.hazelcast.internal.memory.FreeMemoryChecker;
 import com.hazelcast.internal.memory.GlobalIndexPoolingAllocator;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
+import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
@@ -26,6 +28,9 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
+import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE;
+import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_MIN_BLOCK_SIZE;
+import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_PAGE_SIZE;
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.getKeysCount;
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.getLockState;
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.getNodeLevel;
@@ -62,7 +67,8 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
     @Before
     public void setUp() {
         PoolingMemoryManager poolingMemoryManager = new PoolingMemoryManager(
-                new MemorySize(1300, MemoryUnit.MEGABYTES), getNodeSize());
+                getMemorySize(), DEFAULT_MIN_BLOCK_SIZE, DEFAULT_PAGE_SIZE, getMetadataPercentage(),
+                getNodeSize(), new UnsafeMallocFactory(new FreeMemoryChecker()));
         this.keyAllocator = newKeyAllocator(poolingMemoryManager);
         MemoryAllocator indexAllocator = poolingMemoryManager.getGlobalIndexAllocator();
         this.ess = getSerializationService();
@@ -81,6 +87,14 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
 
     int getNodeSize() {
         return NODE_SIZE;
+    }
+
+    MemorySize getMemorySize() {
+        return new MemorySize(1, MemoryUnit.GIGABYTES);
+    }
+
+    float getMetadataPercentage() {
+        return DEFAULT_METADATA_SPACE_PERCENTAGE;
     }
 
     DelegatingMemoryAllocator newDelegatingIndexMemoryAllocator(MemoryAllocator indexAllocator, AllocatorCallback callback) {

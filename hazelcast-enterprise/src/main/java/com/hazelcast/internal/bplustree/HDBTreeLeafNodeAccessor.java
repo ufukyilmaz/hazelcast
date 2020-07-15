@@ -144,12 +144,16 @@ final class HDBTreeLeafNodeAccessor extends HDBTreeNodeBaseAccessor {
             return oldValue;
         }
 
+        // Convert indexKey into NATIVE format before updating B+tree node
+        // to make sure OOME doesn't leave the B+tree
+        // in a corrupted state.
+        long indexKeyAddr = clonedIndexKeyAddr(indexKey);
+
         // Shift the slots to make space for the new entry
         AMEM.copyMemory(getSlotAddr(nodeAddr, slot), getSlotAddr(nodeAddr, slot + 1),
                 (keysCount - slot) * SLOT_ENTRY_SIZE);
 
         // Set the new slot
-        long indexKeyAddr = clonedIndexKeyAddr(indexKey);
         setIndexKey(nodeAddr, slot, indexKeyAddr);
         setEntryKey(nodeAddr, slot, entryKey);
         setValue(nodeAddr, slot, value);
@@ -196,11 +200,11 @@ final class HDBTreeLeafNodeAccessor extends HDBTreeNodeBaseAccessor {
             assert mid <= keysCount;
             oldValue = getValue(nodeAddr, mid);
             long oldIndexKeyAddr = getIndexKeyAddr(nodeAddr, mid);
-            keyAccessor.disposeNativeData(oldIndexKeyAddr, getKeyAllocator());
             AMEM.copyMemory(getSlotAddr(nodeAddr, mid + 1), getSlotAddr(nodeAddr, mid),
                     (keysCount - mid - 1) * SLOT_ENTRY_SIZE);
             setKeysCount(nodeAddr, keysCount - 1);
             incSequenceCounter(nodeAddr);
+            keyAccessor.disposeNativeData(oldIndexKeyAddr, getKeyAllocator());
         }
         return oldValue;
     }

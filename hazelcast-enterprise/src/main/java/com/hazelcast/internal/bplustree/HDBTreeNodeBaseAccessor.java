@@ -39,19 +39,19 @@ abstract class HDBTreeNodeBaseAccessor {
     final BPlusTreeKeyComparator keyComparator;
     final BPlusTreeKeyAccessor keyAccessor;
     final MemoryAllocator keyAllocator;
-    final MemoryAllocator indexAllocator;
+    final MemoryAllocator btreeAllocator;
     final int nodeSize;
     NodeSplitStrategy nodeSplitStrategy;
 
     HDBTreeNodeBaseAccessor(LockManager lockManager, EnterpriseSerializationService ess, BPlusTreeKeyComparator keyComparator,
-                            BPlusTreeKeyAccessor keyAccessor, MemoryAllocator keyAllocator, MemoryAllocator indexAllocator,
+                            BPlusTreeKeyAccessor keyAccessor, MemoryAllocator keyAllocator, MemoryAllocator btreeAllocator,
                             int nodeSize, NodeSplitStrategy nodeSplitStrategy) {
         this.lockManager = lockManager;
         this.ess = ess;
         this.keyComparator = keyComparator;
         this.keyAccessor = keyAccessor;
         this.keyAllocator = keyAllocator;
-        this.indexAllocator = indexAllocator;
+        this.btreeAllocator = btreeAllocator;
         this.nodeSize = nodeSize;
         this.nodeSplitStrategy = nodeSplitStrategy;
     }
@@ -63,7 +63,7 @@ abstract class HDBTreeNodeBaseAccessor {
      * @return the write locked node's address
      */
     long newNodeLocked(LockingContext lockingContext) {
-        long address = getIndexAllocator().allocate(nodeSize);
+        long address = getBtreeAllocator().allocate(nodeSize);
         // Don't initialize lockState and sequence number fields to avoid race condition with lookup operations
         lockManager.writeLock(address);
         lockingContext.addLock(address);
@@ -79,7 +79,7 @@ abstract class HDBTreeNodeBaseAccessor {
      */
     void disposeNode(long nodeAddr) {
         if (nodeAddr != NULL_ADDRESS) {
-            getIndexAllocator().free(nodeAddr, nodeSize);
+            getBtreeAllocator().free(nodeAddr, nodeSize);
         }
     }
 
@@ -259,7 +259,7 @@ abstract class HDBTreeNodeBaseAccessor {
         return keyAllocator;
     }
 
-    MemoryAllocator getIndexAllocator() {
-        return indexAllocator;
+    MemoryAllocator getBtreeAllocator() {
+        return btreeAllocator;
     }
 }

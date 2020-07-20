@@ -19,9 +19,9 @@ final class HDBTreeInnerNodeAccessor extends HDBTreeNodeBaseAccessor {
 
     HDBTreeInnerNodeAccessor(LockManager lockManager, EnterpriseSerializationService ess, BPlusTreeKeyComparator keyComparator,
                              BPlusTreeKeyAccessor keyAccessor, MemoryAllocator keyAllocator,
-                             MemoryAllocator indexAllocator,
+                             MemoryAllocator btreeAllocator,
                              int nodeSize, NodeSplitStrategy nodeSplitStrategy) {
-        super(lockManager, ess, keyComparator, keyAccessor, keyAllocator, indexAllocator, nodeSize, nodeSplitStrategy);
+        super(lockManager, ess, keyComparator, keyAccessor, keyAllocator, btreeAllocator, nodeSize, nodeSplitStrategy);
     }
 
     @Override

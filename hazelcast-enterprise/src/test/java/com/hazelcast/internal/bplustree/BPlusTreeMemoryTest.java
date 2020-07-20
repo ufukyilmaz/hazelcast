@@ -2,10 +2,12 @@ package com.hazelcast.internal.bplustree;
 
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -42,6 +44,20 @@ public class BPlusTreeMemoryTest extends BPlusTreeTestSupport {
     private int throwIndexMemoryManagerOOMCounter = Integer.MAX_VALUE;
     private int throwKeyMemoryManagerOOMCounter = Integer.MAX_VALUE;
     private boolean freedMemory;
+
+    @SuppressWarnings("checkstyle:ParameterNumber")
+    @Override
+    HDBPlusTree newBPlusTree(EnterpriseSerializationService ess,
+                             MemoryAllocator keyAllocator,
+                             MemoryAllocator indexAllocator, LockManager lockManager,
+                             BPlusTreeKeyComparator keyComparator,
+                             BPlusTreeKeyAccessor keyAccessor,
+                             MapEntryFactory entryFactory,
+                             int nodeSize,
+                             int indexScanBatchSize) {
+        return HDBPlusTree.newHDBTree(ess, keyAllocator, indexAllocator, lockManager, keyComparator, keyAccessor,
+                entryFactory, nodeSize, 0);
+    }
 
     @Override
     HazelcastMemoryManager newKeyAllocator(PoolingMemoryManager poolingMemoryManager) {
@@ -206,7 +222,7 @@ public class BPlusTreeMemoryTest extends BPlusTreeTestSupport {
             Throwable e = exceptions[i].get();
             assertNotNull(e);
             assertTrue(e instanceof HazelcastException);
-            assertTrue(e.getMessage().contains("Disposed index cannot be accessed"));
+            assertTrue(e.getMessage().contains("Disposed B+tree cannot be accessed"));
         }
 
         executor.shutdownNow();

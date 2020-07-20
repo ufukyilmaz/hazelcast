@@ -99,11 +99,20 @@ import static com.hazelcast.internal.util.QuickMath.nextPowerOfTwo;
  * While the B+tree can increase the depth, the root node's address never changes.
  * <p>
  * A valid B+tree index always has at least 1 level, that is it always has at least one inner and one leaf node.
+ * <p>
+ * A batching of iterator results is supported to minimize the readLock/releaseLock calls count and
+ * potential iterator re-synchronization.
  *
  * @param <T> the type of the lookup/range scan entries
  */
 @SuppressWarnings("checkstyle:MethodCount")
 public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T> {
+
+    // The initial buffer size for a lookup batch
+    static final int LOOKUP_INITIAL_BUFFER_SIZE = 8;
+
+    // The default maximum batch size for B+tree scan operation
+    static final int DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE = 1000;
 
     // The Thread local to cache LockingContext object
     private static final ThreadLocal<LockingContext> LOCKING_CONTEXT =
@@ -134,26 +143,32 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
     // Indicates whether the B+tree is already disposed
     private volatile boolean isDisposed;
 
+    // The maximum batch size for B+tree scan operation,
+    // 0 value disables batching
+    private final int btreeScanBatchSize;
+
     /**
-     * Constructs new B+tree. Both the keyAllocator and the indexAllocator must be thread-safe.
-     *
-     * @param ess            the serialization service
-     * @param keyAllocator   the memory allocator for leaf and inner keys on the node
-     * @param indexAllocator the memory allocator for B+tree node
-     * @param lockManager    the lock manager
-     * @param keyComparator  the off-heap keys comparator
-     * @param keyAccessor    the index key component accessor
-     * @param entryFactory   The factory to build lookup result entries. Must produce the entries on-heap
-     * @param nodeSize       the B+tree node size
+     * Constructs new B+tree. Both the keyAllocator and the btreeAllocator must be thread-safe.
+     *  @param ess                the serialization service
+     * @param keyAllocator       the memory allocator for leaf and inner keys on the node
+     * @param btreeAllocator     the memory allocator for B+tree node
+     * @param lockManager        the lock manager
+     * @param keyComparator      the off-heap keys comparator
+     * @param keyAccessor        the index key component accessor
+     * @param entryFactory       The factory to build lookup result entries. Must produce the entries on-heap
+     * @param nodeSize           the B+tree node size
+     * @param btreeScanBatchSize The maximum batch size for B+tree scan operation, 0 value disabled batching,
+     *                           negative value is not allowed
      */
     private HDBPlusTree(EnterpriseSerializationService ess,
                         MemoryAllocator keyAllocator,
-                        MemoryAllocator indexAllocator,
+                        MemoryAllocator btreeAllocator,
                         LockManager lockManager,
                         BPlusTreeKeyComparator keyComparator,
                         BPlusTreeKeyAccessor keyAccessor,
                         MapEntryFactory<T> entryFactory,
-                        int nodeSize) {
+                        int nodeSize,
+                        int btreeScanBatchSize) {
         if (nodeSize <= 0 || !isPowerOfTwo(nodeSize)) {
             throw new IllegalArgumentException("Illegal node size " + nodeSize
                     + ". Node size must be a power of two");
@@ -162,15 +177,20 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
             throw new IllegalArgumentException("Illegal node size " + nodeSize
                     + ". Node size cannot exceed " + MAX_NODE_SIZE + " and be less than " + MIN_NODE_SIZE);
         }
+
+        if (btreeScanBatchSize < 0) {
+            throw new IllegalArgumentException("Range scan batch size " + btreeScanBatchSize + " must be positive or zero");
+        }
         this.mapEntryFactory = entryFactory;
         this.ess = ess;
         this.lockManager = lockManager;
+        this.btreeScanBatchSize = btreeScanBatchSize;
         NodeSplitStrategy splitStrategy = new DefaultNodeSplitStrategy();
 
         this.innerNodeAccessor = new HDBTreeInnerNodeAccessor(lockManager, ess, keyComparator,
-                keyAccessor, keyAllocator, indexAllocator, nodeSize, splitStrategy);
+                keyAccessor, keyAllocator, btreeAllocator, nodeSize, splitStrategy);
         this.leafNodeAccessor = new HDBTreeLeafNodeAccessor(lockManager, ess, keyComparator,
-                keyAccessor, keyAllocator, indexAllocator, nodeSize, splitStrategy);
+                keyAccessor, keyAllocator, btreeAllocator, nodeSize, splitStrategy);
         LockingContext lockingContext = getLockingContext();
         rootAddr = innerNodeAccessor.newNodeLocked(lockingContext);
         createEmptyTree(lockingContext);
@@ -180,26 +200,29 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
     @SuppressWarnings("checkstyle:magicnumber")
     public static <T extends Map.Entry> HDBPlusTree newHDBTree(EnterpriseSerializationService ess,
                                                                MemoryAllocator keyAllocator,
-                                                               MemoryAllocator indexAllocator,
+                                                               MemoryAllocator btreeAllocator,
                                                                BPlusTreeKeyComparator keyComparator,
                                                                BPlusTreeKeyAccessor keyAccessor,
                                                                MapEntryFactory<T> entryFactory,
                                                                int nodeSize) {
         int stripesCount = nextPowerOfTwo(Runtime.getRuntime().availableProcessors() * 4);
         LockManager lockManager = new HDLockManager(stripesCount);
-        return new HDBPlusTree(ess, keyAllocator, indexAllocator, lockManager, keyComparator,
-                keyAccessor, entryFactory, nodeSize);
+        return new HDBPlusTree(ess, keyAllocator, btreeAllocator, lockManager, keyComparator,
+                keyAccessor, entryFactory, nodeSize,
+                DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE);
     }
 
+    @SuppressWarnings("checkstyle:ParameterNumber")
     public static <T extends Map.Entry> HDBPlusTree newHDBTree(EnterpriseSerializationService ess,
                                                                MemoryAllocator keyAllocator,
-                                                               MemoryAllocator indexAllocator, LockManager lockManager,
+                                                               MemoryAllocator btreeAllocator, LockManager lockManager,
                                                                BPlusTreeKeyComparator keyComparator,
                                                                BPlusTreeKeyAccessor keyAccessor,
                                                                MapEntryFactory<T> entryFactory,
-                                                               int nodeSize) {
-        return new HDBPlusTree(ess, keyAllocator, indexAllocator, lockManager, keyComparator,
-                keyAccessor, entryFactory, nodeSize);
+                                                               int nodeSize,
+                                                               int rangeScanBatchSize) {
+        return new HDBPlusTree(ess, keyAllocator, btreeAllocator, lockManager, keyComparator,
+                keyAccessor, entryFactory, nodeSize, rangeScanBatchSize);
     }
 
     private void createEmptyTree(LockingContext lockingContext) {
@@ -765,9 +788,13 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
         if (indexKey == null) {
             throw new IllegalArgumentException("Index key cannot be null");
         }
+
         LockingContext lockingContext = getLockingContext();
         try {
-            return lookup0(indexKey, null, true, indexKey, true, lockingContext);
+
+            EntryIterator entryIterator = lookup0(indexKey, null, true,
+                    indexKey, true, false, lockingContext);
+            return batchIterator(entryIterator, LOOKUP_INITIAL_BUFFER_SIZE);
         } catch (Throwable e) {
             releaseLocks(lockingContext);
             throw e;
@@ -780,7 +807,9 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
     public Iterator<T> lookup(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive) {
         LockingContext lockingContext = getLockingContext();
         try {
-            return lookup0(from, null, fromInclusive, to, toInclusive, lockingContext);
+            EntryIterator entryIterator = lookup0(from, null, fromInclusive,
+                    to, toInclusive, false, lockingContext);
+            return batchIterator(entryIterator, btreeScanBatchSize);
         } catch (Throwable e) {
             releaseLocks(lockingContext);
             throw e;
@@ -789,8 +818,22 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
         }
     }
 
+    private Iterator<T> batchIterator(EntryIterator it, int batchInitialSize) {
+        if (btreeScanBatchSize > 0) {
+            EntryBatch entryBatch = new EntryBatch(batchInitialSize, btreeScanBatchSize);
+            if (it.hasNext()) {
+                T next = it.next();
+                entryBatch.add(next);
+            }
+            return new BatchingEntryIterator(it, entryBatch);
+        } else {
+            return it;
+        }
+    }
+
     /**
-     * Performs a range scan in the B+tree.
+     * Performs a range scan in the B+tree. If the iterator is re-syncing, the method
+     * doesn't release a lock on the leaf storing the first element of the range.
      *
      * @param from           the beginning of the range
      * @param fromEntryKey   the entryKy component of the beginning of the range
@@ -799,12 +842,15 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
      * @param to             the end of the range
      * @param toInclusive    {@code true} if the end of the range is inclusive,
      *                       {@code false} otherwise.
+     * @param resync         {@code true} if the lookup is used to re-synchronize the existing iterator,
+     *                       {@code false} otherwise.
      * @param lockingContext the locking context
      * @return the iterator of the range scan
      */
     @SuppressWarnings({"checkstyle:NPathComplexity", "checkstyle:CyclomaticComplexity", "checkstyle:MethodLength"})
     private EntryIterator lookup0(Comparable from, Data fromEntryKey, boolean fromInclusive, Comparable to,
-                                  boolean toInclusive, LockingContext lockingContext) {
+                                  boolean toInclusive, boolean resync,
+                                  LockingContext lockingContext) {
 
         long nodeAddr = rootAddr;
         long parentAddr;
@@ -822,7 +868,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
         EntryIterator it = new EntryIterator(to, toInclusive);
 
         // Skip empty nodes
-        nodeAddr = skipToNonEmptyNode(nodeAddr, lockingContext);
+        nodeAddr = skipToNonEmptyNodeLocked(nodeAddr, lockingContext);
         if (nodeAddr == NULL_ADDRESS) {
             it.nextSlot = NULL_SLOT;
             it.lastSlot = NULL_SLOT;
@@ -905,7 +951,12 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
             it.nextSlotIsWithinRange();
         }
 
-        releaseLock(nodeAddr, lockingContext);
+        // Release the lock if one of the following is true:
+        // - the lookup is not part of iterator re-synchronization logic;
+        // - the iterator has no more results.
+        if (!resync || it.nextSlot == NULL_SLOT) {
+            releaseLock(nodeAddr, lockingContext);
+        }
 
         return it;
     }
@@ -919,7 +970,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
         }
         readLock(forwAddr, lockingContext);
         releaseLock(nodeAddr, lockingContext);
-        return skipToNonEmptyNode(forwAddr, lockingContext);
+        return skipToNonEmptyNodeLocked(forwAddr, lockingContext);
     }
 
     /**
@@ -931,7 +982,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
      * @param nodeAddr the starting node to check emptiness
      * @return next read locked non-empty node, ot NULL_ADDRESS is it doesn't exist
      */
-    private long skipToNonEmptyNode(long nodeAddr, LockingContext lockingContext) {
+    private long skipToNonEmptyNodeLocked(long nodeAddr, LockingContext lockingContext) {
         if (nodeAddr == NULL_ADDRESS) {
             return NULL_ADDRESS;
         }
@@ -1004,7 +1055,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
         void nextEntry() {
             LockingContext lockingContext = getLockingContext();
             try {
-                nextEntry0(lockingContext);
+                nextBatch0(null, lockingContext);
             } catch (Throwable e) {
                 releaseLocks(lockingContext);
                 throw e;
@@ -1013,9 +1064,16 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
             }
         }
 
-        void nextEntry0(LockingContext lockingContext) {
+        /**
+         * Collects the next batch of results from the iterator.
+         * @param entryBatch     the batch to collect entry results, {@code null} if batching is disabled
+         * @param lockingContext the locking context
+         */
+        @SuppressWarnings({"checkstyle:NPathComplexity", "checkstyle:CyclomaticComplexity", "checkstyle:MethodLength"})
+        void nextBatch0(EntryBatch entryBatch, LockingContext lockingContext) {
 
             assert nextSlot == NULL_SLOT;
+            assert entryBatch == null || entryBatch.hasCapacity();
             if (lastSlot == NULL_SLOT) {
                 // The iterator has reached the end
                 return;
@@ -1034,7 +1092,8 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
                 Data lastEntryKeyData = lastEntry.getKeyData();
                 Comparable lastIndexKey = ess.toObject(this.lastIndexKey);
 
-                EntryIterator resyncedIt = lookup0(lastIndexKey, lastEntryKeyData, false, to, toInclusive, lockingContext);
+                EntryIterator resyncedIt = lookup0(lastIndexKey, lastEntryKeyData, false, to, toInclusive,
+                        true, lockingContext);
 
                 if (resyncedIt.nextSlot == NULL_SLOT) {
                     // Key has been removed and we've reached the end
@@ -1048,37 +1107,58 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
                 nextSlot = resyncedIt.nextSlot;
                 nextEntry = resyncedIt.nextEntry;
                 nextIndexKey = resyncedIt.nextIndexKey;
-                return;
-            }
-            // currentNode is read locked
-            assert lastSlot < getKeysCount(currentNodeAddr);
-            if (lastSlot == getKeysCount(currentNodeAddr) - 1) {
-                /* Current node is exhausted. Try next node and skip it if it is empty */
-                do {
-                    long forwAddr = leafNodeAccessor.getForwNode(currentNodeAddr);
-                    if (forwAddr == NULL_ADDRESS) {
-                        nextSlot = NULL_SLOT;
-                        nextEntry = null;
-                        nextIndexKey = null;
-                        releaseLock(currentNodeAddr, lockingContext);
-                        return;
-                    }
-
-                    readLock(forwAddr, lockingContext);
+                if (entryBatch == null) {
+                    // Batching is disabled, release a lock on the leaf
                     releaseLock(currentNodeAddr, lockingContext);
-                    currentNodeAddr = forwAddr;
-                    sequenceNumber = getSequenceNumber(currentNodeAddr);
-                    nextSlot = 0;
-                } while (getKeysCount(currentNodeAddr) == 0);
-            } else {
-                nextSlot = lastSlot + 1;
+                    return;
+                } else {
+                    // Batching is enabled, consume the element and
+                    // proceed to fill in the batch with the next elements
+                    // Don't release a lock on the leaf.
+                    next();
+                    entryBatch.add(lastEntry);
+                    break;
+                }
             }
 
-            nextSlotIsWithinRange();
+            boolean nextSlotWithinRange;
+            do {
+                // currentNode is read locked
+                assert lastSlot < getKeysCount(currentNodeAddr);
+                if (lastSlot == getKeysCount(currentNodeAddr) - 1) {
+                    /* Current node is exhausted. Try next node and skip it if it is empty */
+                    do {
+                        long forwAddr = leafNodeAccessor.getForwNode(currentNodeAddr);
+                        if (forwAddr == NULL_ADDRESS) {
+                            nextSlot = NULL_SLOT;
+                            nextEntry = null;
+                            nextIndexKey = null;
+                            releaseLock(currentNodeAddr, lockingContext);
+                            return;
+                        }
+
+                        readLock(forwAddr, lockingContext);
+                        releaseLock(currentNodeAddr, lockingContext);
+                        currentNodeAddr = forwAddr;
+                        sequenceNumber = getSequenceNumber(currentNodeAddr);
+                        nextSlot = 0;
+                    } while (getKeysCount(currentNodeAddr) == 0);
+                } else {
+                    nextSlot = lastSlot + 1;
+                }
+
+                nextSlotWithinRange = nextSlotIsWithinRange();
+                if (entryBatch != null && nextSlotWithinRange) {
+                    // Consume next element if batching is enabled
+                    next();
+                    entryBatch.add(lastEntry);
+                }
+
+            } while (entryBatch != null && entryBatch.hasCapacity() && nextSlotWithinRange);
+
             releaseLock(currentNodeAddr, lockingContext);
             return;
         }
-
 
         boolean nextSlotIsWithinRange() {
             if (to == null) {
@@ -1109,6 +1189,85 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
             nextEntry = mapEntryFactory.create(lastEntryKey, lastValue);
 
             nextIndexKey = lastIndexKey;
+        }
+    }
+
+    /**
+     * A batching entry iterator which collects results in a batch.
+     * <p>
+     * Optimizes the number of times the readLock/releaseLock logic is called
+     * and reduces the number of potential iterator re-synchronization if
+     * concurrent updates modify the same B+tree node(s).
+     */
+    class BatchingEntryIterator implements Iterator<T> {
+
+        private final EntryBatch<T> batch;
+        private final EntryIterator entryIterator;
+        private Iterator<T> batchIterator;
+
+        BatchingEntryIterator(EntryIterator iterator, EntryBatch<T> batch) {
+            this.batch = batch;
+            this.entryIterator = iterator;
+            this.batchIterator = batch.iterator();
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (batchIterator.hasNext()) {
+                return true;
+            } else {
+                batch.clear();
+                nextBatch();
+                batchIterator = batch.iterator();
+                return batchIterator.hasNext();
+            }
+        }
+
+        private void nextBatch() {
+            LockingContext lockingContext = getLockingContext();
+            try {
+                entryIterator.nextBatch0(batch, lockingContext);
+            } catch (Throwable e) {
+                releaseLocks(lockingContext);
+                throw e;
+            } finally {
+                assert lockingContext.hasNoLocks();
+            }
+        }
+
+        @Override
+        public T next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            return batchIterator.next();
+        }
+    }
+
+    private static class EntryBatch<T> {
+
+        private final List<T> values;
+        private final int capacity;
+
+        EntryBatch(int initialSize, int capacity) {
+            this.capacity = capacity;
+            this.values = new ArrayList<>(initialSize);
+        }
+
+        boolean hasCapacity() {
+            return values.size() < capacity;
+        }
+
+        void add(T e) {
+            values.add(e);
+        }
+
+        Iterator<T> iterator() {
+            return values.iterator();
+        }
+
+        void clear() {
+            values.clear();
         }
     }
 
@@ -1300,7 +1459,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
 
     private void checkIfDisposed() {
         if (isDisposed) {
-            throw new HazelcastException("Disposed index cannot be accessed.");
+            throw new HazelcastException("Disposed B+tree cannot be accessed.");
         }
     }
 

@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_MIN_BLOCK_SIZE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_PAGE_SIZE;
+import static com.hazelcast.internal.bplustree.HDBPlusTree.DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE;
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.getKeysCount;
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.getLockState;
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.getNodeLevel;
@@ -79,7 +80,8 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
         allocatorCallback = new AllocatorCallback(maAllocateAddr, maFreeAddr, maSize);
         delegatingIndexAllocator = newDelegatingIndexMemoryAllocator(indexAllocator, allocatorCallback);
         LockManager lockManager = newLockManager();
-        btree = HDBPlusTree.newHDBTree(ess, keyAllocator, delegatingIndexAllocator, lockManager, keyComparator, keyAccessor, factory, getNodeSize());
+        btree = newBPlusTree(ess, keyAllocator, delegatingIndexAllocator, lockManager, keyComparator, keyAccessor,
+                factory, getNodeSize(), DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE);
         rootAddr = btree.getRoot();
         this.innerNodeAccessor = new HDBTreeInnerNodeAccessor(lockManager, ess, keyComparator, keyAccessor, keyAllocator, delegatingIndexAllocator, getNodeSize(), splitStrategy);
         this.leafNodeAccessor = new HDBTreeLeafNodeAccessor(lockManager, ess, keyComparator, keyAccessor, keyAllocator, delegatingIndexAllocator, getNodeSize(), splitStrategy);
@@ -95,6 +97,19 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
 
     float getMetadataPercentage() {
         return DEFAULT_METADATA_SPACE_PERCENTAGE;
+    }
+
+    @SuppressWarnings("checkstyle:ParameterNumber")
+    HDBPlusTree newBPlusTree(EnterpriseSerializationService ess,
+                             MemoryAllocator keyAllocator,
+                             MemoryAllocator indexAllocator, LockManager lockManager,
+                             BPlusTreeKeyComparator keyComparator,
+                             BPlusTreeKeyAccessor keyAccessor,
+                             MapEntryFactory entryFactory,
+                             int nodeSize,
+                             int indexScanBatchSize) {
+        return HDBPlusTree.newHDBTree(ess, keyAllocator, indexAllocator, lockManager, keyComparator, keyAccessor,
+                entryFactory, nodeSize, indexScanBatchSize);
     }
 
     DelegatingMemoryAllocator newDelegatingIndexMemoryAllocator(MemoryAllocator indexAllocator, AllocatorCallback callback) {

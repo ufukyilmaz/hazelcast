@@ -24,10 +24,10 @@ final class HDBTreeLeafNodeAccessor extends HDBTreeNodeBaseAccessor {
                             BPlusTreeKeyComparator keyComparator,
                             BPlusTreeKeyAccessor keyAccessor,
                             MemoryAllocator keyAllocator,
-                            MemoryAllocator indexAllocator,
+                            MemoryAllocator btreeAllocator,
                             int nodeSize,
                             NodeSplitStrategy nodeSplitStrategy) {
-        super(lockManager, ess, keyComparator, keyAccessor, keyAllocator, indexAllocator,
+        super(lockManager, ess, keyComparator, keyAccessor, keyAllocator, btreeAllocator,
                 nodeSize, nodeSplitStrategy);
     }
 

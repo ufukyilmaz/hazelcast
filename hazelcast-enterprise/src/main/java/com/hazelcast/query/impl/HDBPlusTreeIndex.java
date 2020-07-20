@@ -28,11 +28,11 @@ public final class HDBPlusTreeIndex<T extends QueryableEntry> {
     private final EnterpriseSerializationService ess;
     private final HDBPlusTree recordMap;
 
-    HDBPlusTreeIndex(EnterpriseSerializationService ess, MemoryAllocator keyAllocator, MemoryAllocator indexAllocator,
+    HDBPlusTreeIndex(EnterpriseSerializationService ess, MemoryAllocator keyAllocator, MemoryAllocator btreeAllocator,
                      MapEntryFactory<T> entryFactory, BPlusTreeKeyComparator keyComparator,
                      BPlusTreeKeyAccessor keyAccessor, int nodeSize) {
         this.ess = ess;
-        this.recordMap = HDBPlusTree.newHDBTree(ess, keyAllocator, indexAllocator,
+        this.recordMap = HDBPlusTree.newHDBTree(ess, keyAllocator, btreeAllocator,
                 keyComparator, keyAccessor, entryFactory, nodeSize);
     }
 

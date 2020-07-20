@@ -1,14 +1,19 @@
 package com.hazelcast.internal.bplustree;
 
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
+import com.hazelcast.internal.elastic.tree.MapEntryFactory;
+import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -19,14 +24,33 @@ import static com.hazelcast.internal.bplustree.BPlusTreeLockingTest.LockEventTyp
 import static com.hazelcast.internal.bplustree.BPlusTreeLockingTest.LockEventType.TRY_WRITE_LOCK;
 import static com.hazelcast.internal.bplustree.BPlusTreeLockingTest.LockEventType.WRITE_LOCK;
 import static com.hazelcast.internal.bplustree.BPlusTreeLockingTest.Triple.create;
+import static com.hazelcast.internal.bplustree.HDBPlusTree.DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE;
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.getKeysCount;
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.getNodeLevel;
+import static com.hazelcast.internal.memory.impl.LibMalloc.NULL_ADDRESS;
 import static com.hazelcast.internal.util.QuickMath.nextPowerOfTwo;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class BPlusTreeLockingTest extends BPlusTreeTestSupport {
+
+    @Parameterized.Parameter
+    public int indexScanBatchSize;
+
+    @Parameterized.Parameters(name = "indexScanBatchSize: {0}")
+    public static Collection<Object[]> parameters() {
+        // @formatter:off
+        return asList(new Object[][]{
+                {0},
+                {DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE},
+
+        });
+        // @formatter:on
+    }
 
     private LockManager lockManager;
     private LockManagerCallbackImpl lockManagerCallback;
@@ -45,8 +69,23 @@ public class BPlusTreeLockingTest extends BPlusTreeTestSupport {
         return lockManager;
     }
 
+    @SuppressWarnings("checkstyle:ParameterNumber")
+    @Override
+    HDBPlusTree newBPlusTree(EnterpriseSerializationService ess,
+                             MemoryAllocator keyAllocator,
+                             MemoryAllocator indexAllocator, LockManager lockManager,
+                             BPlusTreeKeyComparator keyComparator,
+                             BPlusTreeKeyAccessor keyAccessor,
+                             MapEntryFactory entryFactory,
+                             int nodeSize,
+                             int indexScanBatchSize0) {
+        return HDBPlusTree.newHDBTree(ess, keyAllocator, indexAllocator, lockManager, keyComparator, keyAccessor,
+                entryFactory, nodeSize, indexScanBatchSize);
+    }
+
     @Test
     public void testLockCouplingOnIteration() {
+        assumeTrue(indexScanBatchSize == 0);
         insertKeysCompact(9 * 9);
 
         assertEquals(1, getNodeLevel(rootAddr));
@@ -96,6 +135,56 @@ public class BPlusTreeLockingTest extends BPlusTreeTestSupport {
 
         assertEquals(expectedEvents, lockManagerCallback.eventsHistory);
     }
+
+    @Test
+    public void testLockCouplingOnIterationWithBatching() {
+        assumeTrue(indexScanBatchSize > 0);
+        insertKeysCompact(9 * 9);
+
+        assertEquals(1, getNodeLevel(rootAddr));
+        clearEventHistory();
+
+        // Check locks on range scan
+        Iterator it = btree.lookup(null, true, null, true);
+        // exhaust the iterator
+        int count = 0;
+        while (it.hasNext()) {
+            it.next();
+            count++;
+        }
+        assertEquals(81, count);
+
+        long leftMostChild = innerNodeAccessor.getValueAddr(rootAddr, 0);
+
+        List<Triple> expectedEvents = new ArrayList<>();
+        expectedEvents.add(create(READ_LOCK, rootAddr));
+        expectedEvents.add(create(READ_LOCK, leftMostChild));
+        expectedEvents.add(create(RELEASE_LOCK, rootAddr));
+        expectedEvents.add(create(RELEASE_LOCK, leftMostChild));
+
+        // Check locks on iteration
+        List<Long> leafAddresses = getLeafAddresses();
+        long lastLeafAddr = leafAddresses.get(leafAddresses.size() - 1);
+
+        long prevLeafAddr = NULL_ADDRESS;
+        for (long leafAddr : leafAddresses) {
+            expectedEvents.add(create(READ_LOCK, leafAddr));
+
+            if (prevLeafAddr != NULL_ADDRESS) {
+                expectedEvents.add(create(RELEASE_LOCK, prevLeafAddr));
+            }
+            prevLeafAddr = leafAddr;
+        }
+        // Release lock on the last leaf
+        expectedEvents.add(create(RELEASE_LOCK, lastLeafAddr));
+
+        // Add to the history an attempt to get next element on already exhausted iterator
+        expectedEvents.add(create(READ_LOCK, lastLeafAddr));
+        expectedEvents.add(create(RELEASE_LOCK, lastLeafAddr));
+
+        assertEquals(expectedEvents, lockManagerCallback.eventsHistory);
+    }
+
 
     @Test
     public void testLockCouplingOnInsertNoSplit() {
@@ -449,7 +538,7 @@ public class BPlusTreeLockingTest extends BPlusTreeTestSupport {
         void onReleaseLock(long lockAddr);
     }
 
-    class LockManagerCallbackImpl implements LockManagerCallback {
+    static class LockManagerCallbackImpl implements LockManagerCallback {
 
         final List<Triple> eventsHistory = new ArrayList<>();
 

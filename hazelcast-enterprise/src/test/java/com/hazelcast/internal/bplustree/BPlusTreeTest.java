@@ -1,8 +1,11 @@
 package com.hazelcast.internal.bplustree;
 
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
+import com.hazelcast.internal.elastic.tree.MapEntryFactory;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.util.MutableInteger;
 import com.hazelcast.query.impl.QueryableEntry;
@@ -12,28 +15,62 @@ import org.apache.commons.collections.CollectionUtils;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.internal.bplustree.HDBPlusTree.DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE;
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.getKeysCount;
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.getNodeLevel;
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.getSequenceNumber;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.internal.serialization.DataType.NATIVE;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class BPlusTreeTest extends BPlusTreeTestSupport {
+
+    @Parameterized.Parameter
+    public int indexScanBatchSize;
+
+    @Parameterized.Parameters(name = "indexScanBatchSize: {0}")
+    public static Collection<Object[]> parameters() {
+        // @formatter:off
+        return asList(new Object[][]{
+                {0}, // batching is disabled
+                {DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE},
+
+        });
+        // @formatter:on
+    }
+
+    @SuppressWarnings("checkstyle:ParameterNumber")
+    @Override
+    HDBPlusTree newBPlusTree(EnterpriseSerializationService ess,
+                             MemoryAllocator keyAllocator,
+                             MemoryAllocator indexAllocator, LockManager lockManager,
+                             BPlusTreeKeyComparator keyComparator,
+                             BPlusTreeKeyAccessor keyAccessor,
+                             MapEntryFactory entryFactory,
+                             int nodeSize,
+                             int indexScanBatchSize0) {
+        return HDBPlusTree.newHDBTree(ess, keyAllocator, indexAllocator, lockManager, keyComparator, keyAccessor,
+                entryFactory, nodeSize, indexScanBatchSize);
+    }
 
     @Test
     public void testInsertNoSplit() {
@@ -392,8 +429,6 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
         for (int i = 1; i < 90; ++i) {
             removeKey(i);
             assertFalse(btree.lookup(i).hasNext());
-
-            System.err.println("Removed key " + i);
         }
         assertEquals(1, queryKeysCount());
     }
@@ -499,6 +534,7 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
 
     @Test
     public void testIteratorResync() {
+        assumeTrue(indexScanBatchSize == 0);
         // Fill in 9 leaf pages
         insertKeysCompact(9 * 9);
 
@@ -570,6 +606,37 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
         // Remove everything ahead of the iterator
         for (int i = 35; i < 81; ++i) {
             assertNotNull(btree.remove(i, nativeData("Name_" + i)));
+        }
+
+        // Iterator has reached the end
+        assertFalse(it.hasNext());
+    }
+
+    @Test
+    public void testIteratorResyncWithBatching() {
+        assumeTrue(indexScanBatchSize > 0);
+        // Fill in 9 leaf pages
+        insertKeysCompact(7);
+
+        // Position iterator on the left-most node
+        Iterator<QueryableEntry> it = btree.lookup(2, true, null, true);
+        assertTrue(it.hasNext());
+        QueryableEntry entry = it.next();
+        assertEquals("Value_2", entry.getValue());
+
+        assertTrue(it.hasNext());
+        entry = it.next();
+        assertEquals("Value_3", entry.getValue());
+
+        // Remove a few keys ahead
+        assertNotNull(btree.remove(4, nativeData("Name_4")));
+        assertNotNull(btree.remove(5, nativeData("Name_5")));
+
+        // All result has been cached in the batch
+        for (int i = 4; i < 7; ++i) {
+            // Try next element in the iterator
+            assertTrue(it.hasNext());
+            assertEquals("Value_" + i, it.next().getValue());
         }
 
         // Iterator has reached the end

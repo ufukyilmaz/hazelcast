@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.hazelcast.internal.bplustree.HDBPlusTree.DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -36,15 +37,18 @@ public class BPlusTreeConcurrencyTest extends BPlusTreeTestSupport {
     @Parameterized.Parameter
     public int nodeSize;
 
-    @Parameterized.Parameters(name = "nodeSize:{0}")
+    @Parameterized.Parameter(1)
+    public int indexScanBatchSize;
+
+    @Parameterized.Parameters(name = "nodeSize:{0}, rangeScanBatchSize: {1}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {256},
-                {512},
-                {1024},
-                {2048},
-                {4096},
-                {8192}
+                {256, 0},
+                {512, DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE},
+                {1024, 0},
+                {2048, DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE},
+                {4096, 0},
+                {8192, DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE}
         });
     }
 
@@ -170,7 +174,7 @@ public class BPlusTreeConcurrencyTest extends BPlusTreeTestSupport {
                 while (count != keysCount) {
                     prevCount = count;
                     count = queryKeysCount();
-                    assertTrue(prevCount <= count);
+                    assertTrue("PrevCount " + prevCount + " count " + count, prevCount <= count);
                 }
             } catch (Throwable t) {
                 exception.compareAndSet(null, t);

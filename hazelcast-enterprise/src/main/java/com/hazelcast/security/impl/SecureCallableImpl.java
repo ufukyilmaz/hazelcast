@@ -59,9 +59,12 @@ import com.hazelcast.security.permission.ReplicatedMapPermission;
 import com.hazelcast.security.permission.ScheduledExecutorPermission;
 import com.hazelcast.security.permission.SemaphorePermission;
 import com.hazelcast.security.permission.SetPermission;
+import com.hazelcast.security.permission.SqlPermission;
 import com.hazelcast.security.permission.TopicPermission;
 import com.hazelcast.security.permission.TransactionPermission;
 import com.hazelcast.splitbrainprotection.SplitBrainProtectionService;
+import com.hazelcast.sql.SqlQuery;
+import com.hazelcast.sql.SqlResult;
 import com.hazelcast.sql.SqlService;
 import com.hazelcast.topic.ITopic;
 import com.hazelcast.transaction.HazelcastXAResource;
@@ -448,7 +451,7 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         @Nonnull
         @Override
         public SqlService getSql() {
-            return instance.getSql();
+            return new SqlServiceDelegate(instance.getSql());
         }
     }
 
@@ -956,6 +959,28 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         @Override
         public CPSessionManagementService getCPSessionManagementService() {
             throw new UnsupportedOperationException("CPSessionManagementService is not available!");
+        }
+    }
+
+    private class SqlServiceDelegate implements SqlService {
+        private final SqlService sqlService;
+
+        SqlServiceDelegate(SqlService sqlService) {
+            this.sqlService = sqlService;
+        }
+
+        @Nonnull
+        @Override
+        public SqlResult query(@Nonnull String sql, Object... params) {
+            checkPermission(new SqlPermission());
+            return sqlService.query(sql, params);
+        }
+
+        @Nonnull
+        @Override
+        public SqlResult query(@Nonnull SqlQuery query) {
+            checkPermission(new SqlPermission());
+            return sqlService.query(query);
         }
     }
 }

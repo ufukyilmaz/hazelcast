@@ -28,12 +28,10 @@ import com.hazelcast.security.permission.RingBufferPermission;
 import com.hazelcast.security.permission.ScheduledExecutorPermission;
 import com.hazelcast.security.permission.SemaphorePermission;
 import com.hazelcast.security.permission.SetPermission;
+import com.hazelcast.security.permission.SqlPermission;
 import com.hazelcast.security.permission.TopicPermission;
 import com.hazelcast.security.permission.TransactionPermission;
 import com.hazelcast.security.permission.UserCodeDeploymentPermission;
-
-import java.io.IOException;
-import java.util.Set;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
@@ -41,6 +39,8 @@ import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
+import java.io.IOException;
+import java.util.Set;
 
 /**
  * Helper methods related to Hazelcast security routines.
@@ -108,6 +108,8 @@ public final class SecurityUtil {
                 return new RingBufferPermission(permissionConfig.getName(), actions);
             case RELIABLE_TOPIC:
                 return new ReliableTopicPermission(permissionConfig.getName(), actions);
+            case SQL:
+                return new SqlPermission();
             default:
                 throw new IllegalArgumentException(permissionConfig.getType().toString());
         }

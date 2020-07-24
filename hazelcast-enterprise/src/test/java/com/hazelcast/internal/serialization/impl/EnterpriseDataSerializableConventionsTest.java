@@ -7,6 +7,8 @@ import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -16,21 +18,12 @@ import java.util.Set;
 @Category({QuickTest.class})
 public class EnterpriseDataSerializableConventionsTest extends DataSerializableConventionsTest {
 
-    private static final String[] WHITELISTED_CLASS_NAMES = new String[] {
-            "com.hazelcast.com.fasterxml.jackson.core.Base64Variant",
-            "com.hazelcast.com.fasterxml.jackson.core.JsonFactory",
-            "com.hazelcast.com.fasterxml.jackson.core.JsonLocation",
-            "com.hazelcast.com.fasterxml.jackson.core.JsonpCharacterEscapes",
-            "com.hazelcast.com.fasterxml.jackson.core.Version",
-            "com.hazelcast.com.fasterxml.jackson.core.io.SerializedString",
-            "com.hazelcast.com.fasterxml.jackson.core.util.DefaultIndenter",
-            "com.hazelcast.com.fasterxml.jackson.core.util.DefaultPrettyPrinter",
-            "com.hazelcast.com.fasterxml.jackson.core.util.DefaultPrettyPrinter$FixedSpaceIndenter",
-            "com.hazelcast.com.fasterxml.jackson.core.util.DefaultPrettyPrinter$NopIndenter",
-            "com.hazelcast.com.fasterxml.jackson.core.util.InternCache",
-            "com.hazelcast.com.fasterxml.jackson.core.util.MinimalPrettyPrinter",
-            "com.hazelcast.com.fasterxml.jackson.core.util.RequestPayload",
-            "com.hazelcast.com.fasterxml.jackson.core.util.Separators",
+    private static final String[] WHITELISTED_PACKAGE_NAMES = new String[] {
+            "com.hazelcast.com.fasterxml",
+            "com.hazelcast.com.google.common",
+            "com.hazelcast.org.apache.calcite",
+            "com.hazelcast.org.codehaus",
+            "com.hazelcast.org.slf4j"
     };
 
     // snakeyaml classes are compiled for java target 1.8
@@ -40,13 +33,15 @@ public class EnterpriseDataSerializableConventionsTest extends DataSerializableC
     };
 
     @Override
+    protected Set<String> getWhitelistedPackageNames() {
+        return new HashSet<>(Arrays.asList(WHITELISTED_PACKAGE_NAMES));
+    }
+
+    @Override
     protected Set<Class> getWhitelistedClasses() {
         Set<Class> classes = super.getWhitelistedClasses();
         classes.add(WanCacheEntryView.class);
 
-        for (String className : WHITELISTED_CLASS_NAMES) {
-            addToWhiteList(classes, className);
-        }
         if (JavaVersion.isAtLeast(JavaVersion.JAVA_8)) {
             // only resolve those classes when tests are executed with Java 8 or later
             for (String className : WHITELISTED_JDK8_CLASS_NAMES) {

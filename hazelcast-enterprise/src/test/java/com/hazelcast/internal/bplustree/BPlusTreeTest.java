@@ -533,6 +533,30 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
     }
 
     @Test
+    public void testDuplicateKeysSkipInLookup() {
+        Integer indexKey = 10;
+
+        // Insert duplicate keys to span multiple B+tree leaf nodes
+        for (int i = 0; i < 100; ++i) {
+            String mapKey = "Name_" + i;
+            String value = "Value_" + i;
+            NativeMemoryData mapKeyData = ess.toData(mapKey, NATIVE);
+            NativeMemoryData valueData = ess.toData(value, NATIVE);
+            btree.insert(indexKey, mapKeyData, valueData);
+        }
+
+        insertKey(11);
+        insertKey(12);
+        assertEquals(102, queryKeysCount());
+        Iterator<Map.Entry> it = btree.lookup(10, false, null, true);
+        assertTrue(it.hasNext());
+        assertEquals("Name_11", it.next().getKey());
+        assertTrue(it.hasNext());
+        assertEquals("Name_12", it.next().getKey());
+        assertFalse(it.hasNext());
+    }
+
+    @Test
     public void testIteratorResync() {
         assumeTrue(indexScanBatchSize == 0);
         // Fill in 9 leaf pages

@@ -111,6 +111,10 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
     // The initial buffer size for a lookup batch
     static final int LOOKUP_INITIAL_BUFFER_SIZE = 8;
 
+    // The +infinity value for the entry key. This value is greater than
+    // any other entry key.
+    static final Data PLUS_INFINITY_ENTRY_KEY = new NativeMemoryData();
+
     // The default maximum batch size for B+tree scan operation
     static final int DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE = 1000;
 
@@ -149,7 +153,8 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
 
     /**
      * Constructs new B+tree. Both the keyAllocator and the btreeAllocator must be thread-safe.
-     *  @param ess                the serialization service
+     *
+     * @param ess                the serialization service
      * @param keyAllocator       the memory allocator for leaf and inner keys on the node
      * @param btreeAllocator     the memory allocator for B+tree node
      * @param lockManager        the lock manager
@@ -791,7 +796,6 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
 
         LockingContext lockingContext = getLockingContext();
         try {
-
             EntryIterator entryIterator = lookup0(indexKey, null, true,
                     indexKey, true, false, lockingContext);
             return batchIterator(entryIterator, LOOKUP_INITIAL_BUFFER_SIZE);
@@ -807,7 +811,8 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
     public Iterator<T> lookup(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive) {
         LockingContext lockingContext = getLockingContext();
         try {
-            EntryIterator entryIterator = lookup0(from, null, fromInclusive,
+            Data fromEntryKey = fromInclusive ? null : PLUS_INFINITY_ENTRY_KEY;
+            EntryIterator entryIterator = lookup0(from, fromEntryKey, fromInclusive,
                     to, toInclusive, false, lockingContext);
             return batchIterator(entryIterator, btreeScanBatchSize);
         } catch (Throwable e) {
@@ -839,6 +844,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
      * @param fromEntryKey   the entryKy component of the beginning of the range
      * @param fromInclusive  {@code true} if the beginning of the range is inclusive,
      *                       {@code false} otherwise.
+     *                       If fromInclusive is {@code false}, the fromEntryKey must be non-null.
      * @param to             the end of the range
      * @param toInclusive    {@code true} if the end of the range is inclusive,
      *                       {@code false} otherwise.
@@ -851,7 +857,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
     private EntryIterator lookup0(Comparable from, Data fromEntryKey, boolean fromInclusive, Comparable to,
                                   boolean toInclusive, boolean resync,
                                   LockingContext lockingContext) {
-
+        assert fromEntryKey != null || fromInclusive;
         long nodeAddr = rootAddr;
         long parentAddr;
 
@@ -1066,6 +1072,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
 
         /**
          * Collects the next batch of results from the iterator.
+         *
          * @param entryBatch     the batch to collect entry results, {@code null} if batching is disabled
          * @param lockingContext the locking context
          */

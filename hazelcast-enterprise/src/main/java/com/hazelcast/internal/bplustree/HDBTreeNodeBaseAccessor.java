@@ -11,6 +11,7 @@ import static com.hazelcast.internal.bplustree.CompositeKeyComparison.INDEX_KEY_
 import static com.hazelcast.internal.bplustree.CompositeKeyComparison.INDEX_KEY_GREATER;
 import static com.hazelcast.internal.bplustree.CompositeKeyComparison.INDEX_KEY_LESS;
 import static com.hazelcast.internal.bplustree.CompositeKeyComparison.KEYS_EQUAL;
+import static com.hazelcast.internal.bplustree.HDBPlusTree.PLUS_INFINITY_ENTRY_KEY;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
@@ -230,6 +231,10 @@ abstract class HDBTreeNodeBaseAccessor {
         long rightIndexKeyAddr = getIndexKeyAddr(nodeAddr, slot);
         int cmp = keyComparator.compare(leftIndexKey, rightIndexKeyAddr);
         if (cmp == 0 && !cmpOnlyIndexKeyPart) {
+            // Right-hand operand comes from the slot and cannot be +infinity
+            if (leftEntryKey == PLUS_INFINITY_ENTRY_KEY) {
+                return INDEX_KEY_EQUAL_ENTRY_KEY_GREATER;
+            }
             long rightEntryKeyAddr = getEntryKeyAddr(nodeAddr, slot);
             if (rightEntryKeyAddr == NULL_ADDRESS) {
                 return leftEntryKey == null ? KEYS_EQUAL : INDEX_KEY_EQUAL_ENTRY_KEY_GREATER;

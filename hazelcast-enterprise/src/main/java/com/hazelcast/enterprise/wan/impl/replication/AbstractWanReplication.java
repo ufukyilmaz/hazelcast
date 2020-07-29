@@ -57,6 +57,7 @@ public abstract class AbstractWanReplication extends AbstractWanPublisher {
         if (discoveryEnabled) {
             return node.createDiscoveryService(config.getDiscoveryConfig(),
                     AliasedDiscoveryConfigUtils.createDiscoveryStrategyConfigs(config),
+                    false,
                     node.getLocalMember());
         }
         throw new InvalidConfigurationException("There are no methods of defining publisher endpoints. "

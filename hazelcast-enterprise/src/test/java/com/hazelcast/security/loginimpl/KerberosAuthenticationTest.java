@@ -59,6 +59,7 @@ import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.security.impl.KerberosCredentialsFactoryTest;
 import com.hazelcast.spi.properties.ClusterProperty;
+import com.hazelcast.test.KerberosUtils;
 import com.hazelcast.test.OverridePropertyRule;
 import com.hazelcast.test.annotation.QuickTest;
 
@@ -112,6 +113,7 @@ public class KerberosAuthenticationTest {
         kdc = ServerAnnotationProcessor.getKdcServer(serverRule.getDirectoryService(), 10088);
         serverRule.getLdapServer().setSearchBaseDn("dc=hazelcast,dc=com");
         assertTrueEventually(() -> kdc.isStarted());
+        KerberosUtils.injectDummyReplayCache(kdc);
         File krb5Conf = tempDir.newFile("krb5.conf");
         IOUtil.copy(KerberosCredentialsFactoryTest.class.getResourceAsStream("/krb5.conf"), krb5Conf);
         propKrb5Conf.setOrClearProperty(krb5Conf.getAbsolutePath());

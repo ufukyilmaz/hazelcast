@@ -51,7 +51,8 @@ import com.hazelcast.security.HazelcastPrincipal;
 import com.hazelcast.security.RealmConfigCallback;
 import com.hazelcast.security.impl.KerberosCredentialsFactory;
 import com.hazelcast.security.impl.KerberosCredentialsFactoryTest;
-import com.hazelcast.test.HazelcastSerialClassRunner;
+import com.hazelcast.test.HazelcastParallelClassRunner;
+import com.hazelcast.test.KerberosUtils;
 import com.hazelcast.test.OverridePropertyRule;
 import com.hazelcast.test.annotation.QuickTest;
 
@@ -71,9 +72,7 @@ import com.hazelcast.test.annotation.QuickTest;
         },
         searchBaseDn = "dc=hazelcast,dc=com")
 @ApplyLdifFiles({"hazelcast.com.ldif"})
-// disable parallel execution to workaround the https://issues.apache.org/jira/browse/DIRKRB-744
-//@RunWith(HazelcastParallelClassRunner.class)
-@RunWith(HazelcastSerialClassRunner.class)
+@RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class})
 public class GssApiLoginModuleTest {
 
@@ -96,6 +95,7 @@ public class GssApiLoginModuleTest {
         TestEnvironmentUtil.assumeNoIbmJvm();
         kdc = ServerAnnotationProcessor.getKdcServer(dsRule.getDirectoryService(), 10088);
         assertTrueEventually(() -> kdc.isStarted());
+        KerberosUtils.injectDummyReplayCache(kdc);
         File krb5Conf = tempDir.newFile("krb5.conf");
         IOUtil.copy(KerberosCredentialsFactoryTest.class.getResourceAsStream("/krb5.conf"), krb5Conf);
         propKrb5Conf.setOrClearProperty(krb5Conf.getAbsolutePath());

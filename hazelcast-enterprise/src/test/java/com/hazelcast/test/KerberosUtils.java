@@ -5,10 +5,15 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.Map;
 
+import javax.security.auth.kerberos.KerberosPrincipal;
+
+import org.apache.directory.server.kerberos.kdc.KdcServer;
 import org.apache.directory.server.kerberos.shared.crypto.encryption.KerberosKeyFactory;
 import org.apache.directory.server.kerberos.shared.keytab.Keytab;
+import org.apache.directory.server.kerberos.shared.replay.ReplayCache;
 import org.apache.directory.shared.kerberos.KerberosTime;
 import org.apache.directory.shared.kerberos.codec.types.EncryptionType;
 import org.apache.directory.shared.kerberos.components.EncryptionKey;
@@ -17,6 +22,7 @@ import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
 import com.hazelcast.config.security.JaasAuthenticationConfig;
 import com.hazelcast.config.security.RealmConfig;
+import com.hazelcast.logging.Logger;
 
 public final class KerberosUtils {
 
@@ -32,14 +38,9 @@ public final class KerberosUtils {
     public static RealmConfig createKerberosJaasRealmConfig(String principal, String keytabPath, boolean isInitiator) {
         return new RealmConfig().setJaasAuthenticationConfig(new JaasAuthenticationConfig().addLoginModuleConfig(
                 new LoginModuleConfig("com.sun.security.auth.module.Krb5LoginModule", LoginModuleUsage.REQUIRED)
-                        .setProperty("refreshKrb5Config", "true")
-                        .setProperty("useTicketCache", "false")
-                        .setProperty("doNotPrompt", "true")
-                        .setProperty("useKeyTab", "true")
-                        .setProperty("storeKey", "true")
-                        .setProperty("debug", "true")
-                        .setProperty("principal", principal)
-                        .setProperty("keyTab", keytabPath)
+                        .setProperty("refreshKrb5Config", "true").setProperty("useTicketCache", "false")
+                        .setProperty("doNotPrompt", "true").setProperty("useKeyTab", "true").setProperty("storeKey", "true")
+                        .setProperty("debug", "true").setProperty("principal", principal).setProperty("keyTab", keytabPath)
                         .setProperty("isInitiator", Boolean.toString(isInitiator))));
     }
 
@@ -97,5 +98,36 @@ public final class KerberosUtils {
             }
         }
         return keytabFile;
+    }
+
+    /**
+     * Workaround for https://issues.apache.org/jira/browse/DIRKRB-744. Injects a dummy replay cache to given KdcServer.
+     */
+    public static void injectDummyReplayCache(KdcServer kdcServer) {
+        try {
+            Field field = kdcServer.getClass().getDeclaredField("replayCache");
+            field.setAccessible(true);
+            field.set(kdcServer, new NocheckReplayCache());
+        } catch (Exception e) {
+            Logger.getLogger(KerberosUtils.class).warning("NocheckReplayCache was not injected to the KdcServer.", e);
+        }
+    }
+
+    public static class NocheckReplayCache implements ReplayCache {
+
+        @Override
+        public boolean isReplay(KerberosPrincipal serverPrincipal, KerberosPrincipal clientPrincipal, KerberosTime clientTime,
+                int clientMicroSeconds) {
+            return false;
+        }
+
+        @Override
+        public void save(KerberosPrincipal serverPrincipal, KerberosPrincipal clientPrincipal, KerberosTime clientTime,
+                int clientMicroSeconds) {
+        }
+
+        @Override
+        public void clear() {
+        }
     }
 }

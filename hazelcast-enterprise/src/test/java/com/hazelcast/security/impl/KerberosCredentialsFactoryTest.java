@@ -6,7 +6,8 @@ import com.hazelcast.security.Credentials;
 import com.hazelcast.security.RealmConfigCallback;
 import com.hazelcast.security.SimpleTokenCredentials;
 import com.hazelcast.test.ChangeLoggingRule;
-import com.hazelcast.test.HazelcastSerialClassRunner;
+import com.hazelcast.test.HazelcastParallelClassRunner;
+import com.hazelcast.test.KerberosUtils;
 import com.hazelcast.test.OverridePropertyRule;
 import com.hazelcast.test.annotation.QuickTest;
 import org.apache.directory.server.annotations.CreateKdcServer;
@@ -57,7 +58,7 @@ import static org.junit.Assert.assertThat;
         },
         searchBaseDn = "dc=hazelcast,dc=com")
 @ApplyLdifFiles({"hazelcast.com.ldif"})
-@RunWith(HazelcastSerialClassRunner.class)
+@RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class})
 public class KerberosCredentialsFactoryTest {
 
@@ -81,6 +82,7 @@ public class KerberosCredentialsFactoryTest {
         TestEnvironmentUtil.assumeNoIbmJvm();
         kdc = ServerAnnotationProcessor.getKdcServer(dsRule.getDirectoryService(), 10088);
         assertTrueEventually(() -> kdc.isStarted());
+        KerberosUtils.injectDummyReplayCache(kdc);
     }
 
     @AfterClass

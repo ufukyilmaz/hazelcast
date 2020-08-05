@@ -1,8 +1,10 @@
 package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.internal.util.MapUtil;
 import com.hazelcast.internal.util.collection.InflatableSet;
 import com.hazelcast.internal.util.collection.InflatableSet.Builder;
+import com.hazelcast.internal.util.collection.Int2ObjectHashMap;
 import com.hazelcast.map.impl.EnterprisePartitionContainer;
 import com.hazelcast.map.impl.MerkleTreeNodeEntries;
 import com.hazelcast.map.impl.record.Record;
@@ -17,8 +19,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map.Entry;
 
 import static com.hazelcast.map.impl.EntryViews.createWanEntryView;
+import static com.hazelcast.wan.impl.merkletree.MerkleTreeUtil.getLeafOrderForHash;
+import static com.hazelcast.wan.impl.merkletree.MerkleTreeUtil.getLevelOfNode;
 
 /**
  * Operation for fetching map entries for any number of merkle tree nodes.
@@ -53,20 +58,33 @@ public class MerkleTreeGetEntriesOperation extends MapOperation implements Reado
             return;
         }
 
-        result = new ArrayList<>(merkleTreeOrderValuePairs.length / 2);
+        Int2ObjectHashMap<Builder<WanMapEntryView<Object, Object>>> entryBuilders = new Int2ObjectHashMap<>(
+                MapUtil.calculateInitialCapacity(merkleTreeOrderValuePairs.length / 2), MapUtil.HASHMAP_DEFAULT_LOAD_FACTOR);
         for (int i = 0; i < merkleTreeOrderValuePairs.length; i += 2) {
-            int order = merkleTreeOrderValuePairs[i];
-            final Builder<WanMapEntryView<Object, Object>> entriesBuilder = InflatableSet.newBuilder(1);
+            entryBuilders.put(merkleTreeOrderValuePairs[i], InflatableSet.newBuilder(1));
+        }
 
-            localMerkleTree.forEachKeyOfNode(order, key -> {
-                Record<Object> record = recordStore.getRecord((Data) key);
-                entriesBuilder.add(createWanEntryView(
-                        mapServiceContext.toData(key),
-                        mapServiceContext.toData(record.getValue()),
-                        record,
-                        getNodeEngine().getSerializationService()));
-            });
-            result.add(new MerkleTreeNodeEntries(order, entriesBuilder.build()));
+        // here we assume all nodes are on the same level
+        int levelOfRequestedNodes = getLevelOfNode(merkleTreeOrderValuePairs[0]);
+
+        recordStore.iterator()
+                   .forEachRemaining(entry -> {
+                       Data keyData = entry.getKey();
+                       int keyHash = keyData.hashCode();
+                       int currentKeyNodeOrder = getLeafOrderForHash(keyHash, levelOfRequestedNodes);
+                       Builder<WanMapEntryView<Object, Object>> entriesBuilder = entryBuilders.get(currentKeyNodeOrder);
+                       if (entriesBuilder != null) {
+                           Record record = entry.getValue();
+                           entriesBuilder.add(createWanEntryView(
+                                   keyData, mapServiceContext.toData(record.getValue()), record,
+                                   getNodeEngine().getSerializationService()));
+                       }
+                   });
+
+
+        result = new ArrayList<>(merkleTreeOrderValuePairs.length / 2);
+        for (Entry<Integer, Builder<WanMapEntryView<Object, Object>>> builderEntry : entryBuilders.entrySet()) {
+            result.add(new MerkleTreeNodeEntries(builderEntry.getKey(), builderEntry.getValue().build()));
         }
     }
 

@@ -15,6 +15,7 @@
         <!-- needed for CheckStyle/SpotBugs -->
         <main.basedir>${project.parent.basedir}</main.basedir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jmh.version>1.21</jmh.version>
     </properties>
 
     <licenses>
@@ -229,6 +230,18 @@
             <groupId>org.hdrhistogram</groupId>
             <artifactId>HdrHistogram</artifactId>
             <version>2.1.4</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+            <version>${jmh.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+            <version>${jmh.version}</version>
             <scope>test</scope>
         </dependency>
         <!-- netty dependencies for OpenSSL integration -->

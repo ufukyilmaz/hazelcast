@@ -8,6 +8,11 @@ import com.hazelcast.wan.impl.merkletree.MerkleTree;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.BitSet;
+
+import static com.hazelcast.wan.impl.merkletree.MerkleTreeUtil.getLeafOrderForHash;
+import static com.hazelcast.wan.impl.merkletree.MerkleTreeUtil.getLevelOfNode;
 
 /**
  * Operation that queries the number of the keys under a set of Merkle tree nodes
@@ -46,9 +51,21 @@ public class MerkleTreeGetEntryCountOperation extends MapOperation implements Re
             return;
         }
 
+        BitSet nodeOrderBitSet = new BitSet(Arrays.stream(merkleTreeNodeOrders).max().getAsInt());
         for (int order : merkleTreeNodeOrders) {
-            result += localMerkleTree.getNodeKeyCount(order);
+            nodeOrderBitSet.set(order);
         }
+        // here we assume all nodes are on the same level
+        int levelOfRequestedNodes = getLevelOfNode(merkleTreeNodeOrders[0]);
+
+        recordStore.iterator()
+                   .forEachRemaining(entry -> {
+                       int keyHash = entry.getKey().hashCode();
+                       int currentKeyNodeOrder = getLeafOrderForHash(keyHash, levelOfRequestedNodes);
+                       if (nodeOrderBitSet.get(currentKeyNodeOrder)) {
+                           result++;
+                       }
+                   });
     }
 
     @Override

@@ -31,6 +31,7 @@ import java.util.concurrent.Callable;
 
 import static com.hazelcast.test.HazelcastTestSupport.assertEqualsEventually;
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
+import static com.hazelcast.test.MemcacheTestUtil.shutdownQuietly;
 import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractSecureOneEndpointTest extends AbstractSecuredEndpointsTest {
@@ -102,9 +103,7 @@ public abstract class AbstractSecureOneEndpointTest extends AbstractSecuredEndpo
             client = getMemcachedClient(hz, MEMCACHE_PORT);
             client.get("whatever");
         } finally {
-            if (client != null) {
-                client.shutdown();
-            }
+            shutdownQuietly(client);
         }
     }
 

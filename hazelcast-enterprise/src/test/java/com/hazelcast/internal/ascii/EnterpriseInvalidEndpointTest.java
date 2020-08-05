@@ -43,6 +43,7 @@ import static com.hazelcast.nio.ssl.TestKeyStoreUtil.getOrCreateTempFile;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.keyStore;
 import static com.hazelcast.nio.ssl.TestKeyStoreUtil.trustStore;
 import static com.hazelcast.test.HazelcastTestSupport.ignore;
+import static com.hazelcast.test.MemcacheTestUtil.shutdownQuietly;
 import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
@@ -125,7 +126,7 @@ public class EnterpriseInvalidEndpointTest
                 ignore(e);
             }
 
-            client.shutdown();
+            shutdownQuietly(client);
         } finally {
             if (proxy != null) {
                 proxy.stop();

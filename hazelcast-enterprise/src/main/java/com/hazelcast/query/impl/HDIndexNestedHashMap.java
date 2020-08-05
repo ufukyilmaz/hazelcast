@@ -15,17 +15,17 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.record.HDRecordAccessor;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 
+import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
 import static com.hazelcast.internal.elastic.map.BinaryElasticHashMap.loadFromOffHeapHeader;
 import static com.hazelcast.internal.serialization.DataType.HEAP;
-import static com.hazelcast.internal.util.CollectionUtil.isNotEmpty;
 
 /**
  * Nested map, so a map of maps, with two-tiers of keys.
@@ -50,8 +50,8 @@ import static com.hazelcast.internal.util.CollectionUtil.isNotEmpty;
 class HDIndexNestedHashMap<T extends QueryableEntry> {
 
     private static final long NULL_ADDRESS = 0L;
-    private static final ThreadLocal<LinkedList> THREAD_LOCAL_DISPOSE_QUEUE
-            = ThreadLocal.withInitial(() -> new LinkedList());
+    private static final ThreadLocal<Deque> THREAD_LOCAL_DISPOSE_QUEUE
+            = ThreadLocal.withInitial(() -> new ArrayDeque(3));
 
     private final MemoryAllocator malloc;
     private final HDExpirableIndexStore indexStore;
@@ -85,7 +85,8 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
 
         NativeMemoryData mapHeader = records.get(segmentData);
 
-        LinkedList disposeQueue = null;
+        Deque disposeQueue = THREAD_LOCAL_DISPOSE_QUEUE.get();
+        disposeQueue.clear();
 
         try {
             BinaryElasticHashMap<MemoryBlock> map;
@@ -93,10 +94,6 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
             if (isNullOrEmptyData(mapHeader)) {
                 map = new BinaryElasticHashMap<MemoryBlock>(ess, behmSlotAccessorFactory,
                         behmMemoryBlockAccessor, malloc);
-
-                disposeQueue = THREAD_LOCAL_DISPOSE_QUEUE.get();
-                disposeQueue.clear();
-
                 disposeQueue.offer(map);
 
                 mapHeader = map.storeHeaderOffHeap(malloc, NULL_ADDRESS);
@@ -114,19 +111,14 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
                         behmSlotAccessorFactory, behmMemoryBlockAccessor);
             }
 
-            if (value == null) {
-                value = new NativeMemoryData();
-            }
-            MemoryBlock oldValueData = map.put(keyData, value);
+            MemoryBlock oldValueData = map.put(keyData,
+                    value == null ? new NativeMemoryData() : value);
             map.storeHeaderOffHeap(malloc, mapHeader.address());
 
             return oldValueData;
         } catch (NativeOutOfMemoryError e) {
-            if (isNotEmpty(disposeQueue)) {
-                Iterator iterator = disposeQueue.descendingIterator();
-                while (iterator.hasNext()) {
-                    dispose(iterator.next());
-                }
+            while (!disposeQueue.isEmpty()) {
+                dispose(disposeQueue.pollLast());
             }
             throw e;
         }

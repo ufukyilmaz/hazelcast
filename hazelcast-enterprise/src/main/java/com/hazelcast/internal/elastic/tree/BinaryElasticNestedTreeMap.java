@@ -15,17 +15,17 @@ import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.query.impl.Comparables;
 
 import java.util.AbstractMap;
+import java.util.ArrayDeque;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
 import static com.hazelcast.internal.elastic.map.BinaryElasticHashMap.loadFromOffHeapHeader;
 import static com.hazelcast.internal.serialization.DataType.HEAP;
-import static com.hazelcast.internal.util.CollectionUtil.isNotEmpty;
 
 /**
  * Nested map, so a map of maps, with two-tiers of keys.
@@ -54,8 +54,8 @@ import static com.hazelcast.internal.util.CollectionUtil.isNotEmpty;
 public abstract class BinaryElasticNestedTreeMap<T extends Map.Entry, V extends MemoryBlock> {
 
     private static final long NULL_ADDRESS = 0L;
-    private static final ThreadLocal<LinkedList> THREAD_LOCAL_DISPOSE_QUEUE
-            = ThreadLocal.withInitial(() -> new LinkedList());
+    private static final ThreadLocal<Deque> THREAD_LOCAL_DISPOSE_QUEUE
+            = ThreadLocal.withInitial(() -> new ArrayDeque(3));
 
     protected final MapEntryFactory<T> mapEntryFactory;
 
@@ -65,20 +65,26 @@ public abstract class BinaryElasticNestedTreeMap<T extends Map.Entry, V extends 
     private final MemoryBlockAccessor memoryBlockAccessor;
     private final BehmSlotAccessorFactory behmSlotAccessorFactory;
 
-    public BinaryElasticNestedTreeMap(EnterpriseSerializationService ess, MemoryAllocator malloc,
-                                      OffHeapComparator keyComparator, MapEntryFactory<T> mapEntryFactory,
-                                      BehmSlotAccessorFactory behmSlotAccessorFactory, MemoryBlockAccessor memoryBlockAccessor) {
+    public BinaryElasticNestedTreeMap(EnterpriseSerializationService ess,
+                                      MemoryAllocator malloc,
+                                      OffHeapComparator keyComparator,
+                                      MapEntryFactory<T> mapEntryFactory,
+                                      BehmSlotAccessorFactory behmSlotAccessorFactory,
+                                      MemoryBlockAccessor memoryBlockAccessor) {
         this.records = new RedBlackTreeStore(ess.getCurrentMemoryAllocator(), keyComparator);
         this.ess = ess;
         this.malloc = malloc;
-        this.mapEntryFactory = mapEntryFactory != null ? mapEntryFactory : new DefaultMapEntryFactory<T>();
+        this.mapEntryFactory = mapEntryFactory != null
+                ? mapEntryFactory : new DefaultMapEntryFactory<T>();
         this.behmSlotAccessorFactory = behmSlotAccessorFactory;
         this.memoryBlockAccessor = memoryBlockAccessor;
     }
 
-    public BinaryElasticNestedTreeMap(EnterpriseSerializationService ess, MemoryAllocator malloc,
+    public BinaryElasticNestedTreeMap(EnterpriseSerializationService ess,
+                                      MemoryAllocator malloc,
                                       OffHeapComparator keyComparator,
-                                      BehmSlotAccessorFactory behmSlotAccessorFactory, MemoryBlockAccessor memoryBlockAccessor) {
+                                      BehmSlotAccessorFactory behmSlotAccessorFactory,
+                                      MemoryBlockAccessor memoryBlockAccessor) {
         this(ess, malloc, keyComparator, null, behmSlotAccessorFactory, memoryBlockAccessor);
     }
 
@@ -92,23 +98,21 @@ public abstract class BinaryElasticNestedTreeMap<T extends Map.Entry, V extends 
 
         MemoryBlock mapMemBlock;
         BinaryElasticHashMap<V> map;
-        LinkedList disposeQueue = null;
+
+        Deque disposeQueue = THREAD_LOCAL_DISPOSE_QUEUE.get();
+        disposeQueue.clear();
 
         try {
             if (entry == null) {
                 map = new BinaryElasticHashMap<V>(ess, behmSlotAccessorFactory,
                         memoryBlockAccessor, malloc);
-
-                disposeQueue = THREAD_LOCAL_DISPOSE_QUEUE.get();
-                disposeQueue.clear();
-
-                disposeQueue.add(map);
+                disposeQueue.offer(map);
 
                 mapMemBlock = map.storeHeaderOffHeap(malloc, NULL_ADDRESS);
-                disposeQueue.add(mapMemBlock);
+                disposeQueue.offer(mapMemBlock);
 
                 NativeMemoryData nativeSegmentKey = ess.toNativeData(segmentKey, malloc);
-                disposeQueue.add(nativeSegmentKey);
+                disposeQueue.offer(nativeSegmentKey);
 
                 records.put(nativeSegmentKey, mapMemBlock);
             } else {
@@ -122,11 +126,8 @@ public abstract class BinaryElasticNestedTreeMap<T extends Map.Entry, V extends 
 
             return oldValue;
         } catch (NativeOutOfMemoryError e) {
-            if (isNotEmpty(disposeQueue)) {
-                Iterator iterator = disposeQueue.descendingIterator();
-                while (iterator.hasNext()) {
-                    dispose(iterator.next());
-                }
+            while (!disposeQueue.isEmpty()) {
+                dispose(disposeQueue.pollLast());
             }
             throw e;
         }

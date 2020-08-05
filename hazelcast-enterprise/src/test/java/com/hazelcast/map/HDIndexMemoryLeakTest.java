@@ -9,8 +9,10 @@ import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
+import com.hazelcast.internal.util.EmptyStatement;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -40,6 +42,11 @@ import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_
 import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
 
+/**
+ * This test forces internal data structures to go native OOM and
+ * triggers forced-eviction to save from it. Under these stressing
+ * conditions we expect to see no hd memory leak in the end.
+ */
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
@@ -81,8 +88,13 @@ public class HDIndexMemoryLeakTest extends HazelcastTestSupport {
 
         IMap<Long, IndexPerson> map = hz.getMap(MAP_NAME);
 
-        for (long id = 0; id < 100; id++) {
-            map.set(id, initAndGet(id));
+        for (long id = 0; id < 1000; id++) {
+            try {
+                map.set(id, initAndGet(id));
+            } catch (NativeOutOfMemoryError e) {
+                // even we get NativeOutOfMemoryError we want to continue
+                EmptyStatement.ignore(e);
+            }
         }
 
         String[] fields = {"personId", "age", "firstName", "lastName", "salary", "count"};
@@ -113,7 +125,12 @@ public class HDIndexMemoryLeakTest extends HazelcastTestSupport {
         Runnable addPerson = () -> {
             while (!stop.get()) {
                 long id = ID.incrementAndGet();
-                map.set(id, initAndGet(id));
+                try {
+                    map.set(id, initAndGet(id));
+                } catch (NativeOutOfMemoryError e) {
+                    // even we get NativeOutOfMemoryError we want to continue
+                    EmptyStatement.ignore(e);
+                }
             }
         };
 
@@ -153,9 +170,7 @@ public class HDIndexMemoryLeakTest extends HazelcastTestSupport {
         map.destroy();
 
         assertFreeNativeMemory(hz1, hz2);
-
     }
-
 
     private static IndexPerson initAndGet(long id) {
         return new IndexPerson(id, id, "first" + id, "last" + id, id);

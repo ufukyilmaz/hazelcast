@@ -45,7 +45,7 @@ public class GlobalPoolingMemoryManagerStressTest extends ParameterizedMemoryTes
         gc = new SimpleGarbageCollector();
         gc.start();
 
-        malloc = newLibMalloc(persistentMemory);
+        malloc = newLibMalloc(allocationSource);
         globalPoolingMemoryManager = new GlobalPoolingMemoryManager(minBlockSize, pageSize, malloc, stats, gc);
     }
 

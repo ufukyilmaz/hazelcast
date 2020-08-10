@@ -17,7 +17,8 @@ import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.internal.memory.impl.LibMallocFactory;
-import com.hazelcast.internal.memory.impl.PersistentMemoryMallocFactory;
+import com.hazelcast.internal.memory.impl.MemkindMallocFactory;
+import com.hazelcast.internal.memory.impl.MemkindUtil;
 import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.metrics.StaticMetricsProvider;
@@ -103,10 +104,9 @@ public class EnterpriseClientExtension extends DefaultClientExtension implements
             MemorySize size = memoryConfig.getSize();
             NativeMemoryConfig.MemoryAllocatorType type = memoryConfig.getAllocatorType();
             final FreeMemoryChecker freeMemoryChecker = new FreeMemoryChecker(client.getProperties());
-            String persistentMemoryDirectory = memoryConfig.getPersistentMemoryDirectory();
-            final LibMallocFactory libMallocFactory = persistentMemoryDirectory == null
-                    ?  new UnsafeMallocFactory(freeMemoryChecker)
-                    : new PersistentMemoryMallocFactory(memoryConfig);
+            final LibMallocFactory libMallocFactory = !MemkindUtil.shouldUseMemkindMalloc(memoryConfig)
+                    ? new UnsafeMallocFactory(freeMemoryChecker)
+                    : new MemkindMallocFactory(memoryConfig);
 
             LOGGER.info("Creating " + type + " native memory manager with " + size.toPrettyString() + " size");
             if (type == NativeMemoryConfig.MemoryAllocatorType.STANDARD) {

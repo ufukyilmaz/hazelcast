@@ -53,7 +53,7 @@ public class ThreadLocalMgrPointerValidationTest extends ParameterizedMemoryTest
         long maxNative = 1 << 20;
         long maxMetadata = 1 << 20;
 
-        libMalloc = newLibMalloc(persistentMemory);
+        libMalloc = newLibMalloc(allocationSource);
         mgr = new ThreadLocalPoolingMemoryManager(minBlockSize, pageSize, libMalloc,
                 new PooledNativeMemoryStats(maxNative, maxMetadata));
     }

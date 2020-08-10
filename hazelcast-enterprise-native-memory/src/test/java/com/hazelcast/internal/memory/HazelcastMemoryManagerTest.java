@@ -32,7 +32,7 @@ public class HazelcastMemoryManagerTest extends ParameterizedMemoryTest {
     @Before
     public void setup() {
         checkPlatform();
-        malloc = newLibMalloc(persistentMemory);
+        malloc = newLibMalloc(allocationSource);
     }
 
     @After

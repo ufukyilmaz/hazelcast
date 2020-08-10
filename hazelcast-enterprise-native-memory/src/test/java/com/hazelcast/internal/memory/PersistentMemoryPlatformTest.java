@@ -3,7 +3,7 @@ package com.hazelcast.internal.memory;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.LibMallocFactory;
-import com.hazelcast.internal.memory.impl.PersistentMemoryMallocFactory;
+import com.hazelcast.internal.memory.impl.MemkindMallocFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import org.junit.Test;
@@ -20,7 +20,7 @@ public class PersistentMemoryPlatformTest extends ParameterizedMemoryTest {
     public void testPersistentMemoryFailOnNonLinuxPlatform() {
         NativeMemoryConfig config = new NativeMemoryConfig();
         config.setPersistentMemoryDirectory(PERSISTENT_MEMORY_DIRECTORY);
-        LibMallocFactory libMallocFactory = new PersistentMemoryMallocFactory(config);
+        LibMallocFactory libMallocFactory = new MemkindMallocFactory(config);
 
         LibMalloc libMalloc = null;
 

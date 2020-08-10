@@ -7,16 +7,20 @@ import com.hazelcast.config.NativeMemoryConfig;
  * A factory to create {@link LibMalloc} to manage allocations in non-volatile memory.
  */
 
-public final class PersistentMemoryMallocFactory implements LibMallocFactory {
+public final class MemkindMallocFactory implements LibMallocFactory {
 
     private final NativeMemoryConfig config;
 
-    public PersistentMemoryMallocFactory(NativeMemoryConfig config) {
+    public MemkindMallocFactory(NativeMemoryConfig config) {
         this.config = config;
     }
 
     @Override
     public LibMalloc create(long size) {
-        return new PersistentMemoryMalloc(config, size);
+        if (config.getPersistentMemoryDirectory() != null) {
+            return MemkindPmemMalloc.create(config, size);
+        } else {
+            return MemkindMalloc.create(config, size);
+        }
     }
 }

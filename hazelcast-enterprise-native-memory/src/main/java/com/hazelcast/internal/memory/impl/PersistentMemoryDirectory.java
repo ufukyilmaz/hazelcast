@@ -3,9 +3,9 @@ package com.hazelcast.internal.memory.impl;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.internal.util.DirectoryLock;
+import com.hazelcast.internal.util.UuidUtil;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.internal.util.UuidUtil;
 
 import java.io.File;
 import java.util.UUID;
@@ -13,9 +13,9 @@ import java.util.UUID;
 import static com.hazelcast.internal.util.DirectoryLock.lockForDirectory;
 
 /**
- * Manages persistent memory directory used by {@link PersistentMemoryMalloc}.
+ * Manages persistent memory directory used by {@link MemkindPmemMalloc}.
  * <p>
- * Locks the directory and creates new file for {@link PersistentMemoryHeap}.
+ * Locks the directory and creates new file for {@link MemkindHeap}.
  */
 final class PersistentMemoryDirectory {
 
@@ -36,7 +36,7 @@ final class PersistentMemoryDirectory {
     private final NativeMemoryConfig config;
 
     /**
-     * The File where {@link PersistentMemoryHeap} allocates memory.
+     * The File where {@link MemkindHeap} allocates memory.
      * The file backs non-volatile Optane memory.
      */
     private final File pmemFile;
@@ -59,9 +59,7 @@ final class PersistentMemoryDirectory {
             throw new HazelcastException(pmemDirectory.getAbsolutePath() + " is not a directory!");
         }
 
-        File[] dirs = pmemDirectory.listFiles(f -> {
-            return f.isDirectory() && isUUID(f.getName());
-        });
+        File[] dirs = pmemDirectory.listFiles(f -> f.isDirectory() && isUUID(f.getName()));
 
         if (dirs == null) {
             return newDirectoryAndDatafile(pmemDirectory, false);

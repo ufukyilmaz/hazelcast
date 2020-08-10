@@ -54,7 +54,8 @@ import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.internal.memory.impl.LibMallocFactory;
-import com.hazelcast.internal.memory.impl.PersistentMemoryMallocFactory;
+import com.hazelcast.internal.memory.impl.MemkindMallocFactory;
+import com.hazelcast.internal.memory.impl.MemkindUtil;
 import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.metrics.StaticMetricsProvider;
@@ -657,12 +658,12 @@ public class EnterpriseNodeExtension
 
     private static LibMallocFactory createLibMallocFactory(Node node, NativeMemoryConfig config,
                                                            FreeMemoryChecker freeMemoryChecker) {
-        if (config.getPersistentMemoryDirectory() == null) {
+        if (!MemkindUtil.shouldUseMemkindMalloc(config)) {
             // RAM via Unsafe
             return new UnsafeMallocFactory(freeMemoryChecker);
         } else {
-            // Non-volatile memory
-            return new PersistentMemoryMallocFactory(config);
+            // PMEM, PMEM DAX KMEM, DRAM or DRAM with huge pages via Memkind
+            return new MemkindMallocFactory(config);
         }
     }
 

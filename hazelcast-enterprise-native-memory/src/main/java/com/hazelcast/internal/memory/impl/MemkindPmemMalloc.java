@@ -1,6 +1,8 @@
 package com.hazelcast.internal.memory.impl;
 
 import com.hazelcast.config.NativeMemoryConfig;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
 
 import java.io.File;
 
@@ -9,51 +11,34 @@ import static com.hazelcast.internal.util.OsHelper.OS;
 import static com.hazelcast.internal.util.OsHelper.isLinux;
 
 /**
- * LibMalloc implementation for non-volatile memory. Makes JNI calls to the PMDK library
+ * LibMalloc implementation for non-volatile memory. Makes JNI calls to the Memkind library
  * for all allocation requests.
  * <p>
  * Creates and locks exclusively a {@link #directory} backed by a non-volatile memory
  * to store all allocated memory blocks.
  */
-final class PersistentMemoryMalloc implements LibMalloc {
+final class MemkindPmemMalloc extends AbstractMemkindMalloc {
+    private static final ILogger LOGGER = Logger.getLogger(MemkindPmemMalloc.class);
 
     private final PersistentMemoryDirectory directory;
-    private final PersistentMemoryHeap pmemHeap;
 
-    PersistentMemoryMalloc(NativeMemoryConfig config, long size) {
+    MemkindPmemMalloc(MemkindHeap heap, PersistentMemoryDirectory directory) {
+        super(heap);
+        this.directory = directory;
+    }
+
+    static MemkindPmemMalloc create(NativeMemoryConfig config, long size) {
         checkPlatform();
         assert config.getPersistentMemoryDirectory() != null;
-        this.directory = new PersistentMemoryDirectory(config);
+        PersistentMemoryDirectory directory = new PersistentMemoryDirectory(config);
         File pmemFile = directory.getPersistentMemoryFile();
-        pmemHeap = PersistentMemoryHeap.createHeap(pmemFile.getAbsolutePath(), size);
+        LOGGER.info("Using Memkind PMEM memory allocator with path " + directory.getPersistentMemoryFile().getPath());
+        MemkindHeap heap = MemkindHeap.createPmemHeap(pmemFile.getAbsolutePath(), size);
+        return new MemkindPmemMalloc(heap, directory);
     }
 
     @Override
-    public long malloc(long size) {
-        try {
-            return pmemHeap.allocate(size);
-        } catch (OutOfMemoryError e) {
-            return NULL_ADDRESS;
-        }
-    }
-
-    @Override
-    public long realloc(long address, long size) {
-        try {
-            return pmemHeap.realloc(address, size);
-        } catch (OutOfMemoryError e) {
-            return NULL_ADDRESS;
-        }
-    }
-
-    @Override
-    public void free(long address) {
-        pmemHeap.free(address);
-    }
-
-    @Override
-    public void dispose() {
-        pmemHeap.close();
+    protected void onDispose() {
         directory.dispose();
     }
 

@@ -1,0 +1,11 @@
+**/CMakeCache.txt
+**/CMakeFiles/*
+**/Makefile
+**/*.cbp
+**/*.cmake
+**/*.tcl
+**/Testing
+**/Testing/*
+tests/googletest-*
+**/lib/*
+**/bin/*

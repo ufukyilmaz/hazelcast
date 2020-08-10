@@ -37,6 +37,7 @@
                 <filtering>false</filtering>
                 <includes>
                     <include>**/*.so</include>
+                    <include>**/*.so.*</include>
                 </includes>
             </resource>
         </resources>

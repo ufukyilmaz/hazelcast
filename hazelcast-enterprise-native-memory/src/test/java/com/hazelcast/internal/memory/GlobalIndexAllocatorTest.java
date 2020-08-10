@@ -29,10 +29,10 @@ import static com.hazelcast.internal.memory.GlobalIndexPoolingAllocator.DEFAULT_
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(HazelcastSerialParametersRunnerFactory.class)
@@ -49,7 +49,7 @@ public class GlobalIndexAllocatorTest extends ParameterizedMemoryTest {
     @Before
     public void setup() {
         checkPlatform();
-        malloc = newLibMalloc(persistentMemory);
+        malloc = newLibMalloc(allocationSource);
         memoryAllocator = new GlobalIndexPoolingAllocator(malloc, stats, DEFAULT_BTREE_INDEX_NODE_SIZE);
         delegatingAllocator = new DelegatingMemoryAllocator(memoryAllocator);
         nodeSize = memoryAllocator.getNodeSize();

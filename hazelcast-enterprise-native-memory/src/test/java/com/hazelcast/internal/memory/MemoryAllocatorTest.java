@@ -1,11 +1,11 @@
 package com.hazelcast.internal.memory;
 
+import com.hazelcast.internal.memory.ParameterizedMemoryTest.AllocationSource;
 import com.hazelcast.internal.memory.impl.HeapMemoryManager;
 import com.hazelcast.internal.memory.impl.MemoryManagerBean;
-import com.hazelcast.memory.MemorySize;
 import com.hazelcast.internal.nio.Disposable;
-import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
-import com.hazelcast.test.annotation.ParallelJVMTest;
+import com.hazelcast.memory.MemorySize;
+import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -15,49 +15,60 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
-import static com.hazelcast.internal.memory.impl.PersistentMemoryHeap.PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY;
-import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
+import static com.hazelcast.internal.memory.ParameterizedMemoryTest.AllocationSource.MEMKIND_DRAM;
+import static com.hazelcast.internal.memory.ParameterizedMemoryTest.AllocationSource.MEMKIND_PMEM;
+import static com.hazelcast.internal.memory.ParameterizedMemoryTest.AllocationSource.UNSAFE;
 import static com.hazelcast.internal.memory.ParameterizedMemoryTest.newLibMallocFactory;
-import static com.hazelcast.test.HazelcastTestSupport.assumeThatLinuxOS;
+import static com.hazelcast.internal.memory.impl.MemkindHeap.PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY;
+import static com.hazelcast.internal.memory.impl.MemkindUtil.HD_MEMKIND;
 import static com.hazelcast.internal.util.QuickMath.modPowerOfTwo;
+import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
+import static com.hazelcast.test.HazelcastTestSupport.assumeThatLinuxOS;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParallelParametersRunnerFactory.class)
-@Category({QuickTest.class, ParallelJVMTest.class})
+@UseParametersRunnerFactory(HazelcastSerialParametersRunnerFactory.class)
+@Category(QuickTest.class)
 public class MemoryAllocatorTest {
 
     public enum ManagerType {
         HEAP, STANDARD, SYSTEM, POOLED_GLOBAL, POOLED_THREADLOCAL
     }
 
-    @Parameterized.Parameters(name = "managerType:{0}, persistentMemory: {1}")
+    @Parameters(name = "managerType:{0}, allocationSource: {1}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][]{
-                {ManagerType.HEAP, true},
-                {ManagerType.HEAP, false},
-                {ManagerType.STANDARD, true},
-                {ManagerType.STANDARD, false},
-                {ManagerType.SYSTEM, true},
-                {ManagerType.SYSTEM, false},
-                {ManagerType.POOLED_GLOBAL, true},
-                {ManagerType.POOLED_GLOBAL, false},
-                {ManagerType.POOLED_THREADLOCAL, true},
-                {ManagerType.POOLED_THREADLOCAL, false},
-        });
+                {ManagerType.HEAP, UNSAFE},
+                {ManagerType.HEAP, MEMKIND_PMEM},
+                {ManagerType.HEAP, MEMKIND_DRAM},
+                {ManagerType.STANDARD, UNSAFE},
+                {ManagerType.STANDARD, MEMKIND_PMEM},
+                {ManagerType.STANDARD, MEMKIND_DRAM},
+                {ManagerType.SYSTEM, UNSAFE},
+                {ManagerType.SYSTEM, MEMKIND_PMEM},
+                {ManagerType.SYSTEM, MEMKIND_DRAM},
+                {ManagerType.POOLED_GLOBAL, UNSAFE},
+                {ManagerType.POOLED_GLOBAL, MEMKIND_PMEM},
+                {ManagerType.POOLED_GLOBAL, MEMKIND_DRAM},
+                {ManagerType.POOLED_THREADLOCAL, UNSAFE},
+                {ManagerType.POOLED_THREADLOCAL, MEMKIND_PMEM},
+                {ManagerType.POOLED_THREADLOCAL, MEMKIND_DRAM},
+                });
     }
 
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public ManagerType mgrType;
 
-    @Parameterized.Parameter(1)
-    public boolean persistentMemory;
-
+    @Parameter(1)
+    public AllocationSource allocationSource;
 
     private MemoryManager memMgr;
     private Disposable toDispose;
@@ -70,11 +81,12 @@ public class MemoryAllocatorTest {
     @AfterClass
     public static void cleanup() {
         System.clearProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY);
+        System.clearProperty(HD_MEMKIND);
     }
 
     @Before
     public void setup() {
-        if (persistentMemory) {
+        if (allocationSource != UNSAFE) {
             assumeThatLinuxOS();
         }
         switch (mgrType) {
@@ -107,7 +119,7 @@ public class MemoryAllocatorTest {
 
     private PoolingMemoryManager getMalloc() {
         return new PoolingMemoryManager(new MemorySize(32, MEGABYTES), 16, 1 << 20,
-                newLibMallocFactory(persistentMemory));
+                newLibMallocFactory(allocationSource));
     }
 
     @After

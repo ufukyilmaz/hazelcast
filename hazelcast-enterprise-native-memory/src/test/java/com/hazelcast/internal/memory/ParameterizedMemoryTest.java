@@ -3,7 +3,8 @@ package com.hazelcast.internal.memory;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.LibMallocFactory;
-import com.hazelcast.internal.memory.impl.PersistentMemoryMallocFactory;
+import com.hazelcast.internal.memory.impl.MemkindMallocFactory;
+import com.hazelcast.internal.memory.impl.MemkindUtil;
 import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
 import com.hazelcast.test.HazelcastTestSupport;
 import org.junit.AfterClass;
@@ -12,41 +13,61 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 
-import static com.hazelcast.internal.memory.impl.PersistentMemoryHeap.PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY;
+import static com.hazelcast.internal.memory.impl.MemkindHeap.PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY;
 import static java.util.Arrays.asList;
 
 public class ParameterizedMemoryTest extends HazelcastTestSupport {
 
     @Parameterized.Parameter
-    public boolean persistentMemory;
+    public AllocationSource allocationSource;
 
     @Parameterized.Parameters(name = "persistentMemory: {0}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {true},
-                {false},
-        });
+                {AllocationSource.UNSAFE},
+                {AllocationSource.MEMKIND_PMEM},
+                {AllocationSource.MEMKIND_DRAM},
+                });
     }
 
-    static LibMallocFactory newLibMallocFactory(boolean persistentMemory) {
-        if (persistentMemory) {
-            NativeMemoryConfig config = new NativeMemoryConfig().setPersistentMemoryDirectory(PERSISTENT_MEMORY_DIRECTORY);
-            LibMallocFactory libMallocFactory =  new PersistentMemoryMallocFactory(config);
-            return new PersistentMemoryMallocFactoryDelegate(libMallocFactory);
-        } else {
-            return new UnsafeMallocFactory(new FreeMemoryChecker());
+    @AfterClass
+    public static void cleanUp() {
+        System.clearProperty(MemkindUtil.HD_MEMKIND);
+    }
+
+    enum AllocationSource {
+        UNSAFE,
+        MEMKIND_PMEM,
+        MEMKIND_DRAM
+    }
+
+    static LibMallocFactory newLibMallocFactory(AllocationSource allocationSource) {
+        LibMallocFactory libMallocFactory = null;
+        switch (allocationSource) {
+            case UNSAFE:
+                libMallocFactory = new UnsafeMallocFactory(new FreeMemoryChecker());
+                break;
+            case MEMKIND_PMEM:
+                NativeMemoryConfig config = new NativeMemoryConfig().setPersistentMemoryDirectory(PERSISTENT_MEMORY_DIRECTORY);
+                libMallocFactory = new MallocFactoryDelegate(new MemkindMallocFactory(config));
+                break;
+            case MEMKIND_DRAM:
+                System.setProperty(MemkindUtil.HD_MEMKIND, "true");
+                libMallocFactory = new MallocFactoryDelegate(new MemkindMallocFactory(new NativeMemoryConfig()));
+                break;
         }
+        return libMallocFactory;
     }
 
     /**
      * Doubles the size of the allocated heap, because PMDK library
      * utilizes some memory for internal purposes.
      */
-    private static class PersistentMemoryMallocFactoryDelegate implements LibMallocFactory {
+    private static class MallocFactoryDelegate implements LibMallocFactory {
 
         private final LibMallocFactory delegate;
 
-        private PersistentMemoryMallocFactoryDelegate(LibMallocFactory delegate) {
+        private MallocFactoryDelegate(LibMallocFactory delegate) {
             this.delegate = delegate;
         }
 
@@ -56,8 +77,8 @@ public class ParameterizedMemoryTest extends HazelcastTestSupport {
         }
     }
 
-    static LibMalloc newLibMalloc(boolean persistentMemory) {
-        LibMallocFactory libMallocFactory = newLibMallocFactory(persistentMemory);
+    static LibMalloc newLibMalloc(AllocationSource allocationSource) {
+        LibMallocFactory libMallocFactory = newLibMallocFactory(allocationSource);
         return libMallocFactory.create(1 << 28);
     }
 
@@ -72,7 +93,7 @@ public class ParameterizedMemoryTest extends HazelcastTestSupport {
     }
 
     void checkPlatform() {
-        if (persistentMemory) {
+        if (allocationSource != AllocationSource.UNSAFE) {
             assumeThatLinuxOS();
         }
     }

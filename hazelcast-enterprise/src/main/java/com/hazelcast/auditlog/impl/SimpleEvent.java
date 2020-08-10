@@ -1,14 +1,14 @@
-package com.hazelcast.internal.auditlog.impl;
+package com.hazelcast.auditlog.impl;
 
 import static java.util.Objects.requireNonNull;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import com.hazelcast.internal.auditlog.AuditableEvent;
-import com.hazelcast.internal.auditlog.EventBuilder;
-import com.hazelcast.internal.auditlog.AuditlogService;
-import com.hazelcast.internal.auditlog.Level;
+import com.hazelcast.auditlog.AuditableEvent;
+import com.hazelcast.auditlog.AuditlogService;
+import com.hazelcast.auditlog.EventBuilder;
+import com.hazelcast.auditlog.Level;
 
 public final class SimpleEvent implements AuditableEvent {
 
@@ -56,6 +56,12 @@ public final class SimpleEvent implements AuditableEvent {
     @Override
     public long getTimestamp() {
         return timestamp;
+    }
+
+    @Override
+    public String toString() {
+        return "SimpleEvent [typeId=" + typeId + ", message=" + message + ", timestamp=" + timestamp + ", level=" + level
+                + ", parameters=" + parameters + ", cause=" + cause + "]";
     }
 
     /**

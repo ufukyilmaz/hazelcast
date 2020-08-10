@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="ALL">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{ABSOLUTE} %5p |%X{test-name}| - [%c{1}] %t - %m%n" />
+        </Console>
+        <Syslog name="Syslog" format="RFC5424" host="127.0.0.1" port="4514" protocol="TCP" appName="Hazelcast"
+            newLine="true" messageId="Audit" id="hz" />
+    </Appenders>
+
+     <Loggers>
+        <Logger name="hazelcast.auditlog" level="debug">
+            <AppenderRef ref="Console" />
+            <AppenderRef ref="Syslog" />
+        </Logger>
+        <Root level="INFO">
+            <AppenderRef ref="Console" />
+        </Root>
+    </Loggers>
+</Configuration>

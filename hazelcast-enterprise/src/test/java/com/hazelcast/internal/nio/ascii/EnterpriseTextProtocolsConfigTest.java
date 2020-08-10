@@ -1,8 +1,13 @@
 package com.hazelcast.internal.nio.ascii;
 
+import static com.hazelcast.auditlog.AuditlogTypeIds.AUTHENTICATION_REST;
+import static com.hazelcast.auditlog.AuditlogTypeIds.NETWORK_CONNECT;
+import static com.hazelcast.auditlog.AuditlogTypeIds.NETWORK_DISCONNECT;
+import static com.hazelcast.auditlog.AuditlogTypeIds.NETWORK_SELECT_PROTOCOL;
 import static com.hazelcast.test.AbstractHazelcastClassRunner.getTestMethodName;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.Accessors.getAddress;
+import static com.hazelcast.test.Accessors.getAuditlogService;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -17,6 +22,8 @@ import com.hazelcast.config.RestEndpointGroup;
 import com.hazelcast.config.security.RealmConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.security.auditlog.TestAuditlogService;
+import com.hazelcast.security.auditlog.TestAuditlogServiceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 
 /**
@@ -31,6 +38,21 @@ public class EnterpriseTextProtocolsConfigTest extends TextProtocolsConfigTest {
         HazelcastInstance hz = factory.newHazelcastInstance(createConfigWithEnabledGroups(RestEndpointGroup.CLUSTER_READ));
         assertTextProtocolResponse(hz,
                 new TestUrl(RestEndpointGroup.CLUSTER_READ, "GET", "/hazelcast/rest/license", "\"maxNodeCount\":99"));
+    }
+
+    @Test
+    public void testAuditableEvents() throws Exception {
+        Config config = createConfigWithEnabledGroups(RestEndpointGroup.CLUSTER_READ);
+        config.getAuditlogConfig()
+            .setEnabled(true)
+            .setFactoryClassName(TestAuditlogServiceFactory.class.getName());
+        config.getSecurityConfig().setEnabled(true).setMemberRealmConfig("realm",
+                new RealmConfig().setUsernamePasswordIdentityConfig(getTestMethodName(), "secret"));
+        HazelcastInstance hz = factory.newHazelcastInstance(config);
+        TestAuditlogService auditlog = (TestAuditlogService) getAuditlogService(hz);
+        assertClusterState(hz, getTestMethodName() + "&secret", "active");
+        auditlog.assertEventPresentEventually(NETWORK_CONNECT, NETWORK_SELECT_PROTOCOL, AUTHENTICATION_REST,
+                NETWORK_DISCONNECT);
     }
 
     @Test

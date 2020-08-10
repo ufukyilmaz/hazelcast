@@ -1,5 +1,6 @@
 package com.hazelcast.enterprise.wan.impl;
 
+import com.hazelcast.auditlog.AuditlogTypeIds;
 import com.hazelcast.config.AbstractWanPublisherConfig;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.MerkleTreeConfig;
@@ -466,6 +467,12 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
      */
     @Override
     public UUID syncMap(String wanReplicationName, String wanPublisherId, String mapName) {
+        node.getNodeExtension().getAuditlogService().eventBuilder(AuditlogTypeIds.WAN_SYNC)
+            .message("Explicit request for WAN map synchronization")
+            .addParameter("replicationName", wanReplicationName)
+            .addParameter("publisherId", wanPublisherId)
+            .addParameter("mapName", mapName)
+            .log();
         WanSyncEvent event = new WanSyncEvent(WanSyncType.SINGLE_MAP, mapName);
         syncManager.initiateAntiEntropyRequest(wanReplicationName, wanPublisherId, event);
         return event.getUuid();
@@ -478,6 +485,11 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
      */
     @Override
     public UUID syncAllMaps(String wanReplicationName, String wanPublisherId) {
+        node.getNodeExtension().getAuditlogService().eventBuilder(AuditlogTypeIds.WAN_SYNC)
+            .message("Explicit request for WAN all maps synchronization")
+            .addParameter("replicationName", wanReplicationName)
+            .addParameter("publisherId", wanPublisherId)
+            .log();
         WanSyncEvent event = new WanSyncEvent(WanSyncType.ALL_MAPS);
         syncManager.initiateAntiEntropyRequest(wanReplicationName, wanPublisherId, event);
         return event.getUuid();
@@ -532,6 +544,12 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
                       .flatMap(Collection::stream)
                       .map(WanReplicationServiceImpl::getWanPublisherId)
                       .collect(Collectors.toSet());
+
+        node.getNodeExtension().getAuditlogService().eventBuilder(AuditlogTypeIds.WAN_ADD_CONFIG)
+            .message("WAN Adding configuration")
+            .addParameter("newConfig", wanReplicationConfig)
+            .addParameter("existingConfig", existingConfig)
+            .log();
 
         if (existingConfig != null) {
             Set<String> ignoredPublisherIds =

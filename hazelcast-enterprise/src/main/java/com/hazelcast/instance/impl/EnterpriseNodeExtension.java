@@ -1,9 +1,14 @@
 package com.hazelcast.instance.impl;
 
+import com.hazelcast.auditlog.AuditlogService;
+import com.hazelcast.auditlog.AuditlogServiceFactory;
+import com.hazelcast.auditlog.impl.DefaultAuditlogFactory;
+import com.hazelcast.auditlog.impl.NoOpAuditlogService;
 import com.hazelcast.cache.impl.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.AdvancedNetworkConfig;
+import com.hazelcast.config.AuditlogConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InstanceTrackingConfig.InstanceTrackingProperties;
@@ -14,6 +19,7 @@ import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
+import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.cp.internal.persistence.CPPersistenceService;
 import com.hazelcast.cp.internal.persistence.CPPersistenceServiceImpl;
@@ -25,9 +31,6 @@ import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.instance.EndpointQualifier;
 import com.hazelcast.internal.EnterprisePhoneHome;
 import com.hazelcast.internal.ascii.TextCommandService;
-import com.hazelcast.internal.auditlog.AuditlogService;
-import com.hazelcast.internal.auditlog.impl.ILoggerAuditlogService;
-import com.hazelcast.internal.auditlog.impl.NoOpAuditlogService;
 import com.hazelcast.internal.cluster.impl.ClusterVersionAutoUpgradeHelper;
 import com.hazelcast.internal.cluster.impl.JoinMessage;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
@@ -64,6 +67,7 @@ import com.hazelcast.internal.networking.ChannelInitializer;
 import com.hazelcast.internal.networking.InboundHandler;
 import com.hazelcast.internal.networking.OutboundHandler;
 import com.hazelcast.internal.nio.CipherByteArrayProcessor;
+import com.hazelcast.internal.nio.ClassLoaderUtil;
 import com.hazelcast.internal.nio.EnterpriseChannelInitializerFunction;
 import com.hazelcast.internal.nio.tcp.SymmetricCipherPacketDecoder;
 import com.hazelcast.internal.nio.tcp.SymmetricCipherPacketEncoder;
@@ -77,6 +81,7 @@ import com.hazelcast.internal.util.ByteArrayProcessor;
 import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.internal.util.LicenseExpirationReminderTask;
 import com.hazelcast.internal.util.Preconditions;
+import com.hazelcast.internal.util.StringUtil;
 import com.hazelcast.license.domain.Feature;
 import com.hazelcast.license.domain.License;
 import com.hazelcast.license.domain.LicenseVersion;
@@ -90,6 +95,7 @@ import com.hazelcast.nio.SocketInterceptor;
 import com.hazelcast.partition.PartitioningStrategy;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityService;
+import com.hazelcast.security.impl.NodeCallbackHandler;
 import com.hazelcast.security.impl.SecurityContextImpl;
 import com.hazelcast.security.impl.SecurityServiceImpl;
 import com.hazelcast.security.impl.WeakSecretsConfigChecker;
@@ -196,8 +202,21 @@ public class EnterpriseNodeExtension
     }
 
     private AuditlogService createAuditlogService(Node node) {
-        if (node.getProperties().getBoolean(ClusterProperty.AUDIT_LOG_ENABLED)) {
-            return new ILoggerAuditlogService(node.getLoggingService());
+        AuditlogConfig auditlogConfig = node.getConfig().getAuditlogConfig();
+        if (auditlogConfig.isEnabled()) {
+            AuditlogServiceFactory factory = null;
+            String clsName = StringUtil.trim(auditlogConfig.getFactoryClassName());
+            try {
+                if (StringUtil.isNullOrEmpty(clsName)) {
+                    factory = new DefaultAuditlogFactory();
+                } else {
+                    factory = ClassLoaderUtil.newInstance(node.getConfigClassLoader(), clsName);
+                }
+                factory.init(new NodeCallbackHandler(node), auditlogConfig.getProperties());
+                return factory.createAuditlog();
+            } catch (Exception e) {
+                throw new HazelcastException("AuditlogService initialization failed", e);
+            }
         }
         return NoOpAuditlogService.INSTANCE;
     }

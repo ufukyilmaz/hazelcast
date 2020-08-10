@@ -1,5 +1,6 @@
 package com.hazelcast.security;
 
+import com.hazelcast.auditlog.AuditableEvent;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.CredentialsFactoryConfig;
 import com.hazelcast.config.InvalidConfigurationException;
@@ -11,6 +12,8 @@ import com.hazelcast.config.security.RealmConfig;
 import com.hazelcast.config.security.StaticCredentialsFactory;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.security.auditlog.TestAuditlogService;
+import com.hazelcast.security.auditlog.TestAuditlogServiceFactory;
 import com.hazelcast.security.loginimpl.DefaultLoginModule;
 import com.hazelcast.security.loginmodules.TestLoginModule;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -24,13 +27,23 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
+import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
+import static com.hazelcast.auditlog.AuditlogTypeIds.AUTHENTICATION_MEMBER;
 import static com.hazelcast.security.loginmodules.TestLoginModule.PROPERTY_PRINCIPALS_SIMPLE;
 import static com.hazelcast.security.loginmodules.TestLoginModule.PROPERTY_RESULT_COMMIT;
 import static com.hazelcast.security.loginmodules.TestLoginModule.PROPERTY_RESULT_LOGIN;
 import static com.hazelcast.security.loginmodules.TestLoginModule.VALUE_ACTION_FAIL;
 import static com.hazelcast.test.AbstractHazelcastClassRunner.getTestMethodName;
+import static com.hazelcast.test.Accessors.getAuditlogService;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({ QuickTest.class, ParallelJVMTest.class })
@@ -82,11 +95,21 @@ public class MemberSecurityTest extends HazelcastTestSupport {
     public void testNoClusterPrincipal() {
         Properties properties = new Properties();
         properties.setProperty(PROPERTY_PRINCIPALS_SIMPLE, "test1,test2");
-        final Config config = createTestLoginModuleConfig(properties);
+        Config config = createTestLoginModuleConfig(properties);
+        config.getAuditlogConfig()
+            .setEnabled(true)
+            .setFactoryClassName(TestAuditlogServiceFactory.class.getName());
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
-        factory.newHazelcastInstance(config); // master
+        HazelcastInstance hz = factory.newHazelcastInstance(config);
         HazelcastInstance member = factory.newHazelcastInstance(config);
         assertClusterSize(2, member);
+
+        TestAuditlogService auditlog = (TestAuditlogService) getAuditlogService(hz);
+        Optional<AuditableEvent> ev = auditlog.getEventQueue().stream().filter(e -> AUTHENTICATION_MEMBER.equals(e.typeId())).findAny();
+        assertTrue(ev.isPresent());
+        Map<String, Object> parameters = ev.get().parameters();
+        assertEquals(Boolean.TRUE, parameters.get("passed"));
+        assertThat(parameters.get("credentials"), is(instanceOf(UsernamePasswordCredentials.class)));
     }
 
     /**
@@ -100,11 +123,25 @@ public class MemberSecurityTest extends HazelcastTestSupport {
     public void testFailedLogin() {
         Properties properties = new Properties();
         properties.setProperty(PROPERTY_RESULT_LOGIN, VALUE_ACTION_FAIL);
-        final Config config = createTestLoginModuleConfig(properties);
-        final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
-        factory.newHazelcastInstance(config); // master
-        expected.expect(IllegalStateException.class);
-        factory.newHazelcastInstance(config);
+        Config config = createTestLoginModuleConfig(properties);
+        config.getAuditlogConfig()
+            .setEnabled(true)
+            .setFactoryClassName(TestAuditlogServiceFactory.class.getName());
+        TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
+        HazelcastInstance hz = factory.newHazelcastInstance(config);
+        try {
+            factory.newHazelcastInstance(config);
+            fail("New member start was expected to fail.");
+        } catch (IllegalStateException e) {
+            ignore(e);
+        }
+        TestAuditlogService auditlog = (TestAuditlogService) getAuditlogService(hz);
+        auditlog.assertEventPresent(AUTHENTICATION_MEMBER);
+        Optional<AuditableEvent> ev = auditlog.getEventQueue().stream().filter(e -> AUTHENTICATION_MEMBER.equals(e.typeId())).findAny();
+        assertTrue(ev.isPresent());
+        Map<String, Object> parameters = ev.get().parameters();
+        assertEquals(Boolean.FALSE, parameters.get("passed"));
+        assertThat(parameters.get("credentials"), is(instanceOf(UsernamePasswordCredentials.class)));
     }
 
     /**
@@ -176,7 +213,7 @@ public class MemberSecurityTest extends HazelcastTestSupport {
 
     @Test
     public void testDenyMember() {
-        final Config config = new Config();
+        final Config config = smallInstanceConfig();
         final SecurityConfig secCfg = config.getSecurityConfig();
         secCfg.setEnabled(true);
 
@@ -191,7 +228,7 @@ public class MemberSecurityTest extends HazelcastTestSupport {
      */
     @Test
     public void testRealmDoesntExistMember() {
-        final Config config = new Config();
+        final Config config = smallInstanceConfig();
         final SecurityConfig secCfg = config.getSecurityConfig();
         secCfg.setEnabled(true).setMemberRealm("noSuchRealm");
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
@@ -204,7 +241,7 @@ public class MemberSecurityTest extends HazelcastTestSupport {
      */
     @Test
     public void testRealmDoesntExistClient() {
-        final Config config = new Config();
+        final Config config = smallInstanceConfig();
         final SecurityConfig secCfg = config.getSecurityConfig();
         secCfg.setEnabled(true).setClientRealm("noSuchRealm");
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
@@ -220,7 +257,7 @@ public class MemberSecurityTest extends HazelcastTestSupport {
      * @param password password for the member identity
      */
     private Config createLoginModuleStackConfig(LoginModuleUsage usage, String password) {
-        Config config = new Config();
+        Config config = smallInstanceConfig();
         Properties properties = new Properties();
         properties.setProperty(PROPERTY_PRINCIPALS_SIMPLE, "testPrincipal");
         RealmConfig realmConfig = new RealmConfig().setJaasAuthenticationConfig(new JaasAuthenticationConfig()
@@ -239,7 +276,7 @@ public class MemberSecurityTest extends HazelcastTestSupport {
      *        for the property names)
      */
     private Config createTestLoginModuleConfig(Properties properties) {
-        final Config config = new Config();
+        final Config config = smallInstanceConfig();
         final SecurityConfig secCfg = config.getSecurityConfig();
         secCfg.setEnabled(true);
         LoginModuleConfig loginModuleConfig = new LoginModuleConfig();

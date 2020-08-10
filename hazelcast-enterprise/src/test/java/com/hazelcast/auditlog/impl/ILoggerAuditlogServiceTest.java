@@ -1,4 +1,4 @@
-package com.hazelcast.internal.auditlog.impl;
+package com.hazelcast.auditlog.impl;
 
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 import static org.junit.Assert.assertEquals;
@@ -12,12 +12,13 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 
-import com.hazelcast.spi.properties.ClusterProperty;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import com.hazelcast.auditlog.AuditlogTypeIds;
 import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.TestAwareInstanceFactory;
@@ -45,14 +46,23 @@ public class ILoggerAuditlogServiceTest {
         }
     }
 
+    @After
+    public void after() {
+        factory.terminateAll();
+    }
+
     @Test
     public void testAuditLogEnabled() throws IOException {
-        testAuditLogInternal(smallInstanceConfig().setProperty(ClusterProperty.AUDIT_LOG_ENABLED.getName(), "true"), true);
+        Config config = smallInstanceConfig();
+        config.getAuditlogConfig().setEnabled(true);
+        testAuditLogInternal(config, true);
     }
 
     @Test
     public void testAuditLogDisabled() throws IOException {
-        testAuditLogInternal(smallInstanceConfig().setProperty(ClusterProperty.AUDIT_LOG_ENABLED.getName(), "false"), false);
+        Config config = smallInstanceConfig();
+        config.getAuditlogConfig().setEnabled(false);
+        testAuditLogInternal(config, false);
     }
 
     @Test
@@ -68,7 +78,7 @@ public class ILoggerAuditlogServiceTest {
             assertFalse("Auditlog file doesn't exist", logExpected);
             return;
         }
-        Optional<String> line = Files.lines(file.toPath()).filter(l -> l.contains(AuditlogTypeIds.CONNECTION_ASKS_PROTOCOL))
+        Optional<String> line = Files.lines(file.toPath()).filter(l -> l.contains(AuditlogTypeIds.NETWORK_SELECT_PROTOCOL))
                 .findFirst();
         assertEquals("Auditlog entry presence", logExpected, line.isPresent());
     }

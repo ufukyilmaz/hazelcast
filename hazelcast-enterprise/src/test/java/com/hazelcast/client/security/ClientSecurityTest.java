@@ -1,5 +1,6 @@
 package com.hazelcast.client.security;
 
+import com.hazelcast.auditlog.AuditableEvent;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
@@ -14,6 +15,8 @@ import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.security.auditlog.TestAuditlogService;
+import com.hazelcast.security.auditlog.TestAuditlogServiceFactory;
 import com.hazelcast.security.loginmodules.TestLoginModule;
 import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -25,13 +28,23 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
+import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
+import static com.hazelcast.auditlog.AuditlogTypeIds.AUTHENTICATION_CLIENT;
 import static com.hazelcast.config.PermissionConfig.PermissionType.ALL;
+import static com.hazelcast.security.loginmodules.TestLoginModule.PROPERTY_RESULT_LOGIN;
+import static com.hazelcast.security.loginmodules.TestLoginModule.VALUE_ACTION_FAIL;
+import static com.hazelcast.test.Accessors.getAuditlogService;
+import static com.hazelcast.test.HazelcastTestSupport.ignore;
 import static com.hazelcast.test.HazelcastTestSupport.randomString;
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -51,20 +64,40 @@ public class ClientSecurityTest {
 
     @Test
     public void testDenyAll() {
-        final Config config = createConfig();
-        factory.newHazelcastInstance(config);
+        Config config = createConfig();
+        config.getAuditlogConfig()
+            .setEnabled(true)
+            .setFactoryClassName(TestAuditlogServiceFactory.class.getName());
+        HazelcastInstance hz = factory.newHazelcastInstance(config);
         HazelcastInstance client = factory.newHazelcastClient();
+
+        assertAuthenticationEventInAuditlog(hz, TRUE);
+
         expectedException.expect(RuntimeException.class);
         client.getMap(testObjectName).size();
+    }
+
+    private void assertAuthenticationEventInAuditlog(HazelcastInstance hz, Boolean expectedResult) {
+        TestAuditlogService auditlog = (TestAuditlogService) getAuditlogService(hz);
+        Optional<AuditableEvent> ev = auditlog.getEventQueue().stream().filter(e -> AUTHENTICATION_CLIENT.equals(e.typeId()))
+                .findAny();
+        assertTrue(ev.isPresent());
+        Map<String, Object> parameters = ev.get().parameters();
+        assertEquals(expectedResult, parameters.get("passed"));
     }
 
     @Test
     public void testAllowAll() {
         final Config config = createConfig();
         addPermission(config, ALL, "", null);
-
-        factory.newHazelcastInstance(config);
+        config.getAuditlogConfig()
+            .setEnabled(true)
+            .setFactoryClassName(TestAuditlogServiceFactory.class.getName());
+        HazelcastInstance hz = factory.newHazelcastInstance(config);
         HazelcastInstance client = factory.newHazelcastClient();
+
+        assertAuthenticationEventInAuditlog(hz, TRUE);
+
         client.getMap(testObjectName).size();
         client.getMap(testObjectName).size();
         client.getMap(testObjectName).put("a", "b");
@@ -85,6 +118,29 @@ public class ClientSecurityTest {
         clientConfig.getSecurityConfig().setTokenIdentityConfig(new TokenIdentityConfig(new byte[1]));
         HazelcastInstance client = factory.newHazelcastClient(clientConfig);
         client.getMap(testObjectName).size();
+    }
+
+    @Test
+    public void testFailedAuthentication() {
+        Properties properties = new Properties();
+        properties.setProperty(PROPERTY_RESULT_LOGIN, VALUE_ACTION_FAIL);
+        Config config = createTestLoginModuleConfig(properties);
+        config.getAuditlogConfig()
+            .setEnabled(true)
+            .setFactoryClassName(TestAuditlogServiceFactory.class.getName());
+
+        HazelcastInstance hz = factory.newHazelcastInstance(config);
+        ClientConfig clientConfig = new ClientConfig();
+        clientConfig.getConnectionStrategyConfig().getConnectionRetryConfig().setClusterConnectTimeoutMillis(0);
+        clientConfig.getSecurityConfig().setUsernamePasswordIdentityConfig("not important", "value");
+        try {
+            factory.newHazelcastClient(clientConfig);
+            fail("Authentication failure expeted");
+        } catch (IllegalStateException e) {
+            ignore(e);
+        }
+
+        assertAuthenticationEventInAuditlog(hz, FALSE);
     }
 
     @Test

@@ -842,6 +842,13 @@
             <version>${reflections.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.graylog2</groupId>
+            <artifactId>syslog4j</artifactId>
+            <version>0.9.60</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <distributionManagement>

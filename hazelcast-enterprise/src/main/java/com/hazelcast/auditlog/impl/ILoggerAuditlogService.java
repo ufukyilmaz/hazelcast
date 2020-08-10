@@ -1,11 +1,11 @@
-package com.hazelcast.internal.auditlog.impl;
+package com.hazelcast.auditlog.impl;
 
 import java.util.Map;
 
-import com.hazelcast.internal.auditlog.AuditableEvent;
-import com.hazelcast.internal.auditlog.EventBuilder;
-import com.hazelcast.internal.auditlog.AuditlogService;
-import com.hazelcast.internal.auditlog.Level;
+import com.hazelcast.auditlog.AuditableEvent;
+import com.hazelcast.auditlog.AuditlogService;
+import com.hazelcast.auditlog.EventBuilder;
+import com.hazelcast.auditlog.Level;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.logging.LoggingService;

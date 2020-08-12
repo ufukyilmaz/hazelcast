@@ -507,6 +507,38 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
     }
 
     @Test
+    public void testRangeScanOnNodeBoundary() {
+        insertKeysCompact(10);
+
+        // Make sure the last result from the iterator is a last slot in the B+tree node
+        Iterator it = btree.lookup(0, true, 8, true);
+        while (it.hasNext()) {
+            it.next();
+        }
+
+        // Call hasNext() on already exhausted iterator
+        assertFalse(it.hasNext());
+    }
+
+    @Test
+    public void testHasNextOnExhaustedIterator() {
+        int keysCount = 10000;
+        insertKeys(keysCount);
+
+        for (int i = 0; i < 100; ++i) {
+            int from = nextInt(keysCount);
+            int to = from + 1000;
+            Iterator it = btree.lookup(from, true, to, true);
+
+            int expectedCount = Math.min(to, keysCount - 1) - from + 1;
+
+            assertIterator(it, expectedCount, from);
+
+            assertFalse(it.hasNext());
+        }
+    }
+
+    @Test
     public void testFullScan() {
         // All keys fit into one node
         insertKeys(9);

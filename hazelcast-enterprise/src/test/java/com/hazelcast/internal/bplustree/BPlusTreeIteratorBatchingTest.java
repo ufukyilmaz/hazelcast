@@ -71,7 +71,7 @@ public class BPlusTreeIteratorBatchingTest extends BPlusTreeTestSupport {
         assertEquals(7, getKeysCount(rootAddr));
         clearEventHistory();
         assertEquals(10000, queryKeysCount());
-        assertEquals(11, leafNodeReadLockCountInHistory());
+        assertEquals(10, leafNodeReadLockCountInHistory());
     }
 
     @Test
@@ -95,7 +95,7 @@ public class BPlusTreeIteratorBatchingTest extends BPlusTreeTestSupport {
         clearEventHistory();
         Iterator it = btree.lookup(10);
         assertIterator(keysCount, it);
-        assertEquals(17, leafNodeReadLockCountInHistory());
+        assertEquals(16, leafNodeReadLockCountInHistory());
     }
 
     private void clearEventHistory() {

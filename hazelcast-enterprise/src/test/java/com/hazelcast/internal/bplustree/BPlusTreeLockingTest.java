@@ -178,10 +178,6 @@ public class BPlusTreeLockingTest extends BPlusTreeTestSupport {
         // Release lock on the last leaf
         expectedEvents.add(create(RELEASE_LOCK, lastLeafAddr));
 
-        // Add to the history an attempt to get next element on already exhausted iterator
-        expectedEvents.add(create(READ_LOCK, lastLeafAddr));
-        expectedEvents.add(create(RELEASE_LOCK, lastLeafAddr));
-
         assertEquals(expectedEvents, lockManagerCallback.eventsHistory);
     }
 

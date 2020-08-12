@@ -876,8 +876,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
         // Skip empty nodes
         nodeAddr = skipToNonEmptyNodeLocked(nodeAddr, lockingContext);
         if (nodeAddr == NULL_ADDRESS) {
-            it.nextSlot = NULL_SLOT;
-            it.lastSlot = NULL_SLOT;
+            it.setNextEntryNull();
             return it;
         }
         // Now, nodeAddr is read locked
@@ -946,7 +945,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
                 nodeAddr = skipToNextNonEmptyNode(it.currentNodeAddr, lockingContext);
                 if (nodeAddr == NULL_ADDRESS) {
                     // No keys in range anymore
-                    it.nextSlot = NULL_SLOT;
+                    it.setNextEntryNull();
                     return it;
                 }
                 it.sequenceNumber = getSequenceNumber(nodeAddr);
@@ -1104,9 +1103,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
 
                 if (resyncedIt.nextSlot == NULL_SLOT) {
                     // Key has been removed and we've reached the end
-                    nextSlot = NULL_SLOT;
-                    nextEntry = null;
-                    nextIndexKey = null;
+                    setNextEntryNull();
                     return;
                 }
                 sequenceNumber = resyncedIt.sequenceNumber;
@@ -1137,9 +1134,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
                     do {
                         long forwAddr = leafNodeAccessor.getForwNode(currentNodeAddr);
                         if (forwAddr == NULL_ADDRESS) {
-                            nextSlot = NULL_SLOT;
-                            nextEntry = null;
-                            nextIndexKey = null;
+                            setNextEntryNull();
                             releaseLock(currentNodeAddr, lockingContext);
                             return;
                         }
@@ -1182,11 +1177,16 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
                 }
             }
 
-            // Key is out of range
+            // Key is out of range, mark the iterator has reached the end
+            setNextEntryNull();
+            return false;
+        }
+
+        private void setNextEntryNull() {
+            lastSlot = NULL_SLOT;
             nextSlot = NULL_SLOT;
             nextEntry = null;
             nextIndexKey = null;
-            return false;
         }
 
         private void setNextEntry() {

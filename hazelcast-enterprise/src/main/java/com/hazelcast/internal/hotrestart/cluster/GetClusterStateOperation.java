@@ -1,14 +1,20 @@
 package com.hazelcast.internal.hotrestart.cluster;
 
 import com.hazelcast.cluster.ClusterState;
-import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
+import com.hazelcast.core.MemberLeftException;
+import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.spi.exception.TargetNotMemberException;
+import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 import com.hazelcast.spi.impl.NodeEngineImpl;
+import com.hazelcast.spi.impl.operationservice.ExceptionAction;
 import com.hazelcast.spi.impl.operationservice.Operation;
+import com.hazelcast.spi.impl.operationservice.UrgentSystemOperation;
 
 /**
  * Retrieves the cluster state of a member.
  */
-public class GetClusterStateOperation extends Operation implements JoinOperation {
+public class GetClusterStateOperation extends Operation implements UrgentSystemOperation,
+        AllowedDuringPassiveState, IdentifiedDataSerializable {
 
     private ClusterState response;
 
@@ -24,6 +30,14 @@ public class GetClusterStateOperation extends Operation implements JoinOperation
     @Override
     public ClusterState getResponse() {
         return response;
+    }
+
+    @Override
+    public ExceptionAction onInvocationException(Throwable throwable) {
+        if (throwable instanceof MemberLeftException || throwable instanceof TargetNotMemberException) {
+            return ExceptionAction.THROW_EXCEPTION;
+        }
+        return super.onInvocationException(throwable);
     }
 
     @Override

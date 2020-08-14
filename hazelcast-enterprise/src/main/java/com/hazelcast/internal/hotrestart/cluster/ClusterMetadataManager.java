@@ -7,6 +7,7 @@ import com.hazelcast.cluster.impl.MemberImpl;
 import com.hazelcast.cluster.memberselector.MemberSelectors;
 import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
 import com.hazelcast.config.HotRestartPersistenceConfig;
+import com.hazelcast.core.MemberLeftException;
 import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.cluster.ClusterService;
@@ -22,6 +23,7 @@ import com.hazelcast.internal.util.Clock;
 import com.hazelcast.internal.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.internal.util.concurrent.IdleStrategy;
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.spi.exception.TargetNotMemberException;
 import com.hazelcast.spi.impl.executionservice.ExecutionService;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.spi.impl.operationservice.OperationService;
@@ -49,6 +51,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 import static com.hazelcast.cluster.memberselector.MemberSelectors.DATA_MEMBER_SELECTOR;
 import static com.hazelcast.cluster.memberselector.MemberSelectors.NON_LOCAL_MEMBER_SELECTOR;
@@ -1466,12 +1469,10 @@ public class ClusterMetadataManager {
         long startTimeNanos = System.nanoTime();
         Collection<Member> members = clusterService
                 .getMembers(MemberSelectors.and(DATA_MEMBER_SELECTOR, NON_LOCAL_MEMBER_SELECTOR));
-        Set<Address> addresses = new HashSet<>(members.size());
-        for (Member member : members) {
-            addresses.add(member.getAddress());
-        }
+        Set<Address> addresses = members.stream().map(Member::getAddress).collect(Collectors.toSet());
         OperationServiceImpl operationService = node.nodeEngine.getOperationService();
         IdleStrategy idleStrategy = new BackoffIdleStrategy(0, 0, MEMBERS_STATE_BACKOFF_MIN_PARK, MEMBERS_STATE_BACKOFF_MAX_PARK);
+
         for (Member member : members) {
             Address address = member.getAddress();
             for (int idleCount = 0; (System.nanoTime() - startTimeNanos) < MEMBERS_STATE_WAIT_IN_NANOS; idleCount++) {
@@ -1483,14 +1484,17 @@ public class ClusterMetadataManager {
                         break;
                     } else if (memberState != ClusterState.PASSIVE) {
                         addresses.remove(address);
-                        logger.warning("Member " + address + " in inconsistent cluster state: " + memberState + ", expected: "
+                        logger.warning("Member " + member + " in inconsistent cluster state: " + memberState + ", expected: "
                                 + clusterState);
                         break;
                     } else {
                         idleStrategy.idle(idleCount);
                     }
                 } catch (Exception e) {
-                    logger.warning("Error while checking member state: " + address, e);
+                    if (e.getCause() instanceof TargetNotMemberException || e.getCause() instanceof MemberLeftException) {
+                        addresses.remove(address);
+                    }
+                    logger.warning("Error while checking final member state: " + member, e);
                     break;
                 }
             }

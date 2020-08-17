@@ -34,6 +34,9 @@
     <suppress checks="CyclomaticComplexityCheck|ClassFanOutComplexityCheck|ClassDataAbstractionCoupling"
               files="SerializerHook\.java$"/>
 
+    <!-- BPlusTree -->
+    <suppress checks="FileLength" files="HDBPlusTree.java"/>
+
     <!-- Test suppressions -->
     <suppress
             checks="FileLength|MethodLength|LineLength|AnonInnerLength|MethodCount|ReturnCount|ExecutableStatementCount"

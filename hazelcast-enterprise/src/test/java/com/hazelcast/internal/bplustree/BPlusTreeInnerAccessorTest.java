@@ -37,10 +37,10 @@ public class BPlusTreeInnerAccessorTest extends BPlusTreeTestSupport {
         NodeSplitStrategy nodeSplitStrategy = new DefaultNodeSplitStrategy();
         innerAccessor = new HDBTreeInnerNodeAccessor(MOCKED_LOCK_MANAGER, ess, new DefaultBPlusTreeKeyComparator(ess),
                 new DefaultBPlusTreeKeyAccessor(ess), keyAllocator,
-                delegatingIndexAllocator, NODE_SIZE, nodeSplitStrategy);
+                delegatingIndexAllocator, NODE_SIZE, nodeSplitStrategy, new EntrySlotNoPayload());
         leafAccessor = new HDBTreeLeafNodeAccessor(MOCKED_LOCK_MANAGER, ess, new DefaultBPlusTreeKeyComparator(ess),
                 new DefaultBPlusTreeKeyAccessor(ess), keyAllocator,
-                delegatingIndexAllocator, NODE_SIZE, nodeSplitStrategy);
+                delegatingIndexAllocator, NODE_SIZE, nodeSplitStrategy, new EntrySlotNoPayload());
     }
 
     @Test

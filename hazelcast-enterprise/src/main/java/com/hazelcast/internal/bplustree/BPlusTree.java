@@ -2,6 +2,7 @@ package com.hazelcast.internal.bplustree;
 
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.nio.Disposable;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.query.impl.QueryableEntry;
 
@@ -53,6 +54,12 @@ public interface BPlusTree<T extends QueryableEntry> extends Disposable {
      * @return the iterator of entries in the range
      */
     Iterator<T> lookup(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive);
+
+    /**
+     * Returns an iterator of all unique index keys in the B+tree.
+     * @return the iterator of all unique index keys
+     */
+    Iterator<Data> keys();
 
     /**
      * Removes all entries from the B+tree.

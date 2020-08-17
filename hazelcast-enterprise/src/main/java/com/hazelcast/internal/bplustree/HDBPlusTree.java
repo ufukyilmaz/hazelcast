@@ -173,7 +173,8 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
                         BPlusTreeKeyAccessor keyAccessor,
                         MapEntryFactory<T> entryFactory,
                         int nodeSize,
-                        int btreeScanBatchSize) {
+                        int btreeScanBatchSize,
+                        EntrySlotPayload entrySlotPayload) {
         if (nodeSize <= 0 || !isPowerOfTwo(nodeSize)) {
             throw new IllegalArgumentException("Illegal node size " + nodeSize
                     + ". Node size must be a power of two");
@@ -193,9 +194,9 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
         NodeSplitStrategy splitStrategy = new DefaultNodeSplitStrategy();
 
         this.innerNodeAccessor = new HDBTreeInnerNodeAccessor(lockManager, ess, keyComparator,
-                keyAccessor, keyAllocator, btreeAllocator, nodeSize, splitStrategy);
+                keyAccessor, keyAllocator, btreeAllocator, nodeSize, splitStrategy, entrySlotPayload);
         this.leafNodeAccessor = new HDBTreeLeafNodeAccessor(lockManager, ess, keyComparator,
-                keyAccessor, keyAllocator, btreeAllocator, nodeSize, splitStrategy);
+                keyAccessor, keyAllocator, btreeAllocator, nodeSize, splitStrategy, entrySlotPayload);
         LockingContext lockingContext = getLockingContext();
         rootAddr = innerNodeAccessor.newNodeLocked(lockingContext);
         createEmptyTree(lockingContext);
@@ -209,12 +210,12 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
                                                                BPlusTreeKeyComparator keyComparator,
                                                                BPlusTreeKeyAccessor keyAccessor,
                                                                MapEntryFactory<T> entryFactory,
-                                                               int nodeSize) {
+                                                               int nodeSize,
+                                                               EntrySlotPayload entrySlotPayload) {
         int stripesCount = nextPowerOfTwo(Runtime.getRuntime().availableProcessors() * 4);
         LockManager lockManager = new HDLockManager(stripesCount);
         return new HDBPlusTree(ess, keyAllocator, btreeAllocator, lockManager, keyComparator,
-                keyAccessor, entryFactory, nodeSize,
-                DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE);
+                keyAccessor, entryFactory, nodeSize, DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE, entrySlotPayload);
     }
 
     @SuppressWarnings("checkstyle:ParameterNumber")
@@ -225,9 +226,10 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
                                                                BPlusTreeKeyAccessor keyAccessor,
                                                                MapEntryFactory<T> entryFactory,
                                                                int nodeSize,
-                                                               int rangeScanBatchSize) {
+                                                               int rangeScanBatchSize,
+                                                               EntrySlotPayload entrySlotPayload) {
         return new HDBPlusTree(ess, keyAllocator, btreeAllocator, lockManager, keyComparator,
-                keyAccessor, entryFactory, nodeSize, rangeScanBatchSize);
+                keyAccessor, entryFactory, nodeSize, rangeScanBatchSize, entrySlotPayload);
     }
 
     private void createEmptyTree(LockingContext lockingContext) {
@@ -282,7 +284,8 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
     public NativeMemoryData insert(Comparable indexKey, NativeMemoryData entryKey, MemoryBlock value) {
         LockingContext lockingContext = getLockingContext();
         try {
-            return insert(indexKey, entryKey, value, lockingContext);
+            Comparable indexKey0 = getKeyComparator().wrapIndexKey(indexKey);
+            return insert(indexKey0, entryKey, value, lockingContext);
         } catch (Throwable e) {
             releaseLocks(lockingContext);
             throw e;
@@ -563,7 +566,8 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
     public NativeMemoryData remove(Comparable indexKey, NativeMemoryData entryKey) {
         LockingContext lockingContext = getLockingContext();
         try {
-            return remove(indexKey, entryKey, lockingContext);
+            Comparable indexKey0 = getKeyComparator().wrapIndexKey(indexKey);
+            return remove(indexKey0, entryKey, lockingContext);
         } catch (Throwable e) {
             releaseLocks(lockingContext);
             throw e;
@@ -796,8 +800,9 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
 
         LockingContext lockingContext = getLockingContext();
         try {
-            EntryIterator entryIterator = lookup0(indexKey, null, true,
-                    indexKey, true, false, lockingContext);
+            Comparable indexKey0 = getKeyComparator().wrapIndexKey(indexKey);
+            EntryIterator entryIterator = lookup0(indexKey0, null, true,
+                    indexKey0, true, false, lockingContext);
             return batchIterator(entryIterator, LOOKUP_INITIAL_BUFFER_SIZE);
         } catch (Throwable e) {
             releaseLocks(lockingContext);
@@ -811,9 +816,11 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
     public Iterator<T> lookup(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive) {
         LockingContext lockingContext = getLockingContext();
         try {
+            Comparable from0 = getKeyComparator().wrapIndexKey(from);
+            Comparable to0 = getKeyComparator().wrapIndexKey(to);
             Data fromEntryKey = fromInclusive ? null : PLUS_INFINITY_ENTRY_KEY;
-            EntryIterator entryIterator = lookup0(from, fromEntryKey, fromInclusive,
-                    to, toInclusive, false, lockingContext);
+            EntryIterator entryIterator = lookup0(from0, fromEntryKey, fromInclusive,
+                    to0, toInclusive, false, lockingContext);
             return batchIterator(entryIterator, btreeScanBatchSize);
         } catch (Throwable e) {
             releaseLocks(lockingContext);
@@ -833,6 +840,21 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
             return new BatchingEntryIterator(it, entryBatch);
         } else {
             return it;
+        }
+    }
+
+    @Override
+    public Iterator<Data> keys() {
+        LockingContext lockingContext = getLockingContext();
+        try {
+            EntryIterator entryIterator = lookup0(null, null, true, null, true,
+                    false, lockingContext);
+            return new KeyIterator(entryIterator);
+        } catch (Throwable e) {
+            releaseLocks(lockingContext);
+            throw e;
+        } finally {
+            assert lockingContext.hasNoLocks();
         }
     }
 
@@ -1097,8 +1119,9 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
 
                 Data lastEntryKeyData = lastEntry.getKeyData();
                 Comparable lastIndexKey = ess.toObject(this.lastIndexKey);
+                Comparable wrappedLastIndexKey = getKeyComparator().wrapIndexKey(lastIndexKey);
 
-                EntryIterator resyncedIt = lookup0(lastIndexKey, lastEntryKeyData, false, to, toInclusive,
+                EntryIterator resyncedIt = lookup0(wrappedLastIndexKey, lastEntryKeyData, false, to, toInclusive,
                         true, lockingContext);
 
                 if (resyncedIt.nextSlot == NULL_SLOT) {
@@ -1275,6 +1298,47 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
 
         void clear() {
             values.clear();
+        }
+    }
+
+    /**
+     * Wraps the entries iterator and returns only index keys skipping duplicates.
+     */
+    private class KeyIterator implements Iterator<Data> {
+
+        private final EntryIterator entryIterator;
+        private Data lastKey;
+
+        KeyIterator(EntryIterator entryIterator) {
+            this.entryIterator = entryIterator;
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (lastKey == null) {
+                return entryIterator.hasNext();
+            } else {
+                while (entryIterator.hasNext()) {
+
+                    Data indexKeyData = entryIterator.nextIndexKey;
+                    if (!indexKeyData.equals(lastKey)) {
+                        return true;
+                    }
+                    // skip the duplicate
+                    entryIterator.next();
+                }
+                return false;
+            }
+        }
+
+        @Override
+        public Data next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            entryIterator.next();
+            lastKey = entryIterator.lastIndexKey;
+            return lastKey;
         }
     }
 
@@ -1468,6 +1532,10 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
         if (isDisposed) {
             throw new HazelcastException("Disposed B+tree cannot be accessed.");
         }
+    }
+
+    BPlusTreeKeyComparator getKeyComparator() {
+        return leafNodeAccessor.keyComparator;
     }
 
     // For unit testing only

@@ -1,5 +1,6 @@
 package com.hazelcast.internal.bplustree;
 
+import com.hazelcast.config.IndexType;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.FreeMemoryChecker;
@@ -18,16 +19,20 @@ import com.hazelcast.query.impl.CachedQueryEntry;
 import com.hazelcast.query.impl.QueryableEntry;
 import com.hazelcast.query.impl.getters.Extractors;
 import com.hazelcast.test.HazelcastTestSupport;
+import org.apache.commons.lang3.tuple.Triple;
 import org.junit.After;
 import org.junit.Before;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
+import static com.hazelcast.config.IndexType.SORTED;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_MIN_BLOCK_SIZE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_PAGE_SIZE;
@@ -44,6 +49,7 @@ import static com.hazelcast.internal.serialization.DataType.HEAP;
 import static com.hazelcast.internal.serialization.DataType.NATIVE;
 import static com.hazelcast.internal.util.QuickMath.nextPowerOfTwo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class BPlusTreeTestSupport extends HazelcastTestSupport {
@@ -63,6 +69,7 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
     protected VersionedLong maSize = new VersionedLong();
 
     protected HazelcastMemoryManager keyAllocator;
+    protected BPlusTreeKeyComparator keyComparator;
     protected EnterpriseSerializationService ess;
 
     @Before
@@ -74,17 +81,17 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
         MemoryAllocator indexAllocator = poolingMemoryManager.getGlobalIndexAllocator();
         this.ess = getSerializationService();
         MapEntryFactory factory = new OnHeapEntryFactory(ess, null);
-        BPlusTreeKeyComparator keyComparator = newBPlusTreeKeyComparator();
+        keyComparator = newBPlusTreeKeyComparator();
         BPlusTreeKeyAccessor keyAccessor = newBPlusTreeKeyAccessor();
         NodeSplitStrategy splitStrategy = new DefaultNodeSplitStrategy();
         allocatorCallback = new AllocatorCallback(maAllocateAddr, maFreeAddr, maSize);
         delegatingIndexAllocator = newDelegatingIndexMemoryAllocator(indexAllocator, allocatorCallback);
         LockManager lockManager = newLockManager();
         btree = newBPlusTree(ess, keyAllocator, delegatingIndexAllocator, lockManager, keyComparator, keyAccessor,
-                factory, getNodeSize(), DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE);
+                factory, getNodeSize(), DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE, newEntrySlotPayload());
         rootAddr = btree.getRoot();
-        this.innerNodeAccessor = new HDBTreeInnerNodeAccessor(lockManager, ess, keyComparator, keyAccessor, keyAllocator, delegatingIndexAllocator, getNodeSize(), splitStrategy);
-        this.leafNodeAccessor = new HDBTreeLeafNodeAccessor(lockManager, ess, keyComparator, keyAccessor, keyAllocator, delegatingIndexAllocator, getNodeSize(), splitStrategy);
+        this.innerNodeAccessor = new HDBTreeInnerNodeAccessor(lockManager, ess, keyComparator, keyAccessor, keyAllocator, delegatingIndexAllocator, getNodeSize(), splitStrategy, newEntrySlotPayload());
+        this.leafNodeAccessor = new HDBTreeLeafNodeAccessor(lockManager, ess, keyComparator, keyAccessor, keyAllocator, delegatingIndexAllocator, getNodeSize(), splitStrategy, newEntrySlotPayload());
     }
 
     int getNodeSize() {
@@ -107,9 +114,10 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
                              BPlusTreeKeyAccessor keyAccessor,
                              MapEntryFactory entryFactory,
                              int nodeSize,
-                             int indexScanBatchSize) {
+                             int indexScanBatchSize,
+                             EntrySlotPayload entrySlotPayload) {
         return HDBPlusTree.newHDBTree(ess, keyAllocator, indexAllocator, lockManager, keyComparator, keyAccessor,
-                entryFactory, nodeSize, indexScanBatchSize);
+                entryFactory, nodeSize, indexScanBatchSize, entrySlotPayload);
     }
 
     DelegatingMemoryAllocator newDelegatingIndexMemoryAllocator(MemoryAllocator indexAllocator, AllocatorCallback callback) {
@@ -126,6 +134,10 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
 
     BPlusTreeKeyAccessor newBPlusTreeKeyAccessor() {
         return new DefaultBPlusTreeKeyAccessor(ess);
+    }
+
+    EntrySlotPayload newEntrySlotPayload() {
+        return new EntrySlotNoPayload();
     }
 
     @After
@@ -206,6 +218,18 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
             prevKey = key;
         }
     }
+
+    void assertKeysSortedByHash(long nodeAddr, HDBTreeNodeBaseAccessor nodeAccessor) {
+        Long prevHash = null;
+        for (int i = 0; i < getKeysCount(nodeAddr); ++i) {
+            Long hash = nodeAccessor.getPayload(nodeAddr, i);
+            if (prevHash != null) {
+                assertTrue(prevHash <= hash);
+            }
+            prevHash = hash;
+        }
+    }
+
 
     final class DelegatingMemoryAllocator implements MemoryAllocator {
 
@@ -385,6 +409,47 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
         btree.setNodeSplitStrategy(new DefaultNodeSplitStrategy());
     }
 
+    void insertKeysCompact(int count, IndexType indexType) {
+        if (indexType == SORTED) {
+            insertKeysWithStrategy(count, new EmptyNewNodeSplitStrategy());
+        } else {
+            insertHashedKeysCompact(count);
+        }
+    }
+
+    void insertHashedKeysCompact(int count) {
+        TreeMap<Triple, Triple> keys = new TreeMap<>((triple1, triple2) -> {
+            long hash1 = ((NativeMemoryData) triple1.getLeft()).hash64();
+            long hash2 = ((NativeMemoryData) triple2.getLeft()).hash64();
+            NativeMemoryData entryKeyData1 = (NativeMemoryData) triple1.getMiddle();
+            NativeMemoryData entryKeyData2 = (NativeMemoryData) triple2.getMiddle();
+            if (hash1 == hash2) {
+                return keyComparator.compareSerializedKeys(entryKeyData1, entryKeyData2);
+            } else {
+                return hash1 < hash2 ? -1 : 1;
+            }
+        });
+        for (int i = 0; i < count; ++i) {
+            Integer indexKey = i;
+            String mapKey = "Name_" + i;
+            String value = "Value_" + i;
+            NativeMemoryData indexKeyData = toNativeData(indexKey);
+            NativeMemoryData mapKeyData = toNativeData(mapKey);
+            NativeMemoryData valueData = toNativeData(value);
+            Triple triple = Triple.of(indexKeyData, mapKeyData, valueData);
+            keys.put(triple, triple);
+        }
+
+        btree.setNodeSplitStrategy(new EmptyNewNodeSplitStrategy());
+        for (Triple triple : keys.keySet()) {
+            Integer indexKey = ess.toObject(triple.getLeft());
+            NativeMemoryData mapKeyData = (NativeMemoryData) triple.getMiddle();
+            NativeMemoryData valueData = (NativeMemoryData) triple.getRight();
+            btree.insert(indexKey, mapKeyData, valueData);
+        }
+        btree.setNodeSplitStrategy(new DefaultNodeSplitStrategy());
+    }
+
     NativeMemoryData toNativeData(Object value) {
         return ess.toData(value, NATIVE);
     }
@@ -400,6 +465,23 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
         NativeMemoryData mapKeyData = toNativeData(mapKey);
         NativeMemoryData valueData = toNativeData(value);
         btree.insert(indexKey, mapKeyData, valueData);
+    }
+
+    void insertKey(Comparable key) {
+        String mapKey = "Name_" + key.toString();
+        String value = "Value_" + key.toString();
+        NativeMemoryData mapKeyData = toNativeData(mapKey);
+        NativeMemoryData valueData = toNativeData(value);
+        btree.insert(key, mapKeyData, valueData);
+    }
+
+    void assertHasKey(Comparable key) {
+        Iterator<Map.Entry> it = btree.lookup(key);
+        assertTrue(it.hasNext());
+        Map.Entry entry = it.next();
+        assertEquals("Name_" + key, entry.getKey().toString());
+        assertEquals("Value_" + key, entry.getValue().toString());
+        assertFalse(it.hasNext());
     }
 
     NativeMemoryData removeKey(int index) {
@@ -513,5 +595,15 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
         for (Long nodeAddr : indexAllocator.consumeNodeAddressesFromQueue()) {
             assertEquals(0, getKeysCount(nodeAddr));
         }
+    }
+
+    int queryUniqueIndexKeysCount() {
+        Iterator it = btree.keys();
+        int count = 0;
+        while (it.hasNext()) {
+            it.next();
+            count++;
+        }
+        return count;
     }
 }

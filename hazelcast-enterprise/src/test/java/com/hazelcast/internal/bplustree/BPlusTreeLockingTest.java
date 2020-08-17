@@ -78,9 +78,10 @@ public class BPlusTreeLockingTest extends BPlusTreeTestSupport {
                              BPlusTreeKeyAccessor keyAccessor,
                              MapEntryFactory entryFactory,
                              int nodeSize,
-                             int indexScanBatchSize0) {
+                             int indexScanBatchSize0,
+                             EntrySlotPayload entrySlotPayload) {
         return HDBPlusTree.newHDBTree(ess, keyAllocator, indexAllocator, lockManager, keyComparator, keyAccessor,
-                entryFactory, nodeSize, indexScanBatchSize);
+                entryFactory, nodeSize, indexScanBatchSize, entrySlotPayload);
     }
 
     @Test

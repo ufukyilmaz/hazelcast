@@ -26,9 +26,10 @@ final class HDBTreeLeafNodeAccessor extends HDBTreeNodeBaseAccessor {
                             MemoryAllocator keyAllocator,
                             MemoryAllocator btreeAllocator,
                             int nodeSize,
-                            NodeSplitStrategy nodeSplitStrategy) {
+                            NodeSplitStrategy nodeSplitStrategy,
+                            EntrySlotPayload entrySlotPayload) {
         super(lockManager, ess, keyComparator, keyAccessor, keyAllocator, btreeAllocator,
-                nodeSize, nodeSplitStrategy);
+                nodeSize, nodeSplitStrategy, entrySlotPayload);
     }
 
     @Override
@@ -47,7 +48,7 @@ final class HDBTreeLeafNodeAccessor extends HDBTreeNodeBaseAccessor {
     @Override
     boolean isNodeFull(long nodeAddr) {
         int keysCount = getKeysCount(nodeAddr);
-        return (nodeSize - getOffsetEntries() - keysCount * SLOT_ENTRY_SIZE) < SLOT_ENTRY_SIZE;
+        return (nodeSize - getOffsetEntries() - keysCount * entrySlotSize) < entrySlotSize;
     }
 
     long getBackNode(long nodeAddr) {
@@ -151,12 +152,13 @@ final class HDBTreeLeafNodeAccessor extends HDBTreeNodeBaseAccessor {
 
         // Shift the slots to make space for the new entry
         AMEM.copyMemory(getSlotAddr(nodeAddr, slot), getSlotAddr(nodeAddr, slot + 1),
-                (keysCount - slot) * SLOT_ENTRY_SIZE);
+                (keysCount - slot) * entrySlotSize);
 
         // Set the new slot
         setIndexKey(nodeAddr, slot, indexKeyAddr);
         setEntryKey(nodeAddr, slot, entryKey);
         setValue(nodeAddr, slot, value);
+        setPayload(nodeAddr, slot, indexKeyAddr);
 
         setKeysCount(nodeAddr, keysCount + 1);
         incSequenceCounter(nodeAddr);
@@ -201,7 +203,7 @@ final class HDBTreeLeafNodeAccessor extends HDBTreeNodeBaseAccessor {
             oldValue = getValue(nodeAddr, mid);
             long oldIndexKeyAddr = getIndexKeyAddr(nodeAddr, mid);
             AMEM.copyMemory(getSlotAddr(nodeAddr, mid + 1), getSlotAddr(nodeAddr, mid),
-                    (keysCount - mid - 1) * SLOT_ENTRY_SIZE);
+                    (keysCount - mid - 1) * entrySlotSize);
             setKeysCount(nodeAddr, keysCount - 1);
             incSequenceCounter(nodeAddr);
             keyAccessor.disposeNativeData(oldIndexKeyAddr, getKeyAllocator());
@@ -225,7 +227,7 @@ final class HDBTreeLeafNodeAccessor extends HDBTreeNodeBaseAccessor {
         keysCount -= newLeafKeysCount;
         setKeysCount(newLeaf, newLeafKeysCount);
         setKeysCount(nodeAddr, keysCount);
-        AMEM.copyMemory(getSlotAddr(nodeAddr, keysCount), getSlotAddr(newLeaf, 0), newLeafKeysCount * SLOT_ENTRY_SIZE);
+        AMEM.copyMemory(getSlotAddr(nodeAddr, keysCount), getSlotAddr(newLeaf, 0), newLeafKeysCount * entrySlotSize);
         incSequenceCounter(nodeAddr);
         incSequenceCounter(newLeaf);
         return newLeaf;
@@ -256,6 +258,7 @@ final class HDBTreeLeafNodeAccessor extends HDBTreeNodeBaseAccessor {
     }
 
     private long clonedIndexKeyAddr(Comparable indexKey) {
-        return keyAccessor.convertToNativeData(indexKey, getKeyAllocator());
+        Comparable unwrappedIndexKey = keyComparator.unwrapIndexKey(indexKey);
+        return keyAccessor.convertToNativeData(unwrappedIndexKey, getKeyAllocator());
     }
 }

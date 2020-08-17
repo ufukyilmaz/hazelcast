@@ -53,8 +53,10 @@ public class HDGlobalIndexImpl extends AbstractIndex {
 
         switch (config.getType()) {
             case SORTED:
-            case HASH:
                 return new HDOrderedConcurrentIndexStore(copyBehavior,
+                        ess, wrapedKeyAllocator, wrapedIndexAllocator, entryFactory, nodeSize);
+            case HASH:
+                return new HDUnorderedConcurrentIndexStore(copyBehavior,
                         ess, wrapedKeyAllocator, wrapedIndexAllocator, entryFactory, nodeSize);
             case BITMAP:
                 throw new IllegalArgumentException("Bitmap indexes are not supported by NATIVE storage");

@@ -37,12 +37,12 @@ public class BPlusTreeLimitsTest extends BPlusTreeTestSupport {
         MapEntryFactory factory = new OnHeapEntryFactory(ess, null);
         assertThrows(IllegalArgumentException.class, () -> {
             btree = HDBPlusTree.newHDBTree(ess, keyAllocator, delegatingIndexAllocator,
-                    keyComparator, keyAccessor, factory, MAX_NODE_SIZE + 1);
+                    keyComparator, keyAccessor, factory, MAX_NODE_SIZE + 1, new EntrySlotNoPayload());
         });
 
         assertThrows(IllegalArgumentException.class, () -> {
             btree = HDBPlusTree.newHDBTree(ess, keyAllocator, delegatingIndexAllocator,
-                    keyComparator, keyAccessor, factory, MIN_NODE_SIZE / 2);
+                    keyComparator, keyAccessor, factory, MIN_NODE_SIZE / 2, new EntrySlotNoPayload());
         });
     }
 
@@ -54,7 +54,7 @@ public class BPlusTreeLimitsTest extends BPlusTreeTestSupport {
         MapEntryFactory factory = new OnHeapEntryFactory(ess, null);
         assertThrows(IllegalArgumentException.class, () -> {
             btree = HDBPlusTree.newHDBTree(ess, keyAllocator, delegatingIndexAllocator,
-                    lockManager, keyComparator, keyAccessor, factory, MAX_NODE_SIZE, -1);
+                    lockManager, keyComparator, keyAccessor, factory, MAX_NODE_SIZE, -1, new EntrySlotNoPayload());
         });
     }
 

@@ -1,7 +1,10 @@
 package com.hazelcast.internal.bplustree;
 
+import com.hazelcast.config.IndexType;
+import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.query.impl.QueryableEntry;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -22,6 +25,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.hazelcast.config.IndexType.HASH;
+import static com.hazelcast.config.IndexType.SORTED;
 import static com.hazelcast.internal.bplustree.HDBPlusTree.DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -40,15 +45,18 @@ public class BPlusTreeConcurrencyTest extends BPlusTreeTestSupport {
     @Parameterized.Parameter(1)
     public int indexScanBatchSize;
 
-    @Parameterized.Parameters(name = "nodeSize:{0}, rangeScanBatchSize: {1}")
+    @Parameterized.Parameter(2)
+    public IndexType indexType;
+
+    @Parameterized.Parameters(name = "nodeSize:{0}, rangeScanBatchSize: {1}, indexType: {2}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {256, 0},
-                {512, DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE},
-                {1024, 0},
-                {2048, DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE},
-                {4096, 0},
-                {8192, DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE}
+                {256, 0, SORTED},
+                {512, DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE, SORTED},
+                {1024, 0, HASH},
+                {2048, DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE, HASH},
+                {4096, 0, SORTED},
+                {8192, DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE, SORTED}
         });
     }
 
@@ -58,6 +66,33 @@ public class BPlusTreeConcurrencyTest extends BPlusTreeTestSupport {
     @Override
     int getNodeSize() {
         return nodeSize;
+    }
+
+    @SuppressWarnings("checkstyle:ParameterNumber")
+    @Override
+    HDBPlusTree newBPlusTree(EnterpriseSerializationService ess,
+                             MemoryAllocator keyAllocator,
+                             MemoryAllocator indexAllocator, LockManager lockManager,
+                             BPlusTreeKeyComparator keyComparator,
+                             BPlusTreeKeyAccessor keyAccessor,
+                             MapEntryFactory entryFactory,
+                             int nodeSize,
+                             int indexScanBatchSize0,
+                             EntrySlotPayload entrySlotPayload) {
+        return HDBPlusTree.newHDBTree(ess, keyAllocator, indexAllocator, lockManager, keyComparator, keyAccessor,
+                entryFactory, nodeSize, indexScanBatchSize, entrySlotPayload);
+    }
+
+    @Override
+    BPlusTreeKeyComparator newBPlusTreeKeyComparator() {
+        return indexType == HASH ? new HashIndexBPlusTreeKeyComparator(ess)
+                : new DefaultBPlusTreeKeyComparator(ess);
+    }
+
+    @Override
+    EntrySlotPayload newEntrySlotPayload() {
+        return indexType == HASH ? new HashIndexEntrySlotPayload()
+                : new EntrySlotNoPayload();
     }
 
     @Before
@@ -279,7 +314,9 @@ public class BPlusTreeConcurrencyTest extends BPlusTreeTestSupport {
                             mapKeys.add(entry.getKey());
                             count++;
                         }
-                        assertTrue(count <= keysCount - startIndex);
+                        if (indexType == SORTED) {
+                            assertTrue(count <= keysCount - startIndex);
+                        }
                     }
                 } catch (Throwable t) {
                     exception.compareAndSet(null, t);
@@ -294,6 +331,7 @@ public class BPlusTreeConcurrencyTest extends BPlusTreeTestSupport {
         if (exception.get() != null) {
             exception.get().printStackTrace(System.err);
         }
+
         assertNull(exception.get());
 
         assertEquals(keysCount, queryKeysCount());

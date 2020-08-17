@@ -20,8 +20,10 @@ final class HDBTreeInnerNodeAccessor extends HDBTreeNodeBaseAccessor {
     HDBTreeInnerNodeAccessor(LockManager lockManager, EnterpriseSerializationService ess, BPlusTreeKeyComparator keyComparator,
                              BPlusTreeKeyAccessor keyAccessor, MemoryAllocator keyAllocator,
                              MemoryAllocator btreeAllocator,
-                             int nodeSize, NodeSplitStrategy nodeSplitStrategy) {
-        super(lockManager, ess, keyComparator, keyAccessor, keyAllocator, btreeAllocator, nodeSize, nodeSplitStrategy);
+                             int nodeSize, NodeSplitStrategy nodeSplitStrategy,
+                             EntrySlotPayload entrySlotPayload) {
+        super(lockManager, ess, keyComparator, keyAccessor, keyAllocator, btreeAllocator, nodeSize,
+                nodeSplitStrategy, entrySlotPayload);
     }
 
     @Override
@@ -32,7 +34,7 @@ final class HDBTreeInnerNodeAccessor extends HDBTreeNodeBaseAccessor {
     @Override
     boolean isNodeFull(long nodeAddr) {
         int keysCount = getKeysCount(nodeAddr);
-        return (nodeSize - getOffsetEntries() - (keysCount + 1) * SLOT_ENTRY_SIZE) < SLOT_ENTRY_SIZE;
+        return (nodeSize - getOffsetEntries() - (keysCount + 1) * entrySlotSize) < entrySlotSize;
     }
 
     /**
@@ -98,7 +100,7 @@ final class HDBTreeInnerNodeAccessor extends HDBTreeNodeBaseAccessor {
         setNodeLevel(newInnerAddr, level);
 
         AMEM.copyMemory(getSlotAddr(nodeAddr, keysCount + 1), getSlotAddr(newInnerAddr, 0),
-                (newInnerKeysCount + 1) * SLOT_ENTRY_SIZE);
+                (newInnerKeysCount + 1) * entrySlotSize);
 
         incSequenceCounter(nodeAddr);
         incSequenceCounter(newInnerAddr);
@@ -117,6 +119,7 @@ final class HDBTreeInnerNodeAccessor extends HDBTreeNodeBaseAccessor {
         setIndexKey(nodeAddr, 0, NULL_ADDRESS);
         setEntryKey(nodeAddr, 0, NULL_ADDRESS);
         setValue(nodeAddr, 0, childAddr);
+        setPayload(nodeAddr, 0, NULL_ADDRESS);
         incSequenceCounter(nodeAddr);
     }
 
@@ -133,15 +136,17 @@ final class HDBTreeInnerNodeAccessor extends HDBTreeNodeBaseAccessor {
         int keysCount = getKeysCount(nodeAddr);
         NativeMemoryData entryKeyData = new NativeMemoryData().reset(entryKeyAddr);
         Comparable indexKey = keyAccessor.convertToObject(indexKeyAddr);
+        Comparable wrappedIndexKey = keyComparator.wrapIndexKey(indexKey);
 
-        int slot = lowerBound(nodeAddr, indexKey, entryKeyData);
+        int slot = lowerBound(nodeAddr, wrappedIndexKey, entryKeyData);
 
-        AMEM.copyMemory(getSlotAddr(nodeAddr, slot), getSlotAddr(nodeAddr, slot + 1), (keysCount - slot + 1) * SLOT_ENTRY_SIZE);
+        AMEM.copyMemory(getSlotAddr(nodeAddr, slot), getSlotAddr(nodeAddr, slot + 1), (keysCount - slot + 1) * entrySlotSize);
 
         setIndexKey(nodeAddr, slot, indexKeyAddr);
         setEntryKey(nodeAddr, slot, entryKeyAddr);
         setValue(nodeAddr, slot, getValue(nodeAddr, slot + 1));
         setValue(nodeAddr, slot + 1, childAddr);
+        setPayload(nodeAddr, slot, indexKeyAddr);
         setKeysCount(nodeAddr, keysCount + 1);
         incSequenceCounter(nodeAddr);
     }
@@ -169,7 +174,7 @@ final class HDBTreeInnerNodeAccessor extends HDBTreeNodeBaseAccessor {
             disposeSlotData(nodeAddr, slot - 1);
         }
 
-        AMEM.copyMemory(getSlotAddr(nodeAddr, slot + 1), getSlotAddr(nodeAddr, slot), (keysCount - slot) * SLOT_ENTRY_SIZE);
+        AMEM.copyMemory(getSlotAddr(nodeAddr, slot + 1), getSlotAddr(nodeAddr, slot), (keysCount - slot) * entrySlotSize);
         setKeysCount(nodeAddr, keysCount - 1);
         incSequenceCounter(nodeAddr);
         assert getValueAddr(nodeAddr, 0) != NULL_ADDRESS;
@@ -183,6 +188,7 @@ final class HDBTreeInnerNodeAccessor extends HDBTreeNodeBaseAccessor {
         ess.disposeData(oldEntryKeyData, getKeyAllocator());
         setIndexKey(nodeAddr, slot, NULL_ADDRESS);
         setEntryKey(nodeAddr, slot, NULL_ADDRESS);
+        setPayload(nodeAddr, slot, NULL_ADDRESS);
     }
 
     /**

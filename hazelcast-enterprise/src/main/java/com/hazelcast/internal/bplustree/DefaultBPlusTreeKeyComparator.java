@@ -20,7 +20,7 @@ public class DefaultBPlusTreeKeyComparator implements BPlusTreeKeyComparator {
     }
 
     @Override
-    public int compare(Comparable left, long rightAddress) {
+    public int compare(Comparable left, long rightAddress, long rightPayload) {
         NativeMemoryData rightData = rightDataHolder.get();
 
         rightData.reset(rightAddress);

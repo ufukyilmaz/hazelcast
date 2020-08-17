@@ -35,7 +35,7 @@ public class BPlusTreeLeafAccessorTest extends BPlusTreeTestSupport {
         super.setUp();
         leafAccessor = new HDBTreeLeafNodeAccessor(MOCKED_LOCK_MANAGER, ess, new DefaultBPlusTreeKeyComparator(ess),
                 new DefaultBPlusTreeKeyAccessor(ess), keyAllocator, delegatingIndexAllocator,
-                NODE_SIZE, new DefaultNodeSplitStrategy());
+                NODE_SIZE, new DefaultNodeSplitStrategy(), new EntrySlotNoPayload());
     }
 
     @Test

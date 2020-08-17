@@ -6,7 +6,7 @@ package com.hazelcast.internal.bplustree;
 public final class BPlusTreeInlinedLongComparator implements BPlusTreeKeyComparator {
 
     @Override
-    public int compare(Comparable left, long rightAddress) {
+    public int compare(Comparable left, long rightAddress, long rightPayload) {
         // Right key is never considered as "null"
 
         assert left == null || left instanceof Long : left;

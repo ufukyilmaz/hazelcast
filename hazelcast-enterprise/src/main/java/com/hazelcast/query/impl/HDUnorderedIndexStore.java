@@ -107,33 +107,7 @@ class HDUnorderedIndexStore extends HDExpirableIndexStore {
 
     @Override
     public Comparable canonicalizeScalarForStorage(Comparable value) {
-        // Assuming off-heap overhead of 13 bytes (12 for the NativeMemoryData
-        // and 1 for the pooling manager) and allocation granularity by powers
-        // of 2, there is no point in trying to represent a value in less than 2
-        // bytes.
-
-        if (!(value instanceof Number)) {
-            return value;
-        }
-
-        Class clazz = value.getClass();
-
-        Number number = (Number) value;
-
-        if (Numbers.isDoubleRepresentable(clazz)) {
-            double doubleValue = number.doubleValue();
-
-            long longValue = number.longValue();
-            if (Numbers.equalDoubles(doubleValue, (double) longValue)) {
-                return canonicalizeLongRepresentable(longValue);
-            } else if (clazz == Float.class) {
-                return doubleValue;
-            }
-        } else if (Numbers.isLongRepresentable(clazz)) {
-            return canonicalizeLongRepresentable(number.longValue());
-        }
-
-        return value;
+        return canonicalizeScalarForStorage0(value);
     }
 
     @Override
@@ -239,24 +213,55 @@ class HDUnorderedIndexStore extends HDExpirableIndexStore {
         records.dispose();
     }
 
-    private Comparable canonicalize(Comparable value) {
+    static Comparable canonicalize(Comparable value) {
         if (value instanceof CompositeValue) {
             Comparable[] components = ((CompositeValue) value).getComponents();
             for (int i = 0; i < components.length; ++i) {
-                components[i] = canonicalizeScalarForStorage(components[i]);
+                components[i] = canonicalizeScalarForStorage0(components[i]);
             }
             return value;
         } else {
-            return canonicalizeScalarForStorage(value);
+            return canonicalizeScalarForStorage0(value);
         }
     }
 
-    private static Comparable canonicalizeLongRepresentable(long value) {
+    static Comparable canonicalizeLongRepresentable(long value) {
         if (value == (long) (short) value) {
             return (short) value;
         } else {
             return value;
         }
     }
+
+    static Comparable canonicalizeScalarForStorage0(Comparable value) {
+        // Assuming off-heap overhead of 13 bytes (12 for the NativeMemoryData
+        // and 1 for the pooling manager) and allocation granularity by powers
+        // of 2, there is no point in trying to represent a value in less than 2
+        // bytes.
+
+        if (!(value instanceof Number)) {
+            return value;
+        }
+
+        Class clazz = value.getClass();
+
+        Number number = (Number) value;
+
+        if (Numbers.isDoubleRepresentable(clazz)) {
+            double doubleValue = number.doubleValue();
+
+            long longValue = number.longValue();
+            if (Numbers.equalDoubles(doubleValue, (double) longValue)) {
+                return canonicalizeLongRepresentable(longValue);
+            } else if (clazz == Float.class) {
+                return doubleValue;
+            }
+        } else if (Numbers.isLongRepresentable(clazz)) {
+            return canonicalizeLongRepresentable(number.longValue());
+        }
+
+        return value;
+    }
+
 
 }

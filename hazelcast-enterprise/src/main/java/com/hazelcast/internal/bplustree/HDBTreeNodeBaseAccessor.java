@@ -21,8 +21,6 @@ import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 @SuppressWarnings("checkstyle:MethodCount")
 abstract class HDBTreeNodeBaseAccessor {
 
-    static final int SLOT_ENTRY_SIZE = 24;
-
     static final int OFFSET_LOCK_STATE = 0;
     static final int OFFSET_SEQUENCE_NUMBER = OFFSET_LOCK_STATE + 8;
     static final int OFFSET_LEVEL = OFFSET_SEQUENCE_NUMBER + 8;
@@ -42,11 +40,14 @@ abstract class HDBTreeNodeBaseAccessor {
     final MemoryAllocator keyAllocator;
     final MemoryAllocator btreeAllocator;
     final int nodeSize;
+    final EntrySlotPayload entrySlotPayload;
+    final int entrySlotSize;
     NodeSplitStrategy nodeSplitStrategy;
 
+    @SuppressWarnings("checkstyle:MagicNumber")
     HDBTreeNodeBaseAccessor(LockManager lockManager, EnterpriseSerializationService ess, BPlusTreeKeyComparator keyComparator,
                             BPlusTreeKeyAccessor keyAccessor, MemoryAllocator keyAllocator, MemoryAllocator btreeAllocator,
-                            int nodeSize, NodeSplitStrategy nodeSplitStrategy) {
+                            int nodeSize, NodeSplitStrategy nodeSplitStrategy, EntrySlotPayload entrySlotPayload) {
         this.lockManager = lockManager;
         this.ess = ess;
         this.keyComparator = keyComparator;
@@ -55,6 +56,13 @@ abstract class HDBTreeNodeBaseAccessor {
         this.btreeAllocator = btreeAllocator;
         this.nodeSize = nodeSize;
         this.nodeSplitStrategy = nodeSplitStrategy;
+        this.entrySlotPayload = entrySlotPayload;
+        // entry slot consists of
+        // - the index key address (8 bytes);
+        // - the entry key address (8 bytes);
+        // - the value address (8 bytes);
+        // - the payload.
+        this.entrySlotSize = 24 + entrySlotPayload.getPayloadSize();
     }
 
     /**
@@ -151,11 +159,11 @@ abstract class HDBTreeNodeBaseAccessor {
     }
 
     long getIndexKeyAddr(long nodeAddr, int slot) {
-        return AMEM.getLong(nodeAddr + getOffsetEntries() + (long) slot * SLOT_ENTRY_SIZE);
+        return AMEM.getLong(nodeAddr + getOffsetEntries() + (long) slot * entrySlotSize);
     }
 
     void setIndexKey(long nodeAddr, int slot, long indexKeyAddr) {
-        AMEM.putLong(nodeAddr + getOffsetEntries() + (long) slot * SLOT_ENTRY_SIZE, indexKeyAddr);
+        AMEM.putLong(nodeAddr + getOffsetEntries() + (long) slot * entrySlotSize, indexKeyAddr);
     }
 
     NativeMemoryData getEntryKey(long nodeAddr, int slot) {
@@ -164,18 +172,18 @@ abstract class HDBTreeNodeBaseAccessor {
 
     @SuppressWarnings("checkstyle:MagicNumber")
     long getEntryKeyAddr(long nodeAddr, int slot) {
-        return AMEM.getLong(nodeAddr + getOffsetEntries() + (long) slot * SLOT_ENTRY_SIZE + 8);
+        return AMEM.getLong(nodeAddr + getOffsetEntries() + (long) slot * entrySlotSize + 8);
     }
 
     @SuppressWarnings("checkstyle:MagicNumber")
     void setEntryKey(long nodeAddr, int slot, NativeMemoryData entryKey) {
-        long entryKeyAddr = nodeAddr + getOffsetEntries() + (long) slot * SLOT_ENTRY_SIZE + 8;
+        long entryKeyAddr = nodeAddr + getOffsetEntries() + (long) slot * entrySlotSize + 8;
         AMEM.putLong(entryKeyAddr, entryKey.address());
     }
 
     @SuppressWarnings("checkstyle:MagicNumber")
     void setEntryKey(long nodeAddr, int slot, long entryKeyAddr) {
-        AMEM.putLong(nodeAddr + getOffsetEntries() + (long) slot * SLOT_ENTRY_SIZE + 8, entryKeyAddr);
+        AMEM.putLong(nodeAddr + getOffsetEntries() + (long) slot * entrySlotSize + 8, entryKeyAddr);
     }
 
     NativeMemoryData getValue(long nodeAddr, int slot) {
@@ -184,18 +192,29 @@ abstract class HDBTreeNodeBaseAccessor {
 
     @SuppressWarnings("checkstyle:MagicNumber")
     long getValueAddr(long nodeAddr, int slot) {
-        return AMEM.getLong(nodeAddr + getOffsetEntries() + (long) slot * SLOT_ENTRY_SIZE + 16);
+        return AMEM.getLong(nodeAddr + getOffsetEntries() + (long) slot * entrySlotSize + 16);
+    }
+
+    @SuppressWarnings("checkstyle:MagicNumber")
+    long getPayload(long nodeAddr, int slot) {
+        long payloadAddr = nodeAddr + getOffsetEntries() + (long) slot * entrySlotSize + 24;
+        return entrySlotPayload.getPayload(payloadAddr);
     }
 
     @SuppressWarnings("checkstyle:MagicNumber")
     void setValue(long nodeAddr, int slot, MemoryBlock value) {
-        long valueAddr = nodeAddr + getOffsetEntries() + (long) slot * SLOT_ENTRY_SIZE + 16;
+        long valueAddr = nodeAddr + getOffsetEntries() + (long) slot * entrySlotSize + 16;
         AMEM.putLong(valueAddr, value.address());
     }
 
     @SuppressWarnings("checkstyle:MagicNumber")
     void setValue(long nodeAddr, int slot, long valueAddr) {
-        AMEM.putLong(nodeAddr + getOffsetEntries() + (long) slot * SLOT_ENTRY_SIZE + 16, valueAddr);
+        AMEM.putLong(nodeAddr + getOffsetEntries() + (long) slot * entrySlotSize + 16, valueAddr);
+    }
+
+    @SuppressWarnings("checkstyle:MagicNumber")
+    void setPayload(long nodeAddr, int slot, long indexKeyAddr) {
+        entrySlotPayload.setPayload(nodeAddr + getOffsetEntries() + (long) slot * entrySlotSize + 24, indexKeyAddr);
     }
 
     CompositeKeyComparison compareKeys(Comparable leftIndexKey, Data leftEntryKey, long nodeAddr, int slot) {
@@ -229,7 +248,8 @@ abstract class HDBTreeNodeBaseAccessor {
     CompositeKeyComparison compareKeys0(Comparable leftIndexKey, Data leftEntryKey, long nodeAddr, int slot,
                                        boolean cmpOnlyIndexKeyPart) {
         long rightIndexKeyAddr = getIndexKeyAddr(nodeAddr, slot);
-        int cmp = keyComparator.compare(leftIndexKey, rightIndexKeyAddr);
+        long rightPayload = getPayload(nodeAddr, slot);
+        int cmp = keyComparator.compare(leftIndexKey, rightIndexKeyAddr, rightPayload);
         if (cmp == 0 && !cmpOnlyIndexKeyPart) {
             // Right-hand operand comes from the slot and cannot be +infinity
             if (leftEntryKey == PLUS_INFINITY_ENTRY_KEY) {
@@ -244,7 +264,7 @@ abstract class HDBTreeNodeBaseAccessor {
             }
 
             NativeMemoryData rightEntryKey = getEntryKey(nodeAddr, slot);
-            int cmp2 = keyComparator.compareSerializedEntryKeys(leftEntryKey, rightEntryKey);
+            int cmp2 = keyComparator.compareSerializedKeys(leftEntryKey, rightEntryKey);
             return cmp2 < 0 ? INDEX_KEY_EQUAL_ENTRY_KEY_LESS : cmp2 == 0 ? KEYS_EQUAL
                     : INDEX_KEY_EQUAL_ENTRY_KEY_GREATER;
         }
@@ -252,7 +272,7 @@ abstract class HDBTreeNodeBaseAccessor {
     }
 
     long getSlotAddr(long nodeAddr, int slot) {
-        return nodeAddr + getOffsetEntries() + (long) slot * SLOT_ENTRY_SIZE;
+        return nodeAddr + getOffsetEntries() + (long) slot * entrySlotSize;
     }
 
     void copyNodeContent(long srcNodeAddr, long destNodeAddr) {

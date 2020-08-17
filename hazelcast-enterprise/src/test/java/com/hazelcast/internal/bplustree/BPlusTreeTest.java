@@ -1,5 +1,6 @@
 package com.hazelcast.internal.bplustree;
 
+import com.hazelcast.config.IndexType;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
@@ -19,12 +20,17 @@ import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.config.IndexType.HASH;
+import static com.hazelcast.config.IndexType.SORTED;
 import static com.hazelcast.internal.bplustree.HDBPlusTree.DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE;
+import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.OFFSET_NODE_BASE_DATA;
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.getKeysCount;
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.getNodeLevel;
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.getSequenceNumber;
@@ -47,13 +53,17 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
     @Parameterized.Parameter
     public int indexScanBatchSize;
 
-    @Parameterized.Parameters(name = "indexScanBatchSize: {0}")
+    @Parameterized.Parameter(1)
+    public IndexType indexType;
+
+    @Parameterized.Parameters(name = "indexScanBatchSize: {0} indexType: {1}")
     public static Collection<Object[]> parameters() {
         // @formatter:off
         return asList(new Object[][]{
-                {0}, // batching is disabled
-                {DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE},
-
+                {0, SORTED}, // batching is disabled
+                {DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE, SORTED},
+                {0, HASH},
+                {DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE, HASH},
         });
         // @formatter:on
     }
@@ -63,13 +73,42 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
     HDBPlusTree newBPlusTree(EnterpriseSerializationService ess,
                              MemoryAllocator keyAllocator,
                              MemoryAllocator indexAllocator, LockManager lockManager,
-                             BPlusTreeKeyComparator keyComparator,
+                             BPlusTreeKeyComparator keyComparator0,
                              BPlusTreeKeyAccessor keyAccessor,
                              MapEntryFactory entryFactory,
                              int nodeSize,
-                             int indexScanBatchSize0) {
+                             int indexScanBatchSize0,
+                             EntrySlotPayload entrySlotPayload0) {
+        BPlusTreeKeyComparator keyComparator = newBPlusTreeKeyComparator();
+        EntrySlotPayload entrySlotPayload = newEntrySlotPayload();
         return HDBPlusTree.newHDBTree(ess, keyAllocator, indexAllocator, lockManager, keyComparator, keyAccessor,
-                entryFactory, nodeSize, indexScanBatchSize);
+                entryFactory, nodeSize, indexScanBatchSize, entrySlotPayload);
+    }
+
+    @Override
+    BPlusTreeKeyComparator newBPlusTreeKeyComparator() {
+        return indexType == HASH ? new HashIndexBPlusTreeKeyComparator(ess)
+                : new DefaultBPlusTreeKeyComparator(ess);
+    }
+
+    @Override
+    EntrySlotPayload newEntrySlotPayload() {
+        return indexType == HASH ? new HashIndexEntrySlotPayload()
+                : new EntrySlotNoPayload();
+    }
+
+    int getSlotSize() {
+        return indexType == HASH ? 32 : 24;
+    }
+
+    int getLeafSlotsCount() {
+        int slotSize = getSlotSize();
+        return (getNodeSize() - OFFSET_NODE_BASE_DATA - 16) / slotSize;
+    }
+
+    int getInnerSlotsCount() {
+        int slotSize = getSlotSize();
+        return (getNodeSize() - OFFSET_NODE_BASE_DATA) / slotSize;
     }
 
     @Test
@@ -98,7 +137,9 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
     public void testInsertNonUniqueIndexKeys() {
         Integer indexKey = 10;
 
-        for (int i = 0; i < 9; ++i) {
+        int keysCount = getLeafSlotsCount();
+
+        for (int i = 0; i < keysCount; ++i) {
             String mapKey = "Name_" + i;
             String value = "Value_" + i;
             NativeMemoryData mapKeyData = ess.toData(mapKey, NATIVE);
@@ -113,7 +154,7 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
             assertEquals(value, ess.toObject(leafNodeAccessor.getValue(child, i)));
             assertIteratorCount(i + 1, indexKey);
         }
-        assertEquals(9, queryKeysCount());
+        assertEquals(keysCount, queryKeysCount());
         assertEquals(1, getNodeLevel(rootAddr));
     }
 
@@ -132,6 +173,7 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
 
     @Test
     public void testCompactInsert() {
+        assumeTrue(indexType == SORTED);
         btree.setNodeSplitStrategy(new EmptyNewNodeSplitStrategy());
         for (int i = 0; i < 9 * 9; ++i) {
             Integer indexKey = i;
@@ -183,17 +225,19 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
 
     @Test
     public void testLeafSplit() {
+        int keysCount = getLeafSlotsCount() + 1;
         // overflow a leaf page to make a split
-        insertKeys(10);
+        insertKeys(keysCount);
 
         // test root node
         assertEquals(1, getKeysCount(rootAddr));
         assertEquals(1, getNodeLevel(rootAddr));
         Data splitIndexKey = innerNodeAccessor.getIndexKeyHeapData(rootAddr, 0);
         NativeMemoryData splitMapKey = innerNodeAccessor.getEntryKey(rootAddr, 0);
-        Integer expectedSplitIndexKey = 3;
+        // For the HASH index the split key depends on the hash value
+        Integer expectedSplitIndexKey = indexType == SORTED ? 3 : 1;
         assertEquals(expectedSplitIndexKey, ess.toObject(splitIndexKey));
-        assertEquals("Name_3", ess.toObject(splitMapKey));
+        assertEquals("Name_" + expectedSplitIndexKey, ess.toObject(splitMapKey));
 
         assertEquals(NULL_ADDRESS, innerNodeAccessor.getIndexKeyAddr(rootAddr, 1));
         assertEquals(NULL_ADDRESS, innerNodeAccessor.getEntryKeyAddr(rootAddr, 1));
@@ -204,42 +248,57 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
         assertNotEquals(NULL_ADDRESS, rightChildAddr);
 
         // test left child
-        assertLeafSlotValues(leftChildAddr, 0, 3);
-        assertKeysSorted(leftChildAddr, leafNodeAccessor);
+        if (indexType == SORTED) {
+            assertLeafSlotValues(leftChildAddr, 0, 3);
+            assertKeysSorted(leftChildAddr, leafNodeAccessor);
+        }
         assertEquals(NULL_ADDRESS, leafNodeAccessor.getBackNode(leftChildAddr));
         assertEquals(rightChildAddr, leafNodeAccessor.getForwNode(leftChildAddr));
 
         // test right child
-        assertLeafSlotValues(rightChildAddr, 4, 9);
-        assertKeysSorted(rightChildAddr, leafNodeAccessor);
+        if (indexType == SORTED) {
+            assertLeafSlotValues(rightChildAddr, 4, 9);
+            assertKeysSorted(rightChildAddr, leafNodeAccessor);
+        }
         assertEquals(leftChildAddr, leafNodeAccessor.getBackNode(rightChildAddr));
         assertEquals(NULL_ADDRESS, leafNodeAccessor.getForwNode(rightChildAddr));
 
-        assertFromKeyIteratorCount(10, 0);
+        int leftIndexKey = ess.toObject(leafNodeAccessor.getIndexKeyHeapData(leftChildAddr, 0));
+        if (indexType == SORTED) {
+            assertFromKeyIteratorCount(keysCount, leftIndexKey);
+        } else {
+            assertEquals(keysCount, queryKeysCount());
+        }
     }
 
 
     @Test
     public void testIncrementDepth() {
-        // fill in 9 leaf pages to make root full
-        insertKeysCompact(9 * 9);
+        // Fill in the 1 level B+tree
+        int keysCount = getLeafSlotsCount() * getInnerSlotsCount();
+        insertKeysCompact(keysCount, indexType);
 
-        assertNestedKeysSorted(rootAddr, 0, 81, 1);
+        assertNestedKeysSorted(rootAddr, 0, keysCount, 1, indexType == HASH);
 
-        assertEquals(8, getKeysCount(rootAddr));
+        assertEquals(getInnerSlotsCount() - 1, getKeysCount(rootAddr));
         assertEquals(1, getNodeLevel(rootAddr));
         assertTrue(innerNodeAccessor.isNodeFull(rootAddr));
-        assertKeysSorted(rootAddr, innerNodeAccessor);
-        assertEquals(81, queryKeysCount());
+        if (indexType == SORTED) {
+            assertKeysSorted(rootAddr, innerNodeAccessor);
+        } else {
+            assertKeysSortedByHash(rootAddr, innerNodeAccessor);
+        }
+
+        assertEquals(keysCount, queryKeysCount());
 
         // assert all leaf pages are full
         long leftMostChild = innerNodeAccessor.getValueAddr(rootAddr, 0);
         assertOnLeafNodes(leftMostChild, nodeAddr -> assertTrue(leafNodeAccessor.isNodeFull(nodeAddr)));
 
-        // overflow the last leaf, causing the root split and depth increment
+        // overflow the last leaf (for SORTED index), causing the root split and depth increment
         insertKey(82);
 
-        assertNestedKeysSorted(rootAddr, 0, 81, 2);
+        assertNestedKeysSorted(rootAddr, 0, 81, 2, indexType == HASH);
 
         // test root node
         assertEquals(2, getNodeLevel(rootAddr));
@@ -247,9 +306,12 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
 
         Data splitIndexKey = innerNodeAccessor.getIndexKeyHeapData(rootAddr, 0);
         NativeMemoryData splitMapKey = innerNodeAccessor.getEntryKey(rootAddr, 0);
-        Integer expectedSplitIndexKey = 35;
-        assertEquals(expectedSplitIndexKey, ess.toObject(splitIndexKey));
-        assertEquals("Name_" + expectedSplitIndexKey, ess.toObject(splitMapKey));
+
+        if (indexType == SORTED) {
+            Integer expectedSplitIndexKey = 35;
+            assertEquals(expectedSplitIndexKey, ess.toObject(splitIndexKey));
+            assertEquals("Name_" + expectedSplitIndexKey, ess.toObject(splitMapKey));
+        }
 
         assertEquals(NULL_ADDRESS, innerNodeAccessor.getIndexKeyAddr(rootAddr, 1));
         assertEquals(NULL_ADDRESS, innerNodeAccessor.getEntryKeyAddr(rootAddr, 1));
@@ -264,34 +326,51 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
         assertEquals(3, getKeysCount(leftInnerChild));
         // We expect 5 keys on the rightInnerChild, because inner split will create a new inner
         // node with 4 keys, but insertion of the key will add one extra split key
-        assertEquals(5, getKeysCount(rightInnerChild));
+        int rightInnerChildKeysCount = indexType == SORTED ? 5 : 3;
+        assertEquals(rightInnerChildKeysCount, getKeysCount(rightInnerChild));
 
-        // test the leaf nodes
         leftMostChild = innerNodeAccessor.getValueAddr(leftInnerChild, 0);
         assertNotEquals(NULL_ADDRESS, leftMostChild);
         MutableInteger currentNode = new MutableInteger();
-        assertOnLeafNodes(leftMostChild,
-                nodeAddr -> {
-                    if (currentNode.value < 8) {
-                        assertTrue(leafNodeAccessor.isNodeFull(nodeAddr));
-                    } else if (currentNode.value == 8) {
-                        assertEquals(4, getKeysCount(nodeAddr));
-                    } else {
-                        assertEquals(6, getKeysCount(nodeAddr));
-                        assertEquals(NULL_ADDRESS, leafNodeAccessor.getForwNode(nodeAddr));
-                    }
-                    currentNode.getAndInc();
-                });
-        assertEquals(10, currentNode.value);
+
+        if (indexType == SORTED) {
+            // test the leaf nodes
+            assertOnLeafNodes(leftMostChild,
+                    nodeAddr -> {
+                        if (currentNode.value < getInnerSlotsCount() - 1) {
+                            assertTrue(String.valueOf(currentNode.value), leafNodeAccessor.isNodeFull(nodeAddr));
+                        } else if (currentNode.value == 8) {
+                            assertEquals(4, getKeysCount(nodeAddr));
+                        } else {
+                            assertEquals(6, getKeysCount(nodeAddr));
+                            assertEquals(NULL_ADDRESS, leafNodeAccessor.getForwNode(nodeAddr));
+                        }
+                        currentNode.getAndInc();
+                    });
+            assertEquals(10, currentNode.value);
+        } else {
+            // For the HASH index not necessarily the left most node was splitted
+            MutableInteger countFullNodes = new MutableInteger();
+            assertOnLeafNodes(leftMostChild,
+                    nodeAddr -> {
+                        if (leafNodeAccessor.isNodeFull(nodeAddr)) {
+                            countFullNodes.getAndInc();
+                        }
+                        currentNode.getAndInc();
+                    });
+            assertEquals(getInnerSlotsCount() - 1, countFullNodes.value);
+            assertEquals(getInnerSlotsCount() + 1, currentNode.value);
+        }
     }
 
     @Test
     public void testRemove() {
-        insertKeys(9);
+        int keysCount = getLeafSlotsCount();
+        insertKeys(keysCount);
         allocatorCallback.clear();
         assertEquals(1, getNodeLevel(rootAddr));
         long leafAddr = innerNodeAccessor.getValueAddr(rootAddr, 0);
-        assertEquals(9, getKeysCount(leafAddr));
+        assertEquals(keysCount, getKeysCount(leafAddr));
         long seqCount = getSequenceNumber(leafAddr);
 
         // Remove key from the middle
@@ -301,27 +380,28 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
         NativeMemoryData oldValue = btree.remove(indexKey, mapKeyData);
         assertNotNull(oldValue);
         assertEquals("Value_5", ess.toObject(oldValue));
-        assertKeysCountAndSeqCount(leafAddr, 8, ++seqCount);
+        assertKeysCountAndSeqCount(leafAddr, keysCount - 1, ++seqCount);
 
         // Remove edge keys
         oldValue = btree.remove(0, ess.toData("Name_0", NATIVE));
         assertNotNull(oldValue);
         assertEquals("Value_0", ess.toObject(oldValue));
-        assertKeysCountAndSeqCount(leafAddr, 7, ++seqCount);
+        assertKeysCountAndSeqCount(leafAddr, keysCount - 2, ++seqCount);
 
-        oldValue = btree.remove(6, ess.toData("Name_6", NATIVE));
+        int removeIndexKey = keysCount - 3;
+        oldValue = btree.remove(removeIndexKey, ess.toData("Name_" + removeIndexKey, NATIVE));
         assertNotNull(oldValue);
-        assertEquals("Value_6", ess.toObject(oldValue));
-        assertKeysCountAndSeqCount(leafAddr, 6, ++seqCount);
+        assertEquals("Value_" + removeIndexKey, ess.toObject(oldValue));
+        assertKeysCountAndSeqCount(leafAddr, keysCount - 3, ++seqCount);
 
         // Remove not existing key
         oldValue = btree.remove(100, ess.toData("Name_3", NATIVE));
         assertNull(oldValue);
-        assertKeysCountAndSeqCount(leafAddr, 6, seqCount);
+        assertKeysCountAndSeqCount(leafAddr, keysCount - 3, seqCount);
 
-        oldValue = btree.remove(3, ess.toData("Name_100", NATIVE));
+        oldValue = btree.remove(2, ess.toData("Name_100", NATIVE));
         assertNull(oldValue);
-        assertKeysCountAndSeqCount(leafAddr, 6, seqCount);
+        assertKeysCountAndSeqCount(leafAddr, keysCount - 3, seqCount);
 
         assertFalse(maAllocateAddr.hasUpdates());
         assertFalse(maFreeAddr.hasUpdates());
@@ -329,6 +409,7 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
 
     @Test
     public void testRemoveLeafNode() {
+        assumeTrue(indexType == SORTED);
         insertKeysCompact(9 * 3);
         assertEquals(1, getNodeLevel(rootAddr));
         assertEquals(2, getKeysCount(rootAddr));
@@ -386,16 +467,19 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
 
     @Test
     public void testRemoveInnerNode() {
-        // fill in 9 leaf pages to make root full
-        insertKeysCompact(9 * 9);
+        assumeTrue(indexType == SORTED);
+        // Fill in completely the 1 level B+tree
+        int keysCount = getLeafSlotsCount() * getInnerSlotsCount();
+        insertKeysCompact(keysCount, indexType);
 
         // Overflow the last leaf node with the default split strategy
-        insertKey(81);
+        insertKey(keysCount);
         assertEquals(2, getNodeLevel(rootAddr));
         assertEquals(1, getKeysCount(rootAddr));
 
         int rootSplitKey = ess.toObject(innerNodeAccessor.getIndexKeyHeapData(rootAddr, 0));
-        assertEquals(35, rootSplitKey);
+        int expectedRootSplitKey = 35;
+        assertEquals(expectedRootSplitKey, rootSplitKey);
 
         long leftChildAddr = innerNodeAccessor.getValueAddr(rootAddr, 0);
         List<Long> descendants = getChildrenAddrs(leftChildAddr);
@@ -423,10 +507,11 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
 
     @Test
     public void testRemoveMultipleKeys() {
-        insertKeysCompact(9 * 10);
+        int keysCount = getLeafSlotsCount() * (getInnerSlotsCount()) + 1;
+        insertKeysCompact(keysCount, indexType);
         assertEquals(2, getNodeLevel(rootAddr));
 
-        for (int i = 1; i < 90; ++i) {
+        for (int i = 1; i < keysCount; ++i) {
             removeKey(i);
             assertFalse(btree.lookup(i).hasNext());
         }
@@ -435,10 +520,11 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
 
     @Test
     public void testForwBackLinks() {
-        // Fill in 9 leaf pages
-        insertKeysCompact(9 * 9);
+        // Fill in completely the 1 level B+tree
+        int keysCount = getLeafSlotsCount() * getInnerSlotsCount();
+        insertKeysCompact(keysCount, indexType);
         assertEquals(1, getNodeLevel(rootAddr));
-        assertEquals(8, getKeysCount(rootAddr));
+        assertEquals(getInnerSlotsCount() - 1, getKeysCount(rootAddr));
 
         long leftMostChildAddr = innerNodeAccessor.getValueAddr(rootAddr, 0);
         AtomicInteger count = new AtomicInteger();
@@ -448,16 +534,16 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
             assertTrue(leafNodeAccessor.isNodeFull(leafAddr));
             count.incrementAndGet();
         });
-        assertEquals(9, count.get());
+        assertEquals(getInnerSlotsCount(), count.get());
 
         // check backward links
         count.set(0);
-        long rightMostChildAddr = innerNodeAccessor.getValueAddr(rootAddr, 8);
+        long rightMostChildAddr = innerNodeAccessor.getValueAddr(rootAddr, getInnerSlotsCount() - 1);
         assertOnLeafNodes(rightMostChildAddr, true, leafAddr -> {
             assertTrue(leafNodeAccessor.isNodeFull(leafAddr));
             count.incrementAndGet();
         });
-        assertEquals(9, count.get());
+        assertEquals(getInnerSlotsCount(), count.get());
     }
 
     @Test
@@ -474,6 +560,7 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
 
     @Test
     public void testRangeLookup() {
+        assumeTrue(indexType == SORTED);
         insertKeys(10000);
 
         int key = nextInt(9997);
@@ -508,6 +595,8 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
 
     @Test
     public void testRangeScanOnNodeBoundary() {
+        assumeTrue(indexType == SORTED);
+
         insertKeysCompact(10);
 
         // Make sure the last result from the iterator is a last slot in the B+tree node
@@ -522,6 +611,8 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
 
     @Test
     public void testHasNextOnExhaustedIterator() {
+        assumeTrue(indexType == SORTED);
+
         int keysCount = 10000;
         insertKeys(keysCount);
 
@@ -566,6 +657,7 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
 
     @Test
     public void testDuplicateKeysSkipInLookup() {
+        assumeTrue(indexType == SORTED);
         Integer indexKey = 10;
 
         // Insert duplicate keys to span multiple B+tree leaf nodes
@@ -590,6 +682,7 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
 
     @Test
     public void testIteratorResync() {
+        assumeTrue(indexType == SORTED);
         assumeTrue(indexScanBatchSize == 0);
         // Fill in 9 leaf pages
         insertKeysCompact(9 * 9);
@@ -670,6 +763,7 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
 
     @Test
     public void testIteratorResyncWithBatching() {
+        assumeTrue(indexType == SORTED);
         assumeTrue(indexScanBatchSize > 0);
         // Fill in 9 leaf pages
         insertKeysCompact(7);
@@ -699,6 +793,87 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
         assertFalse(it.hasNext());
     }
 
+    @Test
+    public void testIteratorResyncOnLookup() {
+        assumeTrue(indexScanBatchSize == 0);
+        int uniqueKeysCount = 100;
+        insertKeys(uniqueKeysCount);
+
+        // Insert some duplicates
+        int entryKeyIndex = 11;
+        for (int i = 0; i < 10; ++i) {
+            Integer indexKey = 10;
+            String mapKey = "Name_" + entryKeyIndex;
+            String value = "Value_" + ++entryKeyIndex;
+            NativeMemoryData mapKeyData = ess.toData(mapKey, NATIVE);
+            NativeMemoryData valueData = ess.toData(value, NATIVE);
+            btree.insert(indexKey, mapKeyData, valueData);
+        }
+
+        Iterator it = btree.lookup(10);
+        int count = 0;
+        while (it.hasNext()) {
+            it.next();
+            count++;
+
+            if (count == 3) {
+                // Remove all entries and make sure the iterator doesn;t return anything
+                for (int i = 10; i < 21; ++i) {
+                    NativeMemoryData entryKeyData = toNativeData("Name_" + i);
+                    assertNotNull(btree.remove(10, entryKeyData));
+                }
+
+                assertFalse(it.hasNext());
+                break;
+            }
+        }
+    }
+
+    @Test
+    public void testInsertVariousTypeKeys() {
+        assumeTrue(indexType == HASH);
+        Integer integerKey = Integer.valueOf(100);
+        Long longKey = Long.valueOf(Long.MAX_VALUE);
+        String stringKey = "200";
+        insertKey(integerKey);
+        insertKey(longKey);
+        insertKey(stringKey);
+        assertEquals(3, queryKeysCount());
+
+        assertHasKey(integerKey);
+        assertHasKey(integerKey);
+        assertHasKey(stringKey);
+    }
+
+    @Test
+    public void testGetKeys() {
+        int uniqueKeysCount = 1000;
+        insertKeys(uniqueKeysCount);
+
+        // Insert some duplicates
+        for (int i = 0; i < 500; ++i) {
+            Integer indexKey = nextInt(uniqueKeysCount);
+            String mapKey = "Name_" + nextInt(uniqueKeysCount);
+            String value = "Value_" + nextInt(uniqueKeysCount);
+            NativeMemoryData mapKeyData = ess.toData(mapKey, NATIVE);
+            NativeMemoryData valueData = ess.toData(value, NATIVE);
+            btree.insert(indexKey, mapKeyData, valueData);
+        }
+
+        assertEquals(uniqueKeysCount, queryUniqueIndexKeysCount());
+        Set<Integer> indexKeys = new HashSet<>();
+        Iterator<Data> it = btree.keys();
+        while (it.hasNext()) {
+            indexKeys.add(ess.toObject(it.next()));
+        }
+
+        assertEquals(uniqueKeysCount, indexKeys.size());
+
+        for (int i = 0; i < uniqueKeysCount; ++i) {
+            assertTrue(indexKeys.contains(i));
+        }
+    }
+
     private void assertIterator(Iterator<Map.Entry> it, int expectedCount, int startingEntryIndex) {
         int count = 0;
         int key = startingEntryIndex;
@@ -708,7 +883,6 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
         }
         assertEquals(expectedCount, count);
     }
-
 
     private void assertIteratorCount(int expected, Comparable indexKey) {
         Iterator<Map.Entry> it = btree.lookup(indexKey);
@@ -756,16 +930,16 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
         }
     }
 
-    void assertNestedKeysSorted(long nodeAddr, int expectedLowBound, int expectedHighBound, int expectedLevel) {
+    void assertNestedKeysSorted(long nodeAddr, int expectedLowBound, int expectedHighBound, int expectedLevel, boolean hashOrdering) {
         int level = getNodeLevel(nodeAddr);
         assertTrue(level >= 0);
         assertEquals(expectedLevel, level);
         int keysCount = getKeysCount(nodeAddr);
         assertTrue(keysCount >= 0);
         if (level == 0) {
-            assertKeysBoundaries(nodeAddr, expectedLowBound, expectedHighBound, leafNodeAccessor);
+            assertKeysBoundaries(nodeAddr, expectedLowBound, expectedHighBound, leafNodeAccessor, hashOrdering);
         } else {
-            assertKeysBoundaries(nodeAddr, expectedLowBound, expectedHighBound, innerNodeAccessor);
+            assertKeysBoundaries(nodeAddr, expectedLowBound, expectedHighBound, innerNodeAccessor, hashOrdering);
 
             int prevBound = Integer.MIN_VALUE;
             for (int i = 0; i < keysCount; ++i) {
@@ -775,23 +949,28 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
                 assertNotEquals(NULL_ADDRESS, innerNodeAccessor.getEntryKey(nodeAddr, i));
 
                 int bound = ess.toObject(innerNodeAccessor.getIndexKeyHeapData(nodeAddr, i));
-                assertNestedKeysSorted(childAddr, prevBound, bound, expectedLevel - 1);
+                assertNestedKeysSorted(childAddr, prevBound, bound, expectedLevel - 1, hashOrdering);
                 prevBound = bound + 1;
             }
             // check the last pointer
             long childAddr = innerNodeAccessor.getValueAddr(nodeAddr, keysCount);
             assertNotEquals(NULL_ADDRESS, childAddr);
-            assertNestedKeysSorted(childAddr, prevBound, Integer.MAX_VALUE, expectedLevel - 1);
+            assertNestedKeysSorted(childAddr, prevBound, Integer.MAX_VALUE, expectedLevel - 1, hashOrdering);
         }
     }
 
-    private void assertKeysBoundaries(long nodeAddr, int expectedLowBound, int expectedHighBound, HDBTreeNodeBaseAccessor nodeAccesor) {
-        assertKeysSorted(nodeAddr, nodeAccesor);
-        int keysCount = getKeysCount(nodeAddr);
-        int minIndexKey = ess.toObject(nodeAccesor.getIndexKeyHeapData(nodeAddr, 0));
-        int maxIndexKey = ess.toObject(nodeAccesor.getIndexKeyHeapData(nodeAddr, keysCount - 1));
-        assertTrue(expectedLowBound <= minIndexKey);
-        assertTrue(expectedHighBound >= maxIndexKey);
+    private void assertKeysBoundaries(long nodeAddr, int expectedLowBound, int expectedHighBound, HDBTreeNodeBaseAccessor nodeAccesor,
+                                      boolean hashOrdering) {
+        if (hashOrdering) {
+            assertKeysSortedByHash(nodeAddr, nodeAccesor);
+        } else {
+            assertKeysSorted(nodeAddr, nodeAccesor);
+            int keysCount = getKeysCount(nodeAddr);
+            int minIndexKey = ess.toObject(nodeAccesor.getIndexKeyHeapData(nodeAddr, 0));
+            int maxIndexKey = ess.toObject(nodeAccesor.getIndexKeyHeapData(nodeAddr, keysCount - 1));
+            assertTrue(expectedLowBound <= minIndexKey);
+            assertTrue(expectedHighBound >= maxIndexKey);
+        }
     }
 
     private void assertKeysCountAndSeqCount(long nodeAddr, int expectedKeysCount, long expectedSeqCount) {

@@ -55,9 +55,10 @@ public class BPlusTreeIteratorBatchingTest extends BPlusTreeTestSupport {
                              BPlusTreeKeyAccessor keyAccessor,
                              MapEntryFactory entryFactory,
                              int nodeSize,
-                             int indexScanBatchSize) {
+                             int indexScanBatchSize,
+                             EntrySlotPayload entrySlotPayload) {
         return HDBPlusTree.newHDBTree(ess, keyAllocator, indexAllocator, lockManager, keyComparator, keyAccessor,
-                entryFactory, nodeSize, 5000);
+                entryFactory, nodeSize, 5000, entrySlotPayload);
     }
 
     int getNodeSize() {

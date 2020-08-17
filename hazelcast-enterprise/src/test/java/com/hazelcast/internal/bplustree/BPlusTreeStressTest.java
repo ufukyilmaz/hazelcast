@@ -1,5 +1,6 @@
 package com.hazelcast.internal.bplustree;
 
+import com.hazelcast.config.IndexType;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
@@ -17,6 +18,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.hazelcast.config.IndexType.HASH;
+import static com.hazelcast.config.IndexType.SORTED;
 import static com.hazelcast.internal.bplustree.HDBPlusTree.DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -34,13 +37,17 @@ public class BPlusTreeStressTest extends BPlusTreeTestSupport {
     @Parameterized.Parameter
     public int indexScanBatchSize;
 
-    @Parameterized.Parameters(name = "indexScanBatchSize: {0}")
+    @Parameterized.Parameter(1)
+    public IndexType indexType;
+
+    @Parameterized.Parameters(name = "indexScanBatchSize: {0} indexType {1}")
     public static Collection<Object[]> parameters() {
         // @formatter:off
         return asList(new Object[][]{
-                {0},
-                {DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE},
-
+                {0, SORTED},
+                {DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE, SORTED},
+                {0, HASH},
+                {DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE, HASH},
         });
         // @formatter:on
     }
@@ -54,9 +61,22 @@ public class BPlusTreeStressTest extends BPlusTreeTestSupport {
                              BPlusTreeKeyAccessor keyAccessor,
                              MapEntryFactory entryFactory,
                              int nodeSize,
-                             int indexScanBatchSize0) {
+                             int indexScanBatchSize0,
+                             EntrySlotPayload entrySlotPayload) {
         return HDBPlusTree.newHDBTree(ess, keyAllocator, indexAllocator, lockManager, keyComparator, keyAccessor,
-                entryFactory, nodeSize, indexScanBatchSize);
+                entryFactory, nodeSize, indexScanBatchSize, entrySlotPayload);
+    }
+
+    @Override
+    BPlusTreeKeyComparator newBPlusTreeKeyComparator() {
+        return indexType == HASH ? new HashIndexBPlusTreeKeyComparator(ess)
+                : new DefaultBPlusTreeKeyComparator(ess);
+    }
+
+    @Override
+    EntrySlotPayload newEntrySlotPayload() {
+        return indexType == HASH ? new HashIndexEntrySlotPayload()
+                : new EntrySlotNoPayload();
     }
 
     @Test(timeout = 600000)

@@ -69,7 +69,8 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
                 {NONE, -1, -1},
                 {NONE, 100, -1},
                 {NONE, -1, 10},
-                {NONE, 100, 10},
+                // Temporary ignore, https://github.com/hazelcast/hazelcast-enterprise/issues/3145
+                // {NONE, 100, 10},
                 {MERKLE_TREES, -1, 10},
                 {MERKLE_TREES, 100, 10}
         });

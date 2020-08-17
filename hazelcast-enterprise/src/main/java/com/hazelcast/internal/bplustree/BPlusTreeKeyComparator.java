@@ -16,11 +16,12 @@ public interface BPlusTreeKeyComparator {
      *
      * @param left         the  left Comparable instance
      * @param rightAddress the off-heap address of the right key
+     * @param rightPayload the payload of the right slot
      * @return a negative integer, zero, or a positive integer as the left-hand
      * side key is less than, equal to, or greater than the
      * right-hand side key.
      */
-    int compare(Comparable left, long rightAddress);
+    int compare(Comparable left, long rightAddress, long rightPayload);
 
 
     /**
@@ -33,7 +34,7 @@ public interface BPlusTreeKeyComparator {
      * side key is less than, equal to, or greater than the
      * right-hand side key.
      */
-    default int compareSerializedEntryKeys(Data left, NativeMemoryData rightData) {
+    default int compareSerializedKeys(Data left, NativeMemoryData rightData) {
         if (left instanceof NativeMemoryData) {
             NativeMemoryData leftData = (NativeMemoryData) left;
             long leftDataAddress = leftData.address();
@@ -75,4 +76,13 @@ public interface BPlusTreeKeyComparator {
             return 0;
         }
     }
+
+    default Comparable wrapIndexKey(Comparable indexKey) {
+        return indexKey;
+    }
+
+    default Comparable unwrapIndexKey(Comparable indexKey) {
+        return indexKey;
+    }
+
 }

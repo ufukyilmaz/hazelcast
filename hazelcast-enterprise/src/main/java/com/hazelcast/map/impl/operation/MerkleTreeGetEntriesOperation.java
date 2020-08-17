@@ -1,6 +1,8 @@
 package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.internal.serialization.DataType;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.util.MapUtil;
 import com.hazelcast.internal.util.collection.InflatableSet;
 import com.hazelcast.internal.util.collection.InflatableSet.Builder;
@@ -66,7 +68,8 @@ public class MerkleTreeGetEntriesOperation extends MapOperation implements Reado
 
         // here we assume all nodes are on the same level
         int levelOfRequestedNodes = getLevelOfNode(merkleTreeOrderValuePairs[0]);
-
+        InternalSerializationService serializationService =
+                (InternalSerializationService) getNodeEngine().getSerializationService();
         recordStore.iterator()
                    .forEachRemaining(entry -> {
                        Data keyData = entry.getKey();
@@ -76,8 +79,9 @@ public class MerkleTreeGetEntriesOperation extends MapOperation implements Reado
                        if (entriesBuilder != null) {
                            Record record = entry.getValue();
                            entriesBuilder.add(createWanEntryView(
-                                   keyData, mapServiceContext.toData(record.getValue()), record,
-                                   getNodeEngine().getSerializationService()));
+                                   serializationService.toData(keyData, DataType.HEAP),
+                                   serializationService.toData(record.getValue(), DataType.HEAP),
+                                   record, serializationService));
                        }
                    });
 

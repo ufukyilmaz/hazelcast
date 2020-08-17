@@ -1,6 +1,9 @@
 package com.hazelcast.wan.map;
 
+import com.hazelcast.HDTestSupport;
+import com.hazelcast.config.Config;
 import com.hazelcast.config.ConsistencyCheckStrategy;
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
@@ -8,7 +11,9 @@ import com.hazelcast.enterprise.wan.impl.replication.WanMerkleTreeSyncStats;
 import com.hazelcast.enterprise.wan.impl.sync.SyncFailedException;
 import com.hazelcast.internal.monitor.WanSyncState;
 import com.hazelcast.internal.partition.IPartition;
+import com.hazelcast.internal.util.EmptyStatement;
 import com.hazelcast.internal.util.RootCauseMatcher;
+import com.hazelcast.map.IMap;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -35,6 +40,11 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
 import static com.hazelcast.config.ConsistencyCheckStrategy.NONE;
@@ -63,16 +73,19 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
     @Rule
     public RuntimeAvailableProcessorsRule processorsRule = new RuntimeAvailableProcessorsRule(2);
 
-    @Parameters(name = "consistencyCheckStrategy:{0}, maxConcurrentInvocations:{1}, invocationThreshold:{2}")
+    @Parameters(name =
+            "consistencyCheckStrategy:{0}, maxConcurrentInvocations:{1}, invocationThreshold:{2}, inMemoryFormat:{2}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {NONE, -1, -1},
-                {NONE, 100, -1},
-                {NONE, -1, 10},
+                {NONE, -1, -1, InMemoryFormat.BINARY},
+                {NONE, 100, -1, InMemoryFormat.BINARY},
+                {NONE, -1, 10, InMemoryFormat.BINARY},
                 // Temporary ignore, https://github.com/hazelcast/hazelcast-enterprise/issues/3145
-                // {NONE, 100, 10},
-                {MERKLE_TREES, -1, 10},
-                {MERKLE_TREES, 100, 10}
+                // {NONE, 100, 10, InMemoryFormat.BINARY},
+                {MERKLE_TREES, -1, 10, InMemoryFormat.BINARY},
+                {MERKLE_TREES, 100, 10, InMemoryFormat.BINARY},
+                {NONE, -1, -1, InMemoryFormat.NATIVE},
+                {MERKLE_TREES, -1, -1, InMemoryFormat.NATIVE}
         });
     }
 
@@ -95,10 +108,12 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
 
     @Before
     public void setup() {
-        clusterA = clusterA(factory, 3).setup();
+        Supplier<Config> configSupplier = () ->
+                inMemoryFormat == InMemoryFormat.NATIVE ? HDTestSupport.getHDConfig() : smallInstanceConfig();
+        clusterA = clusterA(factory, 3, configSupplier).setup();
         System.setProperty(WAN_CONSUMER_INVOCATION_THRESHOLD.getName(), Integer.toString(invocationThreshold));
 
-        clusterB = clusterB(factory, 2).setup();
+        clusterB = clusterB(factory, 2, configSupplier).setup();
 
         configureMerkleTrees(clusterA);
         configureMerkleTrees(clusterB);
@@ -136,6 +151,55 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
 
     @Parameter(2)
     public int invocationThreshold;
+
+    @Parameter(3)
+    public InMemoryFormat inMemoryFormat;
+
+    @Test
+    public void testConcurrentSync() throws InterruptedException, ExecutionException {
+        clusterA.startAClusterMember();
+        clusterB.startAClusterMember();
+
+        WanReplication toBReplication = replicate()
+                .to(clusterB)
+                .withSetupName(REPLICATION_NAME)
+                .withConsistencyCheckStrategy(consistencyCheckStrategy)
+                .withMaxConcurrentInvocations(maxConcurrentInvocations)
+                .setup();
+        clusterA.addWanReplication(toBReplication);
+
+        fillMap(clusterA, MAP_NAME, 0, 1000);
+        verifyMapReplicated(clusterA, clusterB, MAP_NAME);
+        clusterA.stopWanReplicationOnAllMembers(toBReplication);
+
+        AtomicBoolean stop = new AtomicBoolean();
+        HazelcastInstance memberA = clusterA.getAMember();
+        IMap<Object, Object> mapA = memberA.getMap(MAP_NAME);
+        Random rnd = new Random();
+        Future<?> syncFuture = spawn(() -> {
+            while (!stop.get()) {
+                try {
+                    clusterA.syncMapOnMember(toBReplication, MAP_NAME, memberA);
+                } catch (SyncFailedException e) {
+                    EmptyStatement.ignore(e);
+                }
+            }
+        });
+
+        Future<?> mutationFuture = spawn(() -> {
+            while (!stop.get()) {
+                for (int i = 0; i < 1000; i++) {
+                    mapA.remove(i);
+                    mapA.put(i, new byte[rnd.nextInt(1024)]);
+                }
+            }
+        });
+
+        sleepAndStop(stop, 30);
+        syncFuture.get();
+        mutationFuture.get();
+    }
+
 
     @Test
     public void basicSyncTest() {

@@ -707,4 +707,9 @@ public abstract class AbstractWanPublisher implements
     public PollSynchronizerPublisherQueueContainer getEventQueueContainer() {
         return eventQueueContainer;
     }
+
+    // public for testing
+    public WanPublisherSyncSupport getSyncSupport() {
+        return syncSupport;
+    }
 }

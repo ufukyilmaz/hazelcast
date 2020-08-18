@@ -5,7 +5,6 @@ import com.hazelcast.cluster.memberselector.MemberSelectors;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.enterprise.wan.impl.AbstractWanAntiEntropyEvent;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
-import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.internal.monitor.WanSyncState;
@@ -24,7 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import static java.lang.Thread.currentThread;
@@ -38,20 +36,16 @@ public class WanSyncManager {
     private static final int MAX_RETRY_COUNT = 5;
     private static final AtomicReferenceFieldUpdater<WanSyncManager, WanSyncStatus> SYNC_STATUS
             = newUpdater(WanSyncManager.class, WanSyncStatus.class, "syncStatus");
-    private static final AtomicIntegerFieldUpdater<WanSyncManager> SYNCED_PARTITION_COUNT
-            = AtomicIntegerFieldUpdater.newUpdater(WanSyncManager.class, "syncedPartitionCount");
 
     private final EnterpriseWanReplicationService wanReplicationService;
     private final ILogger logger;
     private final Node node;
 
     private volatile WanSyncStatus syncStatus = WanSyncStatus.READY;
-    /** The processed {@link WanSyncEvent}s count */
-    private volatile int syncedPartitionCount;
 
     private volatile boolean running = true;
-    private volatile String activeWanConfig;
-    private volatile String activePublisher;
+    private volatile String activeWanReplicationName;
+    private volatile String activePublisherId;
 
     public WanSyncManager(EnterpriseWanReplicationService wanReplicationService, Node node) {
         this.node = node;
@@ -90,8 +84,8 @@ public class WanSyncManager {
         if (!SYNC_STATUS.compareAndSet(this, WanSyncStatus.READY, WanSyncStatus.IN_PROGRESS)) {
             throw new SyncFailedException("Another anti-entropy request is already in progress.");
         }
-        activeWanConfig = wanReplicationName;
-        activePublisher = wanPublisherId;
+        activeWanReplicationName = wanReplicationName;
+        activePublisherId = wanPublisherId;
 
         node.getNodeEngine().getExecutionService().execute("hz:wan:sync:pool", () -> {
             Operation op = new WanAntiEntropyEventStarterOperation(wanReplicationName, wanPublisherId, event);
@@ -109,7 +103,7 @@ public class WanSyncManager {
     }
 
     public WanSyncState getWanSyncState() {
-        return new WanSyncStateImpl(syncStatus, syncedPartitionCount, activeWanConfig, activePublisher);
+        return new WanSyncStateImpl(syncStatus, activeWanReplicationName, activePublisherId);
     }
 
     /**
@@ -210,14 +204,6 @@ public class WanSyncManager {
         return node.getNodeEngine().getOperationService();
     }
 
-    public void incrementSyncedPartitionCount() {
-        SYNCED_PARTITION_COUNT.incrementAndGet(this);
-    }
-
-    public void resetSyncedPartitionCount() {
-        SYNCED_PARTITION_COUNT.set(this, 0);
-    }
-
     /**
      * Removes partitions for which WAN sync has been successfully triggered
      * from the {@code partitionsToSync} set.
@@ -263,5 +249,13 @@ public class WanSyncManager {
      */
     private ClusterService getClusterService() {
         return node.getClusterService();
+    }
+
+    public void setActiveWanReplicationName(String activeWanReplicationName) {
+        this.activeWanReplicationName = activeWanReplicationName;
+    }
+
+    public void setActivePublisherId(String activePublisherId) {
+        this.activePublisherId = activePublisherId;
     }
 }

@@ -79,7 +79,6 @@ public class WANPlugin extends DiagnosticsPlugin {
     private static final String WAN_SYNC_STATUS_KEY = "status";
     private static final String WAN_SYNC_ACTIVE_WAN_CONFIG_NAME_KEY = "activeWanConfigName";
     private static final String WAN_SYNC_ACTIVE_PUBLISHER_NAME_KEY = "activePublisherName";
-    private static final String WAN_SYNC_SYNCED_PARTITION_COUNT_KEY = "syncedPartitionCount";
 
 
     private final long periodMillis;
@@ -300,7 +299,6 @@ public class WANPlugin extends DiagnosticsPlugin {
         writer.writeKeyValueEntry(WAN_SYNC_STATUS_KEY, syncState.getStatus().toString());
         writer.writeKeyValueEntry(WAN_SYNC_ACTIVE_WAN_CONFIG_NAME_KEY, syncState.getActiveWanConfigName());
         writer.writeKeyValueEntry(WAN_SYNC_ACTIVE_PUBLISHER_NAME_KEY, syncState.getActivePublisherName());
-        writer.writeKeyValueEntry(WAN_SYNC_SYNCED_PARTITION_COUNT_KEY, syncState.getSyncedPartitionCount());
         writer.endSection();
     }
 

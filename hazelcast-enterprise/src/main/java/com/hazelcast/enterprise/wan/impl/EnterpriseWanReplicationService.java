@@ -297,6 +297,8 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
                                         AbstractWanAntiEntropyEvent event) {
         WanPublisher publisher = getPublisherOrFail(wanReplicationName, wanPublisherId);
         if (publisher instanceof InternalWanPublisher) {
+            syncManager.setActiveWanReplicationName(wanReplicationName);
+            syncManager.setActivePublisherId(wanPublisherId);
             ((InternalWanPublisher) publisher).publishAntiEntropyEvent(event);
         }
     }

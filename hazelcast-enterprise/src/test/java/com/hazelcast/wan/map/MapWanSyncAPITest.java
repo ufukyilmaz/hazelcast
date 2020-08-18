@@ -7,6 +7,8 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
+import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchPublisher;
 import com.hazelcast.enterprise.wan.impl.replication.WanMerkleTreeSyncStats;
 import com.hazelcast.enterprise.wan.impl.sync.SyncFailedException;
 import com.hazelcast.internal.monitor.WanSyncState;
@@ -80,8 +82,7 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
                 {NONE, -1, -1, InMemoryFormat.BINARY},
                 {NONE, 100, -1, InMemoryFormat.BINARY},
                 {NONE, -1, 10, InMemoryFormat.BINARY},
-                // Temporary ignore, https://github.com/hazelcast/hazelcast-enterprise/issues/3145
-                // {NONE, 100, 10, InMemoryFormat.BINARY},
+                {NONE, 100, 10, InMemoryFormat.BINARY},
                 {MERKLE_TREES, -1, 10, InMemoryFormat.BINARY},
                 {MERKLE_TREES, 100, 10, InMemoryFormat.BINARY},
                 {NONE, -1, -1, InMemoryFormat.NATIVE},
@@ -391,7 +392,7 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
         factory.cleanup();
 
         clusterA.syncMap(toBReplication, MAP_NAME);
-        assertSyncState(clusterA, toBReplication, WanSyncStatus.IN_PROGRESS, -1);
+        assertSyncState(clusterA, toBReplication, WanSyncStatus.IN_PROGRESS, false);
 
         clusterB.startCluster();
 
@@ -404,8 +405,7 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
 
         verifyMapReplicated(clusterA, clusterB, MAP_NAME);
 
-        assertSyncState(clusterA, toBReplication, WanSyncStatus.READY,
-                getPartitionService(clusterA.getAMember()).getPartitionCount());
+        assertSyncState(clusterA, toBReplication, WanSyncStatus.READY, true);
     }
 
     private static Map<String, WanSyncStats> getLastSyncResult(HazelcastInstance instance, String setupName, String publisherId) {
@@ -486,31 +486,57 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
      * @param wanReplication the WAN replication
      * @param syncStatus     the expected sync status
      */
-    private static void assertSyncState(Cluster cluster,
-                                        WanReplication wanReplication,
-                                        WanSyncStatus syncStatus,
-                                        int expectedSyncedPartitionCount) {
+    private void assertSyncState(Cluster cluster,
+                                 WanReplication wanReplication,
+                                 WanSyncStatus syncStatus,
+                                 boolean assertSyncedPartitionCount) {
         assertTrueEventually(() -> {
             boolean passed = false;
             ArrayList<WanSyncState> wanSyncStates = new ArrayList<>(cluster.size());
+            ArrayList<Map<String, WanSyncStats>> wanSyncStats = new ArrayList<>(cluster.size());
             int totalSyncedPartitions = 0;
+            int totalPartitionsToSync = 0;
 
             for (HazelcastInstance instance : cluster.getMembers()) {
-                WanSyncState syncState = wanReplicationService(instance).getWanSyncState();
+                EnterpriseWanReplicationService wanService = wanReplicationService(instance);
+                WanSyncState syncState = wanService.getWanSyncState();
                 boolean memberSyncStatePasses =
                         syncState.getStatus() == syncStatus
                                 && wanReplication.getSetupName().equals(syncState.getActiveWanConfigName())
                                 && wanReplication.getTargetClusterName().equals(syncState.getActivePublisherName());
+
                 passed |= memberSyncStatePasses;
                 wanSyncStates.add(syncState);
-                totalSyncedPartitions += syncState.getSyncedPartitionCount();
+                WanBatchPublisher publisher = (WanBatchPublisher) wanService.getPublisherOrFail(
+                        wanReplication.getSetupName(), wanReplication.getTargetClusterName());
+                Map<String, WanSyncStats> lastSyncStats = publisher.getSyncSupport().getLastSyncStats();
+                wanSyncStats.add(lastSyncStats);
+                int publishedSyncedPartitionCount = lastSyncStats
+                        .values().stream().mapToInt(WanSyncStats::getPartitionsSynced)
+                        .sum();
+                int publishedPartitionsToSync = lastSyncStats
+                        .values().stream().mapToInt(WanSyncStats::getPartitionsToSync)
+                        .sum();
+                totalSyncedPartitions += publishedSyncedPartitionCount;
+                totalPartitionsToSync += publishedPartitionsToSync;
             }
             assertTrue("Expected one cluster member to have syncStatus " + syncStatus + " but statuses were " + wanSyncStates,
                     passed);
 
-            if (expectedSyncedPartitionCount > 0) {
-                assertEquals("Expected " + expectedSyncedPartitionCount + " but sync states were " + wanSyncStates,
-                        expectedSyncedPartitionCount, totalSyncedPartitions);
+            if (assertSyncedPartitionCount) {
+                assertEquals("Synced partition count is " + totalSyncedPartitions
+                        + " but partitions to sync is " + totalPartitionsToSync, totalPartitionsToSync, totalSyncedPartitions);
+
+                // merkle trees may report less synced partitions than the total
+                // partition count
+                int totalPartitionCount = getPartitionService(clusterA.getAMember()).getPartitionCount();
+                if (consistencyCheckStrategy == NONE) {
+                    assertEquals("Expected " + totalPartitionCount + " but sync stats were " + wanSyncStats,
+                            totalPartitionCount, totalSyncedPartitions);
+                } else {
+                    assertTrue("Synced partition count is higher than the total partition count. Sync stats are "
+                            + wanSyncStats, totalSyncedPartitions <= totalPartitionCount);
+                }
             }
         });
     }

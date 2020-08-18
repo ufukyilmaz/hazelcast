@@ -7,7 +7,6 @@ import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
 import com.hazelcast.enterprise.wan.impl.connection.WanConnectionWrapper;
 import com.hazelcast.enterprise.wan.impl.operation.MerkleTreeNodeValueComparison;
 import com.hazelcast.enterprise.wan.impl.operation.WanMerkleTreeNodeCompareOperation;
-import com.hazelcast.enterprise.wan.impl.sync.WanSyncManager;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.management.events.WanConsistencyCheckFinishedEvent;
 import com.hazelcast.internal.management.events.WanConsistencyCheckStartedEvent;
@@ -78,7 +77,6 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
             new ConcurrentHashMap<>();
     private final Map<String, WanSyncStats> lastSyncStats = new ConcurrentHashMap<>();
     private final WanBatchPublisher publisher;
-    private final WanSyncManager syncManager;
     private final Map<UUID, WanSyncContext<WanMerkleTreeSyncStats>> syncContextMap = new ConcurrentHashMap<>();
 
     /**
@@ -95,9 +93,6 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
         this.logger = checkNotNull(node.getLogger(getClass()));
         this.configurationContext = checkNotNull(configurationContext);
         this.publisher = checkNotNull(publisher);
-        final EnterpriseWanReplicationService service =
-                checkNotNull((EnterpriseWanReplicationService) nodeEngine.getWanReplicationService());
-        this.syncManager = checkNotNull(service.getSyncManager());
         this.wanTargetInvocationIdleStrategy = new BackoffIdleStrategy(0, 0, WAN_TARGET_INVOCATION_BACKOFF_MIN_PARK,
                 WAN_TARGET_INVOCATION_BACKOFF_MAX_PARK);
         this.updateSerializingExecutor = newSingleThreadExecutor(
@@ -218,7 +213,6 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
             syncStats.onSyncLeaf(nodeEntryCount);
 
             if (remainingEventCount == 0) {
-                syncManager.incrementSyncedPartitionCount();
                 syncStats.onSyncPartition();
 
                 writeManagementCenterProgressUpdateEvent(syncContext.getUuid(), mapName, syncStats.getPartitionsSynced(),

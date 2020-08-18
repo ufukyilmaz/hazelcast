@@ -64,6 +64,15 @@ public class WanMerkleTreeSyncStats implements WanSyncStats {
     }
 
     /**
+     * Callback for synchronizing multiple partitions.
+     *
+     * @return the number of partitions synced
+     */
+    int onSyncPartitions(int syncedPartitionCount) {
+        return partitionsSynced.addAndGet(syncedPartitionCount);
+    }
+
+    /**
      * Callback for synchronizing a Merkle tree node.
      *
      * @param leafEntryCount the number of the records belong to the
@@ -159,5 +168,23 @@ public class WanMerkleTreeSyncStats implements WanSyncStats {
      */
     public double getStdDevEntriesPerLeaf() {
         return stdDevEntriesPerLeaf;
+    }
+
+    @Override
+    public String toString() {
+        return "WanMerkleTreeSyncStats{"
+                + "uuid=" + uuid
+                + ", syncStartNanos=" + syncStartNanos
+                + ", partitionsToSync=" + partitionsToSync
+                + ", partitionsSynced=" + partitionsSynced
+                + ", recordsSynced=" + recordsSynced
+                + ", nodesSynced=" + nodesSynced
+                + ", sumEntryCountSquares=" + sumEntryCountSquares
+                + ", syncDurationNanos=" + syncDurationNanos
+                + ", minLeafEntryCount=" + minLeafEntryCount
+                + ", maxLeafEntryCount=" + maxLeafEntryCount
+                + ", avgEntriesPerLeaf=" + avgEntriesPerLeaf
+                + ", stdDevEntriesPerLeaf=" + stdDevEntriesPerLeaf
+                + '}';
     }
 }

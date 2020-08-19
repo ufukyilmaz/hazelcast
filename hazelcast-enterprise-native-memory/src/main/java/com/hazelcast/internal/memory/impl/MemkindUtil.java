@@ -11,7 +11,7 @@ public final class MemkindUtil {
     }
 
     public static boolean shouldUseMemkindMalloc(NativeMemoryConfig config) {
-        return config.getPersistentMemoryDirectory() != null
+        return !config.getPersistentMemoryConfig().getDirectoryConfigs().isEmpty()
                 || useMemkind();
     }
 

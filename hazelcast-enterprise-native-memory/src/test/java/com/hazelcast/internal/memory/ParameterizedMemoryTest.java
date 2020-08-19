@@ -13,6 +13,7 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 
+import static com.hazelcast.internal.memory.PmemTestUtil.firstOf;
 import static com.hazelcast.internal.memory.impl.MemkindHeap.PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY;
 import static java.util.Arrays.asList;
 
@@ -48,7 +49,8 @@ public class ParameterizedMemoryTest extends HazelcastTestSupport {
                 libMallocFactory = new UnsafeMallocFactory(new FreeMemoryChecker());
                 break;
             case MEMKIND_PMEM:
-                NativeMemoryConfig config = new NativeMemoryConfig().setPersistentMemoryDirectory(PERSISTENT_MEMORY_DIRECTORY);
+                NativeMemoryConfig config = new NativeMemoryConfig()
+                        .setPersistentMemoryDirectory(firstOf(PERSISTENT_MEMORY_DIRECTORIES));
                 libMallocFactory = new MallocFactoryDelegate(new MemkindMallocFactory(config));
                 break;
             case MEMKIND_DRAM:

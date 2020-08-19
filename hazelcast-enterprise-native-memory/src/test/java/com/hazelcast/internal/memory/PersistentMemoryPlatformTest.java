@@ -8,6 +8,7 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import org.junit.Test;
 
+import static com.hazelcast.internal.memory.PmemTestUtil.firstOf;
 import static com.hazelcast.internal.util.OsHelper.isLinux;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -19,7 +20,7 @@ public class PersistentMemoryPlatformTest extends ParameterizedMemoryTest {
     @Test
     public void testPersistentMemoryFailOnNonLinuxPlatform() {
         NativeMemoryConfig config = new NativeMemoryConfig();
-        config.setPersistentMemoryDirectory(PERSISTENT_MEMORY_DIRECTORY);
+        config.setPersistentMemoryDirectory(firstOf(PERSISTENT_MEMORY_DIRECTORIES));
         LibMallocFactory libMallocFactory = new MemkindMallocFactory(config);
 
         LibMalloc libMalloc = null;

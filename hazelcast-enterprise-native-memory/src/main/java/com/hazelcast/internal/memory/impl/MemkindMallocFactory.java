@@ -17,7 +17,7 @@ public final class MemkindMallocFactory implements LibMallocFactory {
 
     @Override
     public LibMalloc create(long size) {
-        if (config.getPersistentMemoryDirectory() != null) {
+        if (!config.getPersistentMemoryConfig().getDirectoryConfigs().isEmpty()) {
             return MemkindPmemMalloc.create(config, size);
         } else {
             return MemkindMalloc.create(config, size);

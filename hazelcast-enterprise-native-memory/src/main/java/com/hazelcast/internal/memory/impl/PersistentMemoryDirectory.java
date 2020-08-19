@@ -1,6 +1,6 @@
 package com.hazelcast.internal.memory.impl;
 
-import com.hazelcast.config.NativeMemoryConfig;
+import com.hazelcast.config.PersistentMemoryDirectoryConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.internal.util.DirectoryLock;
 import com.hazelcast.internal.util.UuidUtil;
@@ -30,10 +30,8 @@ final class PersistentMemoryDirectory {
      */
     private DirectoryLock directoryLock;
 
-    /**
-     * Native memory configuration.
-     */
-    private final NativeMemoryConfig config;
+    private final String directory;
+    private final int numaNodeId;
 
     /**
      * The File where {@link MemkindHeap} allocates memory.
@@ -41,8 +39,13 @@ final class PersistentMemoryDirectory {
      */
     private final File pmemFile;
 
-    PersistentMemoryDirectory(NativeMemoryConfig config) {
-        this.config = config;
+    PersistentMemoryDirectory(PersistentMemoryDirectoryConfig config) {
+        this(config.getDirectory(), config.getNumaNode());
+    }
+
+    private PersistentMemoryDirectory(String directory, int numaNodeId) {
+        this.directory = directory;
+        this.numaNodeId = numaNodeId;
         this.pmemFile = acquireDirectory();
     }
 
@@ -50,8 +53,12 @@ final class PersistentMemoryDirectory {
         return pmemFile;
     }
 
+    int getNumaNodeId() {
+        return numaNodeId;
+    }
+
     private File acquireDirectory() {
-        File pmemDirectory = new File(config.getPersistentMemoryDirectory());
+        File pmemDirectory = new File(directory);
         if (!pmemDirectory.exists() && !pmemDirectory.mkdirs() && !pmemDirectory.exists()) {
             throw new HazelcastException("Could not create " + pmemDirectory.getAbsolutePath());
         }

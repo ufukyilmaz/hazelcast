@@ -2,8 +2,10 @@ package com.hazelcast.query.impl;
 
 import com.hazelcast.core.TypeConverter;
 import com.hazelcast.internal.bplustree.BPlusTreeInlinedLongAccessor;
+import com.hazelcast.internal.bplustree.BPlusTreeInlinedLongComparator;
 import com.hazelcast.internal.bplustree.BPlusTreeKeyComparator;
 import com.hazelcast.internal.bplustree.DefaultBPlusTreeKeyAccessor;
+import com.hazelcast.internal.bplustree.EntrySlotNoPayload;
 import com.hazelcast.internal.bplustree.EntrySlotPayload;
 import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
@@ -37,8 +39,8 @@ abstract class HDBaseConcurrentIndexStore extends BaseSingleValueIndexStore {
         super(copyBehavior, false);
 
         this.recordsWithNullValue = new HDBPlusTreeIndex(ess, keyAllocator, indexAllocator, entryFactory,
-                keyComparator, new BPlusTreeInlinedLongAccessor(ess), nodeSize,
-                entrySlotPayload);
+                new BPlusTreeInlinedLongComparator(), new BPlusTreeInlinedLongAccessor(ess), nodeSize,
+                new EntrySlotNoPayload());
         try {
             this.records = new HDBPlusTreeIndex(ess, keyAllocator, indexAllocator, entryFactory,
                     keyComparator, new DefaultBPlusTreeKeyAccessor(ess), nodeSize,

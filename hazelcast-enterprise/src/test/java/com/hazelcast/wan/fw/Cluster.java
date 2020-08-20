@@ -320,7 +320,12 @@ public class Cluster {
     }
 
     public AddWanConfigResult addWanReplication(WanReplication wanReplication) {
-        return wanReplicationService(getAMember())
+        return addWanReplication(wanReplication, getAMember());
+    }
+
+    public AddWanConfigResult addWanReplication(WanReplication wanReplication,
+                                                HazelcastInstance coordinatorInstance) {
+        return wanReplicationService(coordinatorInstance)
                 .addWanReplicationConfig(wanReplication.getConfig());
     }
 

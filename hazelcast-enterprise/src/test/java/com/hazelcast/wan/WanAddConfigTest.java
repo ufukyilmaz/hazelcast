@@ -388,15 +388,22 @@ public class WanAddConfigTest extends HazelcastTestSupport {
                 .withSetupName(REPLICATION_NAME)
                 .setup();
 
-        clusterA.startAClusterMember();
-        clusterA.startAClusterMember(c -> c.setLiteMember(true));
+        HazelcastInstance dataMember = clusterA.startAClusterMember();
+        HazelcastInstance liteMember = clusterA.startAClusterMember(c -> c.setLiteMember(true));
 
-        AddWanConfigResult addResult = clusterA.addWanReplication(wanReplication);
+        AddWanConfigResult addResult = clusterA.addWanReplication(wanReplication, dataMember);
         assertEquals(1, addResult.getAddedPublisherIds().size());
         assertEquals(0, addResult.getIgnoredPublisherIds().size());
+
+        // all members should now have the config
         assertPublisherCountEventually(REPLICATION_NAME, 1);
         assertPublisherCountEventually(clusterA, REPLICATION_NAME, 1);
 
+        // try to promote lite member and start migrations
+        fillMap(clusterA, MAP_NAME, 0, 100);
+        liteMember.getCluster().promoteLocalLiteMember();
+
+        // all new members should have the config as well
         clusterA.startAClusterMember(c -> c.setLiteMember(true));
         assertPublisherCountEventually(REPLICATION_NAME, 1);
         assertPublisherCountEventually(clusterA, REPLICATION_NAME, 1);

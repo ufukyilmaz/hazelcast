@@ -63,7 +63,7 @@ import com.hazelcast.security.permission.SqlPermission;
 import com.hazelcast.security.permission.TopicPermission;
 import com.hazelcast.security.permission.TransactionPermission;
 import com.hazelcast.splitbrainprotection.SplitBrainProtectionService;
-import com.hazelcast.sql.SqlQuery;
+import com.hazelcast.sql.SqlStatement;
 import com.hazelcast.sql.SqlResult;
 import com.hazelcast.sql.SqlService;
 import com.hazelcast.topic.ITopic;
@@ -971,16 +971,16 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
 
         @Nonnull
         @Override
-        public SqlResult query(@Nonnull String sql, Object... params) {
+        public SqlResult execute(@Nonnull String sql, Object... params) {
             checkPermission(new SqlPermission());
-            return sqlService.query(sql, params);
+            return sqlService.execute(sql, params);
         }
 
         @Nonnull
         @Override
-        public SqlResult query(@Nonnull SqlQuery query) {
+        public SqlResult execute(@Nonnull SqlStatement statement) {
             checkPermission(new SqlPermission());
-            return sqlService.query(query);
+            return sqlService.execute(statement);
         }
     }
 }

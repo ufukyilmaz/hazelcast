@@ -9,7 +9,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.map.IMap;
 import com.hazelcast.security.permission.ActionConstants;
-import com.hazelcast.sql.SqlQuery;
+import com.hazelcast.sql.SqlStatement;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -69,11 +69,11 @@ public class SqlSecurityTest {
         map.put(1, 1);
 
         if (allowed) {
-            client.getSql().query("SELECT * FROM " + MAP_NAME).close();
-            client.getSql().query(new SqlQuery("SELECT * FROM " + MAP_NAME)).close();
+            client.getSql().execute("SELECT * FROM " + MAP_NAME).close();
+            client.getSql().execute(new SqlStatement("SELECT * FROM " + MAP_NAME)).close();
         } else {
             try {
-                client.getSql().query("SELECT * FROM " + MAP_NAME).close();
+                client.getSql().execute("SELECT * FROM " + MAP_NAME).close();
 
                 fail("Must fail");
             } catch (Exception e) {
@@ -85,7 +85,7 @@ public class SqlSecurityTest {
             }
 
             try {
-                client.getSql().query(new SqlQuery("SELECT * FROM " + MAP_NAME)).close();
+                client.getSql().execute(new SqlStatement("SELECT * FROM " + MAP_NAME)).close();
 
                 fail("Must fail");
             } catch (Exception e) {

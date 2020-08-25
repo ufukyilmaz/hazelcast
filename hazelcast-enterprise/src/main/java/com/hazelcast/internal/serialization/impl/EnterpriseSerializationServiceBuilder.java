@@ -153,8 +153,9 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
                 .withVersionedSerializationEnabled(versionedSerializationEnabled)
                 .withNotActiveExceptionSupplier(notActiveExceptionSupplier)
                 .withClassNameFilter(classNameFilter)
+                .withCheckClassDefErrors(checkClassDefErrors)
                 .build();
-                serializationServiceV1.registerClassDefinitions(classDefinitions, checkClassDefErrors);
+                serializationServiceV1.registerClassDefinitions(classDefinitions);
                 return serializationServiceV1;
 
             //future version note: add new versions here

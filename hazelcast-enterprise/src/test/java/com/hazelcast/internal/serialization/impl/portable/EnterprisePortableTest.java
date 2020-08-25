@@ -8,6 +8,7 @@ import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.internal.serialization.impl.GenericRecordQueryReader;
 import com.hazelcast.internal.serialization.impl.TestSerializationConstants;
 import com.hazelcast.internal.serialization.impl.portable.PortableTest.ParentPortableObject;
 import com.hazelcast.memory.MemorySize;
@@ -18,7 +19,6 @@ import com.hazelcast.nio.serialization.FieldDefinition;
 import com.hazelcast.nio.serialization.FieldType;
 import com.hazelcast.nio.serialization.HazelcastSerializationException;
 import com.hazelcast.nio.serialization.Portable;
-import com.hazelcast.nio.serialization.PortableReader;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Assert;
@@ -349,11 +349,11 @@ public class EnterprisePortableTest {
         PortableTest.GrandParentPortableObject grandParent = new PortableTest.GrandParentPortableObject(System.nanoTime(), parent);
 
         Data data = serializationService.toData(grandParent);
-        PortableReader reader = serializationService.createPortableReader(data);
+        GenericRecordQueryReader reader = new GenericRecordQueryReader(serializationService.readAsInternalGenericRecord(data));
 
-        assertEquals(grandParent.timestamp, reader.readLong("timestamp"));
-        assertEquals(parent.timestamp, reader.readLong("child.timestamp"));
-        assertEquals(child.timestamp, reader.readLong("child.child.timestamp"));
+        assertEquals(grandParent.timestamp, reader.read("timestamp"));
+        assertEquals(parent.timestamp, reader.read("child.timestamp"));
+        assertEquals(child.timestamp, reader.read("child.child.timestamp"));
     }
 
     @Test

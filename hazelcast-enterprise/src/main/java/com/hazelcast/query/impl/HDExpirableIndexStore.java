@@ -1,11 +1,13 @@
 package com.hazelcast.query.impl;
 
 import com.hazelcast.internal.memory.MemoryBlock;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.util.Clock;
 import com.hazelcast.map.impl.StoreAdapter;
 import com.hazelcast.map.impl.record.HDRecord;
-import com.hazelcast.internal.serialization.Data;
+
+import java.util.Iterator;
 
 /**
  * Expirable index store for HD memory.
@@ -17,6 +19,31 @@ abstract class HDExpirableIndexStore extends BaseSingleValueIndexStore {
     HDExpirableIndexStore(IndexCopyBehavior copyOn, StoreAdapter partitionStoreAdapter) {
         super(copyOn, false);
         this.partitionStoreAdapter = partitionStoreAdapter;
+    }
+
+    @Override
+    public Iterator<QueryableEntry> getSqlRecordIterator() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public Iterator<QueryableEntry> getSqlRecordIterator(Comparable value) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public Iterator<QueryableEntry> getSqlRecordIterator(Comparison comparison, Comparable value) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public Iterator<QueryableEntry> getSqlRecordIterator(
+        Comparable from,
+        boolean fromInclusive,
+        Comparable to,
+        boolean toInclusive
+    ) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     /**

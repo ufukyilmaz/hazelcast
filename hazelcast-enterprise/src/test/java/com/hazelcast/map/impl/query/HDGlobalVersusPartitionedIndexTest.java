@@ -30,7 +30,7 @@ import static com.hazelcast.HDTestSupport.getSmallInstanceHDConfig;
 import static com.hazelcast.HDTestSupport.getSmallInstanceHDIndexConfig;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.STANDARD;
-import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_INDEX_ENABLED;
+import static com.hazelcast.spi.properties.ClusterProperty.GLOBAL_HD_INDEX_ENABLED;
 import static com.hazelcast.query.impl.predicates.BoundedRangePredicateQueriesTest.Person;
 import static com.hazelcast.test.Accessors.getNodeEngineImpl;
 import static java.util.Arrays.asList;
@@ -132,7 +132,7 @@ public class HDGlobalVersusPartitionedIndexTest extends HazelcastTestSupport {
     @Override
     protected Config getConfig() {
         Config config = getSmallInstanceHDIndexConfig();
-        config.setProperty(PROPERTY_GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex);
+        config.setProperty(GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex);
         return config;
     }
 }

@@ -6,7 +6,6 @@ import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 
-import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -19,6 +18,7 @@ import java.util.Set;
  * - Iterator never returns any native memory - all returning objects are on-heap (QueryableEntry and its fields).
  * - The index operations are thread-safe and can be accessed from multiple threads concurrently
  */
+@SuppressWarnings("rawtypes")
 public class HDOrderedConcurrentIndexStore extends HDBaseConcurrentIndexStore {
 
     HDOrderedConcurrentIndexStore(IndexCopyBehavior copyBehavior,
@@ -40,10 +40,6 @@ public class HDOrderedConcurrentIndexStore extends HDBaseConcurrentIndexStore {
     @Override
     public Set<QueryableEntry> getRecords(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive) {
         return buildResultSet(getRecords0(from, fromInclusive, to, toInclusive));
-    }
-
-    private Iterator<QueryableEntry> getRecords0(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive) {
-        return records.getKeysInRange(from, fromInclusive, to, toInclusive);
     }
 
     @Override

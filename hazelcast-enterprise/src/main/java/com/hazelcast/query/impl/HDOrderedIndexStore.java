@@ -12,6 +12,7 @@ import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.query.Predicate;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 import static com.hazelcast.internal.util.ThreadUtil.assertRunningOnPartitionThread;
@@ -27,6 +28,7 @@ import static com.hazelcast.query.impl.AbstractIndex.NULL;
  * - Never returns any native memory - all returning objects are on-heap (QueryableEntry and its fields).
  * - There is no read & write locking since it's accessed from a single partition-thread only
  */
+@SuppressWarnings("rawtypes")
 class HDOrderedIndexStore extends HDExpirableIndexStore {
 
     private final HDIndexHashMap<QueryableEntry> recordsWithNullValue;
@@ -116,6 +118,31 @@ class HDOrderedIndexStore extends HDExpirableIndexStore {
         assertRunningOnPartitionThread();
         recordsWithNullValue.clear();
         records.clear();
+    }
+
+    @Override
+    public Iterator<QueryableEntry> getSqlRecordIterator() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Iterator<QueryableEntry> getSqlRecordIterator(Comparable value) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Iterator<QueryableEntry> getSqlRecordIterator(Comparison comparison, Comparable value) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Iterator<QueryableEntry> getSqlRecordIterator(
+        Comparable from,
+        boolean fromInclusive,
+        Comparable to,
+        boolean toInclusive
+    ) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -27,7 +27,7 @@ import java.util.Collection;
 
 import static com.hazelcast.HDTestSupport.getHDIndexConfig;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
-import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_INDEX_ENABLED;
+import static com.hazelcast.spi.properties.ClusterProperty.GLOBAL_HD_INDEX_ENABLED;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -54,7 +54,7 @@ public class HDIndexLeakTest
     @Override
     protected Config getConfig() {
         Config config = getHDIndexConfig();
-        config.setProperty(PROPERTY_GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex);
+        config.setProperty(GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex);
         return config;
     }
 

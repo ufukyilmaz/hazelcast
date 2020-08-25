@@ -19,7 +19,7 @@ import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
-import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_INDEX_ENABLED;
+import static com.hazelcast.spi.properties.ClusterProperty.GLOBAL_HD_INDEX_ENABLED;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
@@ -47,7 +47,7 @@ public class EnterpriseMapIndexLifecycleTest extends MapIndexLifecycleTest {
         if (inMemoryFormat == NATIVE) {
             Config config = getHDConfig(super.getConfig());
             config.getNativeMemoryConfig().setAllocatorType(POOLED);
-            config.setProperty(PROPERTY_GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex);
+            config.setProperty(GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex);
             return config;
         } else {
             return super.getConfig();

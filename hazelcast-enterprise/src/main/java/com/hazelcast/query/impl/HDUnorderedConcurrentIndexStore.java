@@ -8,14 +8,12 @@ import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import static com.hazelcast.query.impl.HDUnorderedIndexStore.canonicalize;
 import static com.hazelcast.query.impl.HDUnorderedIndexStore.canonicalizeScalarForStorage0;
-
-
 /**
  * Unordered and concurrent index store for HD memory based on B+tree.
  * <p>
@@ -33,9 +31,7 @@ import static com.hazelcast.query.impl.HDUnorderedIndexStore.canonicalizeScalarF
  * - The index operations are thread-safe and can be accessed from multiple threads concurrently
  */
 public class HDUnorderedConcurrentIndexStore extends HDBaseConcurrentIndexStore {
-
     private final EnterpriseSerializationService ess;
-
     HDUnorderedConcurrentIndexStore(IndexCopyBehavior copyBehavior,
                                     EnterpriseSerializationService ess,
                                     MemoryAllocator keyAllocator,
@@ -43,84 +39,164 @@ public class HDUnorderedConcurrentIndexStore extends HDBaseConcurrentIndexStore 
                                     MapEntryFactory<QueryableEntry> entryFactory,
                                     int nodeSize) {
         super(copyBehavior,
-                ess,
-                keyAllocator,
-                indexAllocator,
-                new HashIndexBPlusTreeKeyComparator(ess),
-                entryFactory,
-                nodeSize,
-                new HashIndexEntrySlotPayload());
+            ess,
+            keyAllocator,
+            indexAllocator,
+            new HashIndexBPlusTreeKeyComparator(ess),
+            entryFactory,
+            nodeSize,
+            new HashIndexEntrySlotPayload());
         this.ess = ess;
     }
-
     @Override
     public Set<QueryableEntry> getRecords(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive) {
-        if (Comparables.compare(from, to) == 0) {
-            if (!fromInclusive || !toInclusive) {
-                return Collections.emptySet();
-            }
-            return getRecords(canonicalize(from));
-        }
-
-        Set<QueryableEntry> results = new HashSet<>();
-        int fromBound = fromInclusive ? 0 : +1;
-        int toBound = toInclusive ? 0 : -1;
-        Iterator<Data> keys = records.getKeys();
-        while (keys.hasNext()) {
-            Comparable value = ess.toObject(keys.next());
-
-            if (Comparables.compare(value, from) >= fromBound && Comparables.compare(value, to) <= toBound) {
-                results.addAll(getRecords(canonicalize(value)));
-            }
-        }
-        return results;
+        Iterator<QueryableEntry> it = getSqlRecordIterator(canonicalize(from), fromInclusive, canonicalize(to), toInclusive);
+        return buildResultSet(it);
     }
-
     @Override
     public Set<QueryableEntry> getRecords(Comparison comparison, Comparable value) {
-        Set<QueryableEntry> results = new HashSet<>();
-        Iterator<Data> keys = records.getKeys();
-        while (keys.hasNext()) {
-            Comparable indexedValue = ess.toObject(keys.next());
-            boolean valid;
-            int result = Comparables.compare(value, indexedValue);
-            switch (comparison) {
-                case LESS:
-                    valid = result > 0;
-                    break;
-                case LESS_OR_EQUAL:
-                    valid = result >= 0;
-                    break;
-                case GREATER:
-                    valid = result < 0;
-                    break;
-                case GREATER_OR_EQUAL:
-                    valid = result <= 0;
-                    break;
-                default:
-                    throw new IllegalStateException("Unrecognized comparison: " + comparison);
-            }
-            if (valid) {
-                results.addAll(getRecords(indexedValue));
-            }
-        }
-        return results;
+        Iterator<QueryableEntry> it = getSqlRecordIterator(comparison, canonicalize(value));
+        return buildResultSet(it);
     }
-
     @Override
     public Set<QueryableEntry> getRecords(Comparable value) {
         return super.getRecords(canonicalize(value));
     }
-
     @Override
     public Comparable canonicalizeScalarForStorage(Comparable value) {
         return canonicalizeScalarForStorage0(value);
     }
-
     @Override
     public Comparable canonicalizeQueryArgumentScalar(Comparable value) {
         // Using a storage representation for arguments here to save on
         // conversions later.
         return canonicalizeScalarForStorage(value);
+    }
+    @Override
+    public Iterator<QueryableEntry> getSqlRecordIterator(Comparable value) {
+        return super.getSqlRecordIterator(canonicalize(value));
+    }
+    @Override
+    public Iterator<QueryableEntry> getSqlRecordIterator(Comparison comparison, Comparable value) {
+        return new ValueComparisonIterator(comparison, canonicalize(value));
+    }
+    @Override
+    public Iterator<QueryableEntry> getSqlRecordIterator(
+        Comparable from,
+        boolean fromInclusive,
+        Comparable to,
+        boolean toInclusive
+    ) {
+        if (Comparables.compare(from, to) == 0) {
+            if (!fromInclusive || !toInclusive) {
+                return Collections.emptyIterator();
+            }
+            return getSqlRecordIterator(canonicalize(from));
+        }
+        return new KeyRangeIterator(canonicalize(from), fromInclusive, canonicalize(to), toInclusive);
+    }
+    private class KeyRangeIterator implements Iterator<QueryableEntry> {
+        private final Comparable from;
+        private final Comparable to;
+        private final int fromBound;
+        private final int toBound;
+        private final Iterator<Data> keys;
+        private Iterator<QueryableEntry> currentIterator;
+        KeyRangeIterator(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive) {
+            this.from = from;
+            this.to = to;
+            fromBound = fromInclusive ? 0 : +1;
+            toBound = toInclusive ? 0 : -1;
+            keys = records.getKeys();
+        }
+        @Override
+        public boolean hasNext() {
+            outer:
+            while (true) {
+                if (currentIterator == null) {
+                    while (keys.hasNext()) {
+                        Comparable value = ess.toObject(keys.next());
+                        if (Comparables.compare(value, from) >= fromBound && Comparables.compare(value, to) <= toBound) {
+                            currentIterator = getSqlRecordIterator(canonicalize(value));
+                            continue outer;
+                        }
+                    }
+                    return false;
+                } else {
+                    if (currentIterator.hasNext()) {
+                        return true;
+                    } else {
+                        currentIterator = null;
+                        continue;
+                    }
+                }
+            }
+        }
+        @Override
+        public QueryableEntry next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            return currentIterator.next();
+        }
+    }
+    private class ValueComparisonIterator implements Iterator<QueryableEntry> {
+        private final Comparison comparison;
+        private final Comparable value;
+        private final Iterator<Data> keys;
+        private Iterator<QueryableEntry> currentIterator;
+        ValueComparisonIterator(Comparison comparison, Comparable value) {
+            this.comparison = comparison;
+            this.value = value;
+            keys = records.getKeys();
+        }
+        @Override
+        public boolean hasNext() {
+            outer:
+            while (true) {
+                if (currentIterator == null) {
+                    while (keys.hasNext()) {
+                        Comparable indexedValue = ess.toObject(keys.next());
+                        boolean valid;
+                        int result = Comparables.compare(value, indexedValue);
+                        switch (comparison) {
+                            case LESS:
+                                valid = result > 0;
+                                break;
+                            case LESS_OR_EQUAL:
+                                valid = result >= 0;
+                                break;
+                            case GREATER:
+                                valid = result < 0;
+                                break;
+                            case GREATER_OR_EQUAL:
+                                valid = result <= 0;
+                                break;
+                            default:
+                                throw new IllegalStateException("Unrecognized comparison: " + comparison);
+                        }
+                        if (valid) {
+                            currentIterator = getSqlRecordIterator(indexedValue);
+                            continue outer;
+                        }
+                    }
+                    return false;
+                } else {
+                    if (currentIterator.hasNext()) {
+                        return true;
+                    } else {
+                        currentIterator = null;
+                        continue;
+                    }
+                }
+            }
+        }
+        @Override
+        public QueryableEntry next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            return currentIterator.next();
+        }
     }
 }

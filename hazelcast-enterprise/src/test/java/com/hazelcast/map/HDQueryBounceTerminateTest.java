@@ -19,7 +19,7 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.util.Set;
 
-import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_INDEX_ENABLED;
+import static com.hazelcast.spi.properties.ClusterProperty.GLOBAL_HD_INDEX_ENABLED;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
@@ -44,7 +44,7 @@ public class HDQueryBounceTerminateTest extends HDQueryBounceTest {
     @Override
     protected Config getConfig() {
         Config config = super.getConfig();
-        config.setProperty(PROPERTY_GLOBAL_HD_INDEX_ENABLED.getName(), "false");
+        config.setProperty(GLOBAL_HD_INDEX_ENABLED.getName(), "false");
         config.getSerializationConfig().addDataSerializableFactory(42, typeId -> new PredicateImpl());
         return config;
     }

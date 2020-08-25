@@ -52,7 +52,7 @@ import java.util.concurrent.TimeUnit;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.internal.metrics.MetricDescriptorConstants.MAP_DISCRIMINATOR_NAME;
 import static com.hazelcast.internal.metrics.MetricDescriptorConstants.MAP_PREFIX;
-import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_INDEX_ENABLED;
+import static com.hazelcast.spi.properties.ClusterProperty.GLOBAL_HD_INDEX_ENABLED;
 import static java.lang.Thread.currentThread;
 
 /**
@@ -79,7 +79,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         this.mapFilterProvider = new MapFilterProvider(nodeEngine);
         this.hdMapQueryRunner = createHDMapQueryRunner(new HDPartitionScanRunner(this),
                 getQueryOptimizer(), getResultProcessorRegistry());
-        this.globalIndexEnabled = getNodeEngine().getProperties().getBoolean(PROPERTY_GLOBAL_HD_INDEX_ENABLED);
+        this.globalIndexEnabled = getNodeEngine().getProperties().getBoolean(GLOBAL_HD_INDEX_ENABLED);
         this.hdIndexProvider = globalIndexEnabled() ? new HDGlobalIndexProvider() : new HDIndexProvider();
 
         Node node = ((NodeEngineImpl) nodeEngine).getNode();

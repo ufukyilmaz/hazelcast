@@ -19,6 +19,7 @@ import com.hazelcast.query.Predicate;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import static com.hazelcast.query.impl.AbstractIndex.NULL;
@@ -101,31 +102,6 @@ abstract class HDBaseConcurrentIndexStore extends BaseSingleValueIndexStore {
     }
 
     @Override
-    public Iterator<QueryableEntry> getSqlRecordIterator() {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
-    public Iterator<QueryableEntry> getSqlRecordIterator(Comparable value) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
-    public Iterator<QueryableEntry> getSqlRecordIterator(Comparison comparison, Comparable value) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
-    public Iterator<QueryableEntry> getSqlRecordIterator(
-        Comparable from,
-        boolean fromInclusive,
-        Comparable to,
-        boolean toInclusive
-    ) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
     public Set<QueryableEntry> getRecords(Comparable value) {
         return doGetRecords(value);
     }
@@ -134,7 +110,7 @@ abstract class HDBaseConcurrentIndexStore extends BaseSingleValueIndexStore {
     public Set<QueryableEntry> getRecords(Set<Comparable> values) {
         Set<QueryableEntry> results = new HashSet<>();
         for (Comparable value : values) {
-            results.addAll(doGetRecords(value));
+            results.addAll(getRecords(value));
         }
         return results;
     }
@@ -165,6 +141,59 @@ abstract class HDBaseConcurrentIndexStore extends BaseSingleValueIndexStore {
         return (MemoryBlock) entry.getValueData();
     }
 
+    private Set<QueryableEntry> doGetRecords(Comparable value) {
+        if (value == NULL) {
+            return buildResultSet(recordsWithNullValue.getKeysInRange(null, true, null, true));
+        } else {
+            return buildResultSet(records.lookup(value));
+        }
+    }
+
+    protected Set<QueryableEntry> buildResultSet(Iterator<QueryableEntry> it) {
+        if (!it.hasNext()) {
+            return Collections.emptySet();
+        } else {
+            Set<QueryableEntry> resultSet = new HashSet<>();
+            while (it.hasNext()) {
+                resultSet.add(it.next());
+            }
+            return resultSet;
+        }
+    }
+
+    @Override
+    public Iterator<QueryableEntry> getSqlRecordIterator() {
+        return getRecords0(null, true, null, true);
+    }
+
+    @Override
+    public Iterator<QueryableEntry> getSqlRecordIterator(Comparable value) {
+        if (value == NULL) {
+            return recordsWithNullValue.getKeysInRange(null, true, null, true);
+        } else {
+            return records.lookup(value);
+        }
+    }
+
+    @Override
+    public Iterator<QueryableEntry> getSqlRecordIterator(Comparison comparison, Comparable value) {
+        return getRecords0(comparison, value);
+    }
+
+    @Override
+    public Iterator<QueryableEntry> getSqlRecordIterator(Comparable from, boolean fromInclusive,
+                                                         Comparable to, boolean toInclusive) {
+        return getRecords0(from, fromInclusive, to, toInclusive);
+    }
+
+    Iterator<QueryableEntry> getRecords0(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive) {
+        if (from == null && to == null) {
+            // For full scan include NULL values
+            return new FullScanIterator();
+        }
+        return records.getKeysInRange(from, fromInclusive, to, toInclusive);
+    }
+
     private Iterator<QueryableEntry> getRecords0(Comparison comparison, Comparable value) {
         Iterator<QueryableEntry> result;
         switch (comparison) {
@@ -186,24 +215,41 @@ abstract class HDBaseConcurrentIndexStore extends BaseSingleValueIndexStore {
         return result;
     }
 
+    /**
+     * The full scan iterator that first returns all NULL entries followed by
+     * the non-NULL ones.
+     */
+    class FullScanIterator implements Iterator<QueryableEntry> {
 
-    private Set<QueryableEntry> doGetRecords(Comparable value) {
-        if (value == NULL) {
-            return buildResultSet(recordsWithNullValue.getKeysInRange(null, true, null, true));
-        } else {
-            return buildResultSet(records.lookup(value));
+        private Iterator<QueryableEntry> iterator;
+        private final Iterator<QueryableEntry> nullValueIterator;
+        private Iterator<QueryableEntry> nonNullValueIterator;
+
+        FullScanIterator() {
+            this.nullValueIterator = recordsWithNullValue.getKeysInRange(null, true, null, true);
+            this.iterator = nullValueIterator;
         }
-    }
 
-    protected Set<QueryableEntry> buildResultSet(Iterator<QueryableEntry> it) {
-        if (!it.hasNext()) {
-            return Collections.emptySet();
-        } else {
-            Set<QueryableEntry> resultSet = new HashSet<>();
-            while (it.hasNext()) {
-                resultSet.add(it.next());
+        @Override
+        public boolean hasNext() {
+            if (!iterator.hasNext()) {
+                if (nonNullValueIterator == null) {
+                    nonNullValueIterator = records.getKeysInRange(null, true, null, true);
+                    iterator = nonNullValueIterator;
+                    return iterator.hasNext();
+                } else {
+                    return false;
+                }
             }
-            return resultSet;
+            return true;
+        }
+
+        @Override
+        public QueryableEntry next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            return iterator.next();
         }
     }
 

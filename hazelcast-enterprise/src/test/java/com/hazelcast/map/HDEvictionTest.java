@@ -33,7 +33,7 @@ import static com.hazelcast.config.EvictionPolicy.LFU;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.STANDARD;
 import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_TASK_PERIOD_SECONDS;
 import static com.hazelcast.memory.MemoryUnit.KILOBYTES;
-import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_INDEX_ENABLED;
+import static com.hazelcast.spi.properties.ClusterProperty.GLOBAL_HD_INDEX_ENABLED;
 import static com.hazelcast.test.Accessors.getNode;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Math.max;
@@ -69,7 +69,7 @@ public class HDEvictionTest extends EvictionTest {
     @Override
     protected Config getConfig() {
         Config config = getHDIndexConfig();
-        config.setProperty(PROPERTY_GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex);
+        config.setProperty(GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex);
         return config;
     }
 

@@ -38,7 +38,7 @@ import static com.hazelcast.NativeMemoryTestUtil.disableNativeMemoryDebugging;
 import static com.hazelcast.NativeMemoryTestUtil.enableNativeMemoryDebugging;
 import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
-import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_INDEX_ENABLED;
+import static com.hazelcast.spi.properties.ClusterProperty.GLOBAL_HD_INDEX_ENABLED;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
 
@@ -198,7 +198,7 @@ public class HDIndexMemoryLeakTest extends HazelcastTestSupport {
         config.getMetricsConfig().setEnabled(false);
         return config
                 .setProperty(ClusterProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4")
-                .setProperty(PROPERTY_GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex)
+                .setProperty(GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex)
                 .setProperty(ClusterProperty.PARTITION_COUNT.getName(), String.valueOf(PARTITION_COUNT))
                 .addMapConfig(mapConfig)
                 .setNativeMemoryConfig(memoryConfig);

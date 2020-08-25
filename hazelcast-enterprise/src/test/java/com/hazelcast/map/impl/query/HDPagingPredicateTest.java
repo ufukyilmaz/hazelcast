@@ -12,7 +12,7 @@ import org.junit.runners.Parameterized;
 import java.util.Collection;
 
 import static com.hazelcast.HDTestSupport.getSmallInstanceHDIndexConfig;
-import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_INDEX_ENABLED;
+import static com.hazelcast.spi.properties.ClusterProperty.GLOBAL_HD_INDEX_ENABLED;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
@@ -34,7 +34,7 @@ public class HDPagingPredicateTest extends PagingPredicateTest {
     @Override
     protected Config getConfig() {
         Config config = getSmallInstanceHDIndexConfig();
-        config.setProperty(PROPERTY_GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex);
+        config.setProperty(GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex);
         return config;
     }
 

@@ -10,7 +10,7 @@ import org.junit.runner.RunWith;
 import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED;
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
-import static com.hazelcast.query.impl.HDGlobalIndexProvider.PROPERTY_GLOBAL_HD_INDEX_ENABLED;
+import static com.hazelcast.spi.properties.ClusterProperty.GLOBAL_HD_INDEX_ENABLED;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
@@ -19,7 +19,7 @@ public class HDQueryBounceGlobalIndexTest extends QueryBounceTest {
     @Override
     protected Config getConfig() {
         Config config = getHDConfig(super.getConfig(), POOLED, new MemorySize(128, MEGABYTES));
-        config.setProperty(PROPERTY_GLOBAL_HD_INDEX_ENABLED.getName(), "true");
+        config.setProperty(GLOBAL_HD_INDEX_ENABLED.getName(), "true");
         return config;
     }
 }

@@ -54,7 +54,8 @@ public class PartitionedMapTableResolverHDTest extends SqlTestSupport {
 
         map.put(1, 1);
 
-        Collection<Table> tables = new PartitionedMapTableResolver(nodeEngine(instance)).getTables();
+        Collection<Table> tables =
+            new PartitionedMapTableResolver(nodeEngine(instance), JetMapMetadataResolver.NO_OP).getTables();
 
         PartitionedMapTable table = (PartitionedMapTable) tables.iterator().next();
 

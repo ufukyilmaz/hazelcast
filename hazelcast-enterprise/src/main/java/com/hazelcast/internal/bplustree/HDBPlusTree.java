@@ -1,6 +1,5 @@
 package com.hazelcast.internal.bplustree;
 
-import com.hazelcast.core.HazelcastException;
 import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.MemoryBlock;
@@ -9,6 +8,7 @@ import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.query.impl.QueryableEntry;
+import com.hazelcast.spi.exception.DistributedObjectDestroyedException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -1530,7 +1530,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
 
     private void checkIfDisposed() {
         if (isDisposed) {
-            throw new HazelcastException("Disposed B+tree cannot be accessed.");
+            throw new DistributedObjectDestroyedException("Disposed B+tree cannot be accessed.");
         }
     }
 

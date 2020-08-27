@@ -4,6 +4,7 @@ import com.hazelcast.cache.impl.wan.WanCacheEntryView;
 import com.hazelcast.internal.util.JavaVersion;
 import com.hazelcast.sql.impl.calcite.validate.types.HazelcastIntegerType;
 import com.hazelcast.sql.impl.calcite.validate.types.HazelcastObjectType;
+import com.hazelcast.sql.impl.calcite.validate.types.HazelcastTemporalType;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
@@ -45,6 +46,7 @@ public class EnterpriseDataSerializableConventionsTest extends DataSerializableC
         classes.add(WanCacheEntryView.class);
         classes.add(HazelcastIntegerType.class);
         classes.add(HazelcastObjectType.class);
+        classes.add(HazelcastTemporalType.class);
 
         if (JavaVersion.isAtLeast(JavaVersion.JAVA_8)) {
             // only resolve those classes when tests are executed with Java 8 or later

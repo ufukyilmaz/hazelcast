@@ -23,6 +23,8 @@ import com.hazelcast.cp.IAtomicLong;
 import com.hazelcast.cp.IAtomicReference;
 import com.hazelcast.cp.ICountDownLatch;
 import com.hazelcast.cp.ISemaphore;
+import com.hazelcast.cp.event.CPGroupAvailabilityListener;
+import com.hazelcast.cp.event.CPMembershipListener;
 import com.hazelcast.cp.lock.FencedLock;
 import com.hazelcast.cp.session.CPSessionManagementService;
 import com.hazelcast.crdt.pncounter.PNCounter;
@@ -959,6 +961,26 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         @Override
         public CPSessionManagementService getCPSessionManagementService() {
             throw new UnsupportedOperationException("CPSessionManagementService is not available!");
+        }
+
+        @Override
+        public UUID addMembershipListener(CPMembershipListener listener) {
+            return cpSubsystem.addMembershipListener(listener);
+        }
+
+        @Override
+        public boolean removeMembershipListener(UUID id) {
+            return cpSubsystem.removeMembershipListener(id);
+        }
+
+        @Override
+        public UUID addGroupAvailabilityListener(CPGroupAvailabilityListener listener) {
+            return cpSubsystem.addGroupAvailabilityListener(listener);
+        }
+
+        @Override
+        public boolean removeGroupAvailabilityListener(UUID id) {
+            return cpSubsystem.removeGroupAvailabilityListener(id);
         }
     }
 

@@ -71,9 +71,10 @@ public class HDNonConcurrentSqlIndexTest extends SqlTestSupport {
 
             fail("Must fail");
         } catch (HazelcastSqlException e) {
-            assertEquals(SqlErrorCode.GENERIC, e.getCode());
+            assertEquals(SqlErrorCode.PARSING, e.getCode());
+
             assertEquals(
-                "Cannot query the IMap \"map\" with InMemoryFormat.NATIVE because it does not have global indexes (please make sure that the IMap has at least one index, and the property \"hazelcast.hd.global.index.enabled\" is set to \"true\")",
+                "Cannot query the IMap \"map\" with InMemoryFormat.NATIVE because it does not have global indexes (please make sure that the IMap has at least one index and the property \"hazelcast.hd.global.index.enabled\" is set to \"true\")",
                 e.getMessage()
             );
         }

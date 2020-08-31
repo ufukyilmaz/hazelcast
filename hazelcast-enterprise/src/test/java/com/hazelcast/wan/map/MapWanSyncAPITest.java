@@ -29,6 +29,7 @@ import com.hazelcast.wan.impl.WanSyncStats;
 import com.hazelcast.wan.impl.WanSyncStatus;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -157,6 +158,7 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
     public InMemoryFormat inMemoryFormat;
 
     @Test
+    @Ignore
     public void testConcurrentSync() throws InterruptedException, ExecutionException {
         clusterA.startAClusterMember();
         clusterB.startAClusterMember();

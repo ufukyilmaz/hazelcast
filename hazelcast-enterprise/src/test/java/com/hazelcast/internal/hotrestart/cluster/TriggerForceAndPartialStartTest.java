@@ -28,9 +28,9 @@ import static com.hazelcast.test.Accessors.getAddresses;
 import static com.hazelcast.test.Accessors.getNode;
 import static com.hazelcast.test.Accessors.getNodeEngineImpl;
 import static org.hamcrest.Matchers.emptyArray;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 
 @RunWith(HazelcastSerialClassRunner.class)
@@ -79,9 +79,9 @@ public class TriggerForceAndPartialStartTest extends AbstractHotRestartClusterSt
     private void checkStartResult(boolean partialStart, HazelcastInstance instance) {
         InternalPartitionService partitionService = getNodeEngineImpl(instance).getPartitionService();
         if (partialStart) {
-            assertThat("Expected partition state version to be > 0", partitionService.getPartitionStateVersion(), greaterThan(0));
+            assertNotEquals("Expected partition state version to be non zero", 0, partitionService.getPartitionStateStamp());
         } else {
-            assertEquals("Expected partition state version to be 0", 0, partitionService.getPartitionStateVersion());
+            assertEquals("Expected partition state version to be 0", 0, partitionService.getPartitionStateStamp());
         }
     }
 

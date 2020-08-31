@@ -1,12 +1,13 @@
 package com.hazelcast.internal.cluster.impl;
 
+import com.hazelcast.cluster.Cluster;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
-import com.hazelcast.cluster.Cluster;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.impl.HazelcastInstanceFactory;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.CompatibilityTest;
@@ -80,6 +81,7 @@ public class ClusterStateCompatibilityTest extends HazelcastTestSupport {
 
     private Config createConfig() {
         Config config = new Config();
+        config.setProperty(ClusterProperty.LOGGING_TYPE.getName(), "log4j2");
         config.setProperty(TCP_JOIN_PORT_TRY_COUNT.getName(), String.valueOf(getKnownPreviousVersionsCount()));
         JoinConfig join = config.getNetworkConfig().getJoin();
         join.getMulticastConfig().setEnabled(false);

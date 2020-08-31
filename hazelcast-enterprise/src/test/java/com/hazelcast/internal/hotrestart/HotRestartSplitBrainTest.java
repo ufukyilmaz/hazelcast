@@ -71,7 +71,7 @@ public class HotRestartSplitBrainTest extends SplitBrainTestSupport {
 
     @Override
     protected void onAfterSplitBrainHealed(HazelcastInstance[] instances) throws Exception {
-        assertPartitionStateVersions(instances);
+        assertPartitionStateStamps(instances);
         assertClusterStates(instances);
 
         IMap<Object, Object> map2 = instances[0].getMap(mapName2);
@@ -83,7 +83,7 @@ public class HotRestartSplitBrainTest extends SplitBrainTestSupport {
         instances = restartCluster(addresses);
         assertClusterSizeEventually(instances.length, instances);
 
-        assertPartitionStateVersions(instances);
+        assertPartitionStateStamps(instances);
         assertClusterStates(instances);
 
         assertMapContents(instances[0]);
@@ -111,10 +111,10 @@ public class HotRestartSplitBrainTest extends SplitBrainTestSupport {
         }
     }
 
-    private void assertPartitionStateVersions(HazelcastInstance[] instances) {
-        int partitionStateVersion = getPartitionService(instances[0]).getPartitionStateVersion();
+    private void assertPartitionStateStamps(HazelcastInstance[] instances) {
+        long partitionStateStamp = getPartitionService(instances[0]).getPartitionStateStamp();
         for (HazelcastInstance instance : instances) {
-            assertEquals(partitionStateVersion, getPartitionService(instance).getPartitionStateVersion());
+            assertEquals(partitionStateStamp, getPartitionService(instance).getPartitionStateStamp());
         }
     }
 

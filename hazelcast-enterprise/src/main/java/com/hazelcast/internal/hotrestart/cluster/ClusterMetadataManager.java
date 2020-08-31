@@ -11,15 +11,19 @@ import com.hazelcast.core.MemberLeftException;
 import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.cluster.ClusterService;
+import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.internal.hotrestart.ForceStartException;
 import com.hazelcast.internal.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus;
 import com.hazelcast.internal.nio.IOUtil;
+import com.hazelcast.internal.partition.IPartition;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.PartitionTableView;
+import com.hazelcast.internal.partition.ReadonlyInternalPartition;
 import com.hazelcast.internal.util.Clock;
+import com.hazelcast.internal.util.collection.Long2ObjectHashMap;
 import com.hazelcast.internal.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.internal.util.concurrent.IdleStrategy;
 import com.hazelcast.logging.ILogger;
@@ -42,6 +46,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,6 +57,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.hazelcast.cluster.memberselector.MemberSelectors.DATA_MEMBER_SELECTOR;
 import static com.hazelcast.cluster.memberselector.MemberSelectors.NON_LOCAL_MEMBER_SELECTOR;
@@ -69,6 +75,7 @@ import static com.hazelcast.internal.hotrestart.cluster.HotRestartClusterStartSt
 import static com.hazelcast.internal.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus.LOAD_FAILED;
 import static com.hazelcast.internal.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus.LOAD_IN_PROGRESS;
 import static com.hazelcast.internal.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus.LOAD_SUCCESSFUL;
+import static com.hazelcast.internal.partition.InternalPartition.MAX_REPLICA_COUNT;
 import static com.hazelcast.internal.util.ThreadUtil.createThreadName;
 import static com.hazelcast.spi.impl.executionservice.ExecutionService.SYSTEM_EXECUTOR;
 import static java.lang.String.format;
@@ -476,6 +483,9 @@ public class ClusterMetadataManager {
             logger.fine("Will persist cluster version: " + newClusterVersion);
         }
         metadataWriterLoop.writeClusterVersion(newClusterVersion);
+
+        //RU_COMPAT_4_0 : will write partitions in the new format
+        persistPartitions();
     }
 
     File getHomeDir() {
@@ -655,12 +665,12 @@ public class ClusterMetadataManager {
 
     @SuppressWarnings("checkstyle:npathcomplexity")
     private boolean validatePartitionTable(PartitionTableView localPartitionTable, PartitionTableView senderPartitionTable) {
-        if (localPartitionTable.getLength() != senderPartitionTable.getLength()) {
+        if (localPartitionTable.length() != senderPartitionTable.length()) {
             return false;
         }
 
-        for (int partitionId = 0; partitionId < localPartitionTable.getLength(); partitionId++) {
-            for (int replicaIndex = 0; replicaIndex < InternalPartition.MAX_REPLICA_COUNT; replicaIndex++) {
+        for (int partitionId = 0; partitionId < localPartitionTable.length(); partitionId++) {
+            for (int replicaIndex = 0; replicaIndex < MAX_REPLICA_COUNT; replicaIndex++) {
                 PartitionReplica localReplica = localPartitionTable.getReplica(partitionId, replicaIndex);
                 PartitionReplica remoteReplica = senderPartitionTable.getReplica(partitionId, replicaIndex);
                 if (localReplica == null) {
@@ -717,7 +727,6 @@ public class ClusterMetadataManager {
 
     private boolean validateMemberClusterStartInfosForFullStart(Member sender) {
         MemberClusterStartInfo thisMemberClusterStartInfo = memberClusterStartInfos.get(node.getThisUuid());
-        int partitionTableVersion = thisMemberClusterStartInfo.getPartitionTableVersion();
         boolean fullStartSuccessful = true;
 
         for (Member member : restoredMembersRef.get()) {
@@ -726,7 +735,6 @@ public class ClusterMetadataManager {
                 fullStartSuccessful = false;
                 continue;
             }
-            int memberPartitionTableVersion = memberClusterStartInfo.getPartitionTableVersion();
             boolean partitionTableValidated = validatePartitionTable(thisMemberClusterStartInfo.getPartitionTable(),
                     memberClusterStartInfo.getPartitionTable());
             DataLoadStatus memberDataLoadStatus = memberClusterStartInfo.getDataLoadStatus();
@@ -740,9 +748,10 @@ public class ClusterMetadataManager {
                 fullStartSuccessful = false;
                 if (clusterDataRecoveryPolicy == FULL_RECOVERY_ONLY) {
                     logger.warning("Failing cluster start since full cluster data recovery is expected and we have a failure! "
-                            + "Failed member: " + member + ", reference partition table version: " + partitionTableVersion
-                            + ", member partition table version: " + memberPartitionTableVersion
-                            + " member load status: " + memberDataLoadStatus);
+                            + "Failed member: " + member + ", reference partition table stamp: "
+                            + thisMemberClusterStartInfo.getPartitionTable().stamp()
+                            + ", member partition table stamp: " + memberClusterStartInfo.getPartitionTable().stamp()
+                            + ", member load status: " + memberDataLoadStatus);
                     hotRestartStatus = CLUSTER_START_FAILED;
                     break;
                 }
@@ -867,13 +876,26 @@ public class ClusterMetadataManager {
 
     private PartitionTableView restorePartitionTable() throws IOException {
         int partitionCount = node.getProperties().getInteger(ClusterProperty.PARTITION_COUNT);
-        PartitionTableReader partitionTableReader = new PartitionTableReader(homeDir, partitionCount);
-        partitionTableReader.read();
-        PartitionTableView table = partitionTableReader.getPartitionTable();
+        PartitionTableView table;
+        boolean newFormat = node.getClusterService().getClusterVersion().isGreaterOrEqual(Versions.V4_1);
+        if (newFormat) {
+            PartitionTableReader partitionTableReader = new PartitionTableReader(homeDir, partitionCount);
+            partitionTableReader.read();
+            table = partitionTableReader.getPartitionTable();
+        } else {
+            //RU_COMPAT_4_0
+            LegacyPartitionTableReader partitionTableReader = new LegacyPartitionTableReader(homeDir, partitionCount);
+            partitionTableReader.read();
+            table = partitionTableReader.getPartitionTable();
+        }
 
         partitionTableRef.set(table);
         if (logger.isFineEnabled()) {
-            logger.fine("Restored partition table version " + table.getVersion());
+            if (newFormat) {
+                logger.fine("Restored partition table with stamp: " + table.stamp());
+            } else {
+                logger.fine("Restored partition table version: " + table.version());
+            }
         }
         return table;
     }
@@ -954,13 +976,15 @@ public class ClusterMetadataManager {
         }
 
         PartitionTableView table = partitionTableRef.get();
-        PartitionReplica[][] newReplicas = new PartitionReplica[table.getLength()][];
-        int versionInc = 0;
-        for (int p = 0; p < newReplicas.length; p++) {
-            PartitionReplica[] replicas = table.getReplicas(p);
-            newReplicas[p] = replicas;
+        InternalPartition[] newPartitions = new InternalPartition[table.length()];
+        int globalVersionInc = 0;
 
-            for (int i = 0; i < InternalPartition.MAX_REPLICA_COUNT; i++) {
+        for (int p = 0; p < newPartitions.length; p++) {
+            int versionInc = 0;
+            PartitionReplica[] replicas = table.getReplicas(p);
+            newPartitions[p] = table.getPartition(p);
+
+            for (int i = 0; i < MAX_REPLICA_COUNT; i++) {
                 PartitionReplica current = replicas[i];
                 if (current == null) {
                     continue;
@@ -973,10 +997,25 @@ public class ClusterMetadataManager {
                 replicas[i] = new PartitionReplica(newAddress, current.uuid());
                 versionInc++;
             }
+
+            if (versionInc > 0) {
+                InternalPartition partition = newPartitions[p];
+                int version = partition.version() + versionInc;
+                newPartitions[p] = new ReadonlyInternalPartition(replicas, p, version);
+                globalVersionInc += versionInc;
+            }
         }
-        int version = table.getVersion() + versionInc;
-        partitionTableRef.set(new PartitionTableView(newReplicas, version));
-        logger.fine("Partition table repair has been completed. New partition table version: " + version);
+
+        if (node.getClusterService().getClusterVersion().isGreaterOrEqual(Versions.V4_1)) {
+            PartitionTableView newTable = new PartitionTableView(newPartitions);
+            partitionTableRef.set(newTable);
+            logger.fine("Partition table repair has been completed. New partition table stamp: " + newTable.stamp());
+        }  else {
+            //RU_COMPAT_4_0
+            int version = table.version() + globalVersionInc;
+            partitionTableRef.set(new PartitionTableView(newPartitions, version));
+            logger.fine("Partition table repair has been completed. New partition table version: " + version);
+        }
     }
 
     /**
@@ -1146,7 +1185,7 @@ public class ClusterMetadataManager {
         if (logger.isFinestEnabled()) {
             logger.finest("Sending partition table to: " + masterAddress + ", TABLE-> " + partitionTable);
         } else if (logger.isFineEnabled()) {
-            logger.fine("Sending partition table to: " + masterAddress + ", Version: " + partitionTable.getVersion());
+            logger.fine("Sending partition table to: " + masterAddress + ", Stamp: " + partitionTable.stamp());
         }
         OperationService operationService = node.getNodeEngine().getOperationService();
         operationService.send(new SendMemberClusterStartInfoOperation(memberClusterStartInfo), masterAddress);
@@ -1271,13 +1310,31 @@ public class ClusterMetadataManager {
     }
 
     private void tryPartialStart() {
-        Map<Integer, List<UUID>> memberUuidsByPartitionTableVersion = collectLoadSucceededMemberUuidsByPartitionTableVersion();
-        if (memberUuidsByPartitionTableVersion.isEmpty()) {
+        boolean failed = false;
+        Set<UUID> excludedMemberUuids = Collections.emptySet();
+
+        if (node.getClusterService().getClusterVersion().isGreaterOrEqual(Versions.V4_1)) {
+            Map<UUID, PartitionTableView> partitionTables = collectLoadSucceededMemberPartitionTables();
+            if (partitionTables.isEmpty()) {
+                failed = true;
+            } else {
+                excludedMemberUuids = collectExcludedMemberUuids(partitionTables);
+            }
+        } else {
+            Map<Integer, List<UUID>> memberUuidsByPartitionTableVersion
+                    = collectLoadSucceededMemberUuidsByPartitionTableVersion();
+            if (memberUuidsByPartitionTableVersion.isEmpty()) {
+                failed = true;
+            } else {
+                excludedMemberUuids = collectExcludedMemberUuidsLegacy(memberUuidsByPartitionTableVersion);
+            }
+        }
+
+        if (failed) {
             logger.severe("Nobody has succeeded to load data...");
             hotRestartStatus = CLUSTER_START_FAILED;
             broadcast(SendClusterStartResultOperation.newFailureResultOperation());
         } else {
-            Set<UUID> excludedMemberUuids = collectExcludedMemberUuids(memberUuidsByPartitionTableVersion);
             this.excludedMemberUuids = unmodifiableSet(excludedMemberUuids);
             node.getClusterService().shrinkMissingMembers(this.excludedMemberUuids);
             hotRestartStatus = CLUSTER_START_SUCCEEDED;
@@ -1286,6 +1343,83 @@ public class ClusterMetadataManager {
         }
     }
 
+    private Map<UUID, PartitionTableView> collectLoadSucceededMemberPartitionTables() {
+        Map<UUID, PartitionTableView> membersPartitionTables = new HashMap<>();
+        final Map<UUID, Address> expectedMembers = expectedMembersRef.get();
+        for (MemberImpl member : restoredMembersRef.get()) {
+            if (!expectedMembers.containsKey(member.getUuid())) {
+                continue;
+            }
+            MemberClusterStartInfo memberClusterStartInfo = memberClusterStartInfos.get(member.getUuid());
+            if (memberClusterStartInfo == null || memberClusterStartInfo.getDataLoadStatus() != LOAD_SUCCESSFUL) {
+                continue;
+            }
+            membersPartitionTables.put(member.getUuid(), memberClusterStartInfo.getPartitionTable());
+        }
+        if (logger.isFineEnabled()) {
+            logger.fine("Partition table -> member UUIDs: " + membersPartitionTables);
+        }
+        return membersPartitionTables;
+    }
+
+    private Set<UUID> collectExcludedMemberUuids(Map<UUID, PartitionTableView> memberPartitionTables) {
+        Long2ObjectHashMap<List<UUID>> versionToUUIDs = new Long2ObjectHashMap<>();
+
+        for (Entry<UUID, PartitionTableView> e : memberPartitionTables.entrySet()) {
+            List<UUID> uuids = versionToUUIDs.computeIfAbsent(sumVersions(e.getValue()), k -> new ArrayList<>());
+            uuids.add(e.getKey());
+        }
+
+        long selectedVersion = -1;
+        List<UUID> selectedMembers = Collections.emptyList();
+
+        for (Entry<Long, List<UUID>> e : versionToUUIDs.entrySet()) {
+            long version = e.getKey();
+            List<UUID> members = e.getValue();
+
+            if (clusterDataRecoveryPolicy == PARTIAL_RECOVERY_MOST_RECENT) {
+                if (version > selectedVersion) {
+                    selectedVersion = version;
+                    selectedMembers = members;
+                }
+            } else if (clusterDataRecoveryPolicy == PARTIAL_RECOVERY_MOST_COMPLETE) {
+                if (members.size() > selectedMembers.size()
+                        || (members.size() == selectedMembers.size() && version > selectedVersion)) {
+                    selectedVersion = version;
+                    selectedMembers = members;
+                }
+            }
+            logger.fine("Candidate members " + selectedMembers + " with total partition table version: " + selectedVersion);
+        }
+
+        PartitionTableView partitionTable = memberPartitionTables.get(selectedMembers.get(0));
+        logger.info("Picking members " + selectedMembers + " with partition table stamp: " + partitionTable.stamp());
+
+        Set<UUID> excludedMemberUuids = new HashSet<>();
+        for (Member member : restoredMembersRef.get()) {
+            if (!selectedMembers.contains(member.getUuid())) {
+                excludedMemberUuids.add(member.getUuid());
+            }
+        }
+        return excludedMemberUuids;
+    }
+
+    /**
+     * Returns sum of partition versions in the partition table.
+     * We can safely assume partition table with the greatest total version
+     * is the most recent one. Because Hot Restart does not support
+     * arbitrary server crashes. Only proper server shutdowns are supported.
+     *
+     * TODO: Is there a case that violates this?
+     */
+    private static long sumVersions(PartitionTableView partitionTable) {
+        return IntStream.range(0, partitionTable.length())
+                .mapToObj(partitionTable::getPartition)
+                .mapToLong(IPartition::version).sum();
+    }
+
+    //RU_COMPAT_4_0
+    @Deprecated
     private Map<Integer, List<UUID>> collectLoadSucceededMemberUuidsByPartitionTableVersion() {
         Map<Integer, List<UUID>> membersUuidsByPartitionTableVersion = new HashMap<>();
         final Map<UUID, Address> expectedMembers = expectedMembersRef.get();
@@ -1297,7 +1431,7 @@ public class ClusterMetadataManager {
             if (memberClusterStartInfo == null || memberClusterStartInfo.getDataLoadStatus() != LOAD_SUCCESSFUL) {
                 continue;
             }
-            int partitionTableVersion = memberClusterStartInfo.getPartitionTableVersion();
+            int partitionTableVersion = memberClusterStartInfo.getPartitionTable().version();
             List<UUID> members =
                     membersUuidsByPartitionTableVersion.computeIfAbsent(partitionTableVersion, k -> new ArrayList<>());
 
@@ -1309,7 +1443,9 @@ public class ClusterMetadataManager {
         return membersUuidsByPartitionTableVersion;
     }
 
-    private Set<UUID> collectExcludedMemberUuids(Map<Integer, List<UUID>> membersByPartitionTableVersion) {
+    //RU_COMPAT_4_0
+    @Deprecated
+    private Set<UUID> collectExcludedMemberUuidsLegacy(Map<Integer, List<UUID>> membersByPartitionTableVersion) {
         int selectedPartitionTableVersion = -1;
         List<UUID> selectedMembers = Collections.emptyList();
         for (Map.Entry<Integer, List<UUID>> e : membersByPartitionTableVersion.entrySet()) {
@@ -1331,8 +1467,7 @@ public class ClusterMetadataManager {
                     + " with partition table version: " + selectedPartitionTableVersion);
         }
 
-        logger.info("Picking members " + selectedMembers
-                + " with partition table version: " + selectedPartitionTableVersion);
+        logger.info("Picking members " + selectedMembers + " with partition table version: " + selectedPartitionTableVersion);
 
         Set<UUID> excludedMemberUuids = new HashSet<>();
         for (Member member : restoredMembersRef.get()) {
@@ -1368,16 +1503,32 @@ public class ClusterMetadataManager {
     private void persistPartitions() {
         InternalPartitionService partitionService = node.getPartitionService();
         PartitionTableView partitionTable = partitionService.createPartitionTableView();
-        if (partitionTable.getVersion() == 0) {
-            if (logger.isFinestEnabled()) {
-                logger.finest("Cannot persist partition table, not initialized yet.");
+        if (node.getClusterService().getClusterVersion().isGreaterOrEqual(Versions.V4_1)) {
+            if (sumVersions(partitionTable) == 0) {
+                if (logger.isFinestEnabled()) {
+                    logger.finest("Won't persist partition table, not initialized yet.");
+                }
+                return;
             }
-            return;
+
+            if (logger.isFinestEnabled()) {
+                logger.finest("Will persist partition table with stamp: " + partitionTable.stamp());
+            }
+            metadataWriterLoop.writePartitionTable(partitionTable);
+        } else {
+            //RU_COMPAT_4_0
+            if (partitionTable.version() == 0) {
+                if (logger.isFinestEnabled()) {
+                    logger.finest("Won't persist partition table, not initialized yet.");
+                }
+                return;
+            }
+
+            if (logger.isFinestEnabled()) {
+                logger.finest("Will persist partition table version: " + partitionTable.version());
+            }
+            metadataWriterLoop.writePartitionTableLegacy(partitionTable);
         }
-        if (logger.isFinestEnabled()) {
-            logger.finest("Will persist partition table version: " + partitionTable.getVersion());
-        }
-        metadataWriterLoop.writePartitionTable(partitionTable);
     }
 
     private void broadcast(Operation operation) {

@@ -8,13 +8,16 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.impl.HazelcastInstanceFactory;
 import com.hazelcast.internal.util.Clock;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.OverridePropertyRule;
 import com.hazelcast.test.annotation.CompatibilityTest;
 import com.hazelcast.version.Version;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -31,12 +34,16 @@ import static com.hazelcast.spi.properties.ClusterProperty.TCP_JOIN_PORT_TRY_COU
 import static com.hazelcast.test.Accessors.getNode;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getOldestKnownVersion;
+import static com.hazelcast.test.OverridePropertyRule.clear;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(CompatibilityTest.class)
 public class MembershipUpdateCompatibilityTest extends HazelcastTestSupport {
+
+    @Rule
+    public final OverridePropertyRule ruleSysPropHazelcastLocalAddress = clear("hazelcast.local.localAddress");
 
     private CompatibilityTestHazelcastInstanceFactory factory;
 
@@ -305,6 +312,7 @@ public class MembershipUpdateCompatibilityTest extends HazelcastTestSupport {
 
     private Config createConfig(boolean multicastEnabled) {
         Config config = new Config();
+        config.setProperty(ClusterProperty.LOGGING_TYPE.getName(), "log4j2");
         config.setProperty(TCP_JOIN_PORT_TRY_COUNT.getName(), String.valueOf(getKnownPreviousVersionsCount()));
         if (!multicastEnabled) {
             JoinConfig join = config.getNetworkConfig().getJoin();

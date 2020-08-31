@@ -1,22 +1,22 @@
 package com.hazelcast.internal.hotrestart.cluster;
 
+import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.partition.PartitionTableView;
+import com.hazelcast.internal.serialization.SerializableByConvention;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
-import com.hazelcast.internal.serialization.SerializableByConvention;
+import com.hazelcast.nio.serialization.impl.Versioned;
 
 import java.io.IOException;
 
 import static com.hazelcast.internal.serialization.SerializableByConvention.Reason.PUBLIC_API;
-import static com.hazelcast.internal.hotrestart.cluster.PartitionTableReader.readPartitionTable;
-import static com.hazelcast.internal.hotrestart.cluster.PartitionTableWriter.writePartitionTable;
 
 /**
  * Contains information about the state read from the disk and the progress of a node during cluster start
  */
 @SerializableByConvention(PUBLIC_API)
-public class MemberClusterStartInfo implements DataSerializable {
+public class MemberClusterStartInfo implements DataSerializable, Versioned {
 
     /**
      * Data load status for each member during Hot Restart
@@ -50,10 +50,6 @@ public class MemberClusterStartInfo implements DataSerializable {
         this.dataLoadStatus = dataLoadStatus;
     }
 
-    public int getPartitionTableVersion() {
-        return partitionTable.getVersion();
-    }
-
     public PartitionTableView getPartitionTable() {
         return partitionTable;
     }
@@ -64,13 +60,21 @@ public class MemberClusterStartInfo implements DataSerializable {
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
-        writePartitionTable(out, partitionTable);
+        if (out.getVersion().isGreaterOrEqual(Versions.V4_1)) {
+            PartitionTableWriter.writePartitionTable(out, partitionTable);
+        } else {
+            LegacyPartitionTableWriter.writePartitionTable(out, partitionTable);
+        }
         out.writeUTF(dataLoadStatus.name());
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
-        partitionTable = readPartitionTable(in);
+        if (in.getVersion().isGreaterOrEqual(Versions.V4_1)) {
+            partitionTable = PartitionTableReader.readPartitionTable(in);
+        } else {
+            partitionTable = LegacyPartitionTableReader.readPartitionTable(in);
+        }
         dataLoadStatus = DataLoadStatus.valueOf(in.readUTF());
     }
 }

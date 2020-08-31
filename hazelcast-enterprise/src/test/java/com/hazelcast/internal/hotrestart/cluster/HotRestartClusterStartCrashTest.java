@@ -14,6 +14,7 @@ import com.hazelcast.internal.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.PartitionTableView;
+import com.hazelcast.internal.partition.ReadonlyInternalPartition;
 import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -41,6 +42,7 @@ import static com.hazelcast.internal.hotrestart.cluster.AbstractHotRestartCluste
 import static com.hazelcast.internal.hotrestart.cluster.AbstractHotRestartClusterStartTest.ReuseAddress.SOMETIMES;
 import static com.hazelcast.internal.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
 import static com.hazelcast.internal.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus.LOAD_IN_PROGRESS;
+import static com.hazelcast.internal.partition.InternalPartition.MAX_REPLICA_COUNT;
 import static com.hazelcast.test.Accessors.getAddresses;
 import static com.hazelcast.test.Accessors.getNode;
 import static java.util.Arrays.asList;
@@ -237,8 +239,11 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
             if (success) {
                 members.add(sender);
                 if (members.size() == expectedNodeCount && firstCrash.compareAndSet(false, true)) {
-                    PartitionTableView partitionTableView = new PartitionTableView(
-                            new PartitionReplica[PARTITION_COUNT][InternalPartition.MAX_REPLICA_COUNT], 0);
+                    InternalPartition[] partitions = new InternalPartition[PARTITION_COUNT];
+                    for (int i = 0; i < partitions.length; i++) {
+                        partitions[i] = new ReadonlyInternalPartition(new PartitionReplica[MAX_REPLICA_COUNT], i, 0);
+                    }
+                    PartitionTableView partitionTableView = new PartitionTableView(partitions);
                     MemberClusterStartInfo invalidMemberClusterStartInfo
                             = new MemberClusterStartInfo(partitionTableView, LOAD_IN_PROGRESS);
                     final HotRestartIntegrationService hotRestartService =

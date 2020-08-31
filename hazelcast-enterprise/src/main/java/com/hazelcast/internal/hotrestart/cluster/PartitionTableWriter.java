@@ -1,8 +1,8 @@
 package com.hazelcast.internal.hotrestart.cluster;
 
+import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.PartitionReplica;
 import com.hazelcast.internal.partition.PartitionTableView;
-import com.hazelcast.internal.util.UUIDSerializationUtil;
 
 import java.io.DataOutput;
 import java.io.File;
@@ -16,11 +16,9 @@ import static com.hazelcast.internal.partition.InternalPartition.MAX_REPLICA_COU
  * Writes partition table to a specific file
  * by overwriting previous one if exists.
  *
- * @since 3.12
+ * @since 4.1
  */
-final class PartitionTableWriter extends AbstractMetadataWriter<PartitionTableView> {
-
-    static final String FILE_NAME = "partitions.bin";
+final class PartitionTableWriter extends LegacyPartitionTableWriter {
 
     PartitionTableWriter(File homeDir) {
         super(homeDir);
@@ -32,26 +30,21 @@ final class PartitionTableWriter extends AbstractMetadataWriter<PartitionTableVi
     }
 
     static void writePartitionTable(DataOutput out, PartitionTableView partitionTable) throws IOException {
-        out.writeInt(partitionTable.getVersion());
-        out.writeInt(partitionTable.getLength());
+        out.writeInt(partitionTable.length());
 
         LinkedHashMap<PartitionReplica, Integer> replicaIdToIndexes = createReplicaIdToIndexMap(partitionTable);
-
-        // replicaIdToIndexes is ordered, that's why we can write keys in iteration (same as insertion) order
-        out.writeInt(replicaIdToIndexes.size());
-        for (PartitionReplica replica : replicaIdToIndexes.keySet()) {
-            writeAddress(out, replica.address());
-            UUIDSerializationUtil.writeUUID(out, replica.uuid());
-        }
+        writeAllReplicas(out, replicaIdToIndexes.keySet());
 
         writePartitionTable(partitionTable, replicaIdToIndexes, out);
     }
 
     private static void writePartitionTable(PartitionTableView partitionTable, Map<PartitionReplica, Integer> replicaIdToIndexes,
             DataOutput out) throws IOException {
-        for (int partitionId = 0; partitionId < partitionTable.getLength(); partitionId++) {
+        for (int partitionId = 0; partitionId < partitionTable.length(); partitionId++) {
+            InternalPartition partition = partitionTable.getPartition(partitionId);
+            out.writeInt(partition.version());
             for (int replicaIndex = 0; replicaIndex < MAX_REPLICA_COUNT; replicaIndex++) {
-                PartitionReplica replica = partitionTable.getReplica(partitionId, replicaIndex);
+                PartitionReplica replica = partition.getReplica(replicaIndex);
                 if (replica == null) {
                     out.writeInt(-1);
                 } else {
@@ -60,30 +53,5 @@ final class PartitionTableWriter extends AbstractMetadataWriter<PartitionTableVi
                 }
             }
         }
-    }
-
-    @SuppressWarnings("checkstyle:illegaltype")
-    // Returns a LinkedHashMap with insertion order on purpose.
-    private static LinkedHashMap<PartitionReplica, Integer> createReplicaIdToIndexMap(PartitionTableView partitionTable) {
-        LinkedHashMap<PartitionReplica, Integer> map = new LinkedHashMap<>();
-        int addressIndex = 0;
-        for (int partitionId = 0; partitionId < partitionTable.getLength(); partitionId++) {
-            for (int replicaIndex = 0; replicaIndex < MAX_REPLICA_COUNT; replicaIndex++) {
-                PartitionReplica replica = partitionTable.getReplica(partitionId, replicaIndex);
-                if (replica == null) {
-                    continue;
-                }
-                if (map.containsKey(replica)) {
-                    continue;
-                }
-                map.put(replica, addressIndex++);
-            }
-        }
-        return map;
-    }
-
-    @Override
-    String getFilename() {
-        return FILE_NAME;
     }
 }

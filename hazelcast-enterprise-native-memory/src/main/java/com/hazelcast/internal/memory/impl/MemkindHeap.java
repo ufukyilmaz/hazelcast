@@ -55,6 +55,7 @@ public class MemkindHeap {
     private final long handle;
     private final String name;
     private boolean isPoolOpen;
+
     protected MemkindHeap(long handle, int numaNode, String name) {
         this.handle = handle;
         this.numaNode = numaNode;

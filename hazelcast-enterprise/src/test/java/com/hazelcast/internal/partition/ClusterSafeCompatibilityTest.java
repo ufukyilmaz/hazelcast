@@ -3,9 +3,10 @@ package com.hazelcast.internal.partition;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.map.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.impl.HazelcastInstanceFactory;
+import com.hazelcast.map.IMap;
+import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -196,6 +197,8 @@ public class ClusterSafeCompatibilityTest extends HazelcastTestSupport {
 
     private Config createConfig() {
         Config config = new Config()
+                .setProperty(ClusterProperty.LOGGING_TYPE.getName(), "log4j2")
+                .setProperty(ClusterProperty.WAIT_SECONDS_BEFORE_JOIN.getName(), "0")
                 .setProperty(TCP_JOIN_PORT_TRY_COUNT.getName(), String.valueOf(getKnownPreviousVersionsCount() + 2))
                 .setProperty(WAIT_SECONDS_BEFORE_JOIN.getName(), "0");
 

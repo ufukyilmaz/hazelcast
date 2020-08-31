@@ -1,7 +1,18 @@
 #include <glob.h>
 
+// needed for secure_getenv()
+#ifndef __USE_GNU
+#define __USE_GNU
+#endif //__USE_GNU
+
 #ifndef HZ_HEAP_H
 #define HZ_HEAP_H
+
+#define HZ_SET_HOG_MEMORY "HZ_SET_HOG_MEMORY"
+#define HZ_SET_HOG_MEMORY_DONTSET "0"
+
+#define MEMKIND_HOG_MEMORY "MEMKIND_HOG_MEMORY"
+#define MEMKIND_HOG_MEMORY_ENABLED "1"
 
 /**
  * Return codes for the heap creation and destroy functions.
@@ -11,20 +22,19 @@ enum {
     HEAP_ERROR_SIZE,
     HEAP_ERROR_PMEM_MAP_FILE,
     HEAP_ERROR_PMEM_UNMAP_FILE,
+    HEAP_ERROR_TRUNCATE_PMEM_FILE,
+    HEAP_ERROR_SETENV_HOG,
     HEAP_ERROR_CREATE_PMEM_KIND,
     HEAP_ERROR_DESTROY_KIND,
     HEAP_ERROR_UNKNOWN_KIND,
     HEAP_ERROR_KIND_UNAVAILABLE
 };
 
-//enum {
-//    KIND_DRAM = 0,
-//    KIND_DRAM_HUGEPAGE,
-//    KIND_PMEM_DAX_KMEM
-//};
-#define KIND_DRAM 0
-#define KIND_DRAM_HUGEPAGE 1
-#define KIND_PMEM_DAX_KMEM 2
+enum {
+    KIND_DRAM = 0,
+    KIND_DRAM_HUGEPAGE,
+    KIND_PMEM_DAX_KMEM
+};
 
 /**
  * The struct representing the metadata for the heap created with hz_create_pmem_heap() and hz_create_heap() functions.
@@ -47,6 +57,14 @@ struct hz_heap {
 #if defined (__cplusplus)
 extern "C" {
 #endif
+
+/**
+ * Initializes the libraries used.
+ *
+ * @param errmsg The pointer to the error message that is potentially set if an error occurs
+ * @return the result of the call
+ */
+int hz_init(char *errmsg);
 
 /**
  * Creates a persistent memory heap at the specified location.

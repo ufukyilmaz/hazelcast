@@ -15,8 +15,9 @@ public class PmemTestUtil {
     public static void configurePmemDirectories(NativeMemoryConfig config, String pmemDirectories) {
         assert !StringUtil.isNullOrEmptyAfterTrim(pmemDirectories);
 
+        int node = 0;
         for (String pmemDirectory : pmemDirectories.split(",")) {
-            config.getPersistentMemoryConfig().addDirectoryConfig(new PersistentMemoryDirectoryConfig(pmemDirectory));
+            config.getPersistentMemoryConfig().addDirectoryConfig(new PersistentMemoryDirectoryConfig(pmemDirectory, node++));
         }
     }
 }

@@ -25,11 +25,12 @@ include_directories($ENV{JAVA_HOME}/include/linux)
 add_library(hazelcast-pmem SHARED
         ${CMAKE_SOURCE_PATH}/com_hazelcast_internal_memory_impl_MemkindHeap.c
         ${CMAKE_SOURCE_PATH}/com_hazelcast_internal_memory_impl_MemkindHeap.h
+        ${CMAKE_SOURCE_PATH}/com_hazelcast_internal_memory_impl_NUMA.c
+        ${CMAKE_SOURCE_PATH}/com_hazelcast_internal_memory_impl_NUMA.h
         ${CMAKE_SOURCE_PATH}/hz_heap.c
-        ${CMAKE_SOURCE_PATH}/hz_heap.h)
-target_sources(hazelcast-pmem PRIVATE
-        ${CMAKE_SOURCE_PATH}/com_hazelcast_internal_memory_impl_MemkindHeap.c
-        ${CMAKE_SOURCE_PATH}/com_hazelcast_internal_memory_impl_MemkindHeap.h)
+        ${CMAKE_SOURCE_PATH}/hz_heap.h
+        ${CMAKE_SOURCE_PATH}/util.c
+        ${CMAKE_SOURCE_PATH}/util.h)
 
 # set RUNPATH to $ORIGIN to look for the direct dependencies in the folder containing libhazelcast-pmem
 set_target_properties(hazelcast-pmem PROPERTIES LINK_FLAGS "-Wl,-rpath,$ORIGIN")

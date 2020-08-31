@@ -1,6 +1,7 @@
 package com.hazelcast.internal.memory;
 
 import com.hazelcast.config.NativeMemoryConfig;
+import com.hazelcast.config.PersistentMemoryDirectoryConfig;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.LibMallocFactory;
 import com.hazelcast.internal.memory.impl.MemkindMallocFactory;
@@ -49,8 +50,9 @@ public class ParameterizedMemoryTest extends HazelcastTestSupport {
                 libMallocFactory = new UnsafeMallocFactory(new FreeMemoryChecker());
                 break;
             case MEMKIND_PMEM:
-                NativeMemoryConfig config = new NativeMemoryConfig()
-                        .setPersistentMemoryDirectory(firstOf(PERSISTENT_MEMORY_DIRECTORIES));
+                NativeMemoryConfig config = new NativeMemoryConfig();
+                config.getPersistentMemoryConfig()
+                      .addDirectoryConfig(new PersistentMemoryDirectoryConfig(firstOf(PERSISTENT_MEMORY_DIRECTORIES)));
                 libMallocFactory = new MallocFactoryDelegate(new MemkindMallocFactory(config));
                 break;
             case MEMKIND_DRAM:

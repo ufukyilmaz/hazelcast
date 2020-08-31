@@ -11,6 +11,14 @@ import static com.hazelcast.internal.memory.impl.MemkindUtil.useMemkind;
 import static com.hazelcast.internal.memory.impl.MemkindUtil.useMemkindDaxKmem;
 import static com.hazelcast.internal.memory.impl.MemkindUtil.useMemkindHugePages;
 
+/**
+ * {@link LibMalloc} implementation for all supported kind of Memkind
+ * except for the PMEM kind. See {@link MemkindKind} for the supported
+ * kinds. Makes JNI calls to the Memkind library for all allocation requests.
+ *
+ * @see MemkindKind
+ * @see MemkindPmemMalloc
+ */
 public final class MemkindMalloc extends AbstractMemkindMalloc {
     private static final ILogger LOGGER = Logger.getLogger(MemkindMalloc.class);
 

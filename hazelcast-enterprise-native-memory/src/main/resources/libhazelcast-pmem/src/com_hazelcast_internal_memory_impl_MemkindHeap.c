@@ -1,25 +1,16 @@
 #include "com_hazelcast_internal_memory_impl_MemkindHeap.h"
 #include "hz_heap.h"
+#include "util.h"
 #include <memkind.h>
 #include <string.h>
 
-void throw_OOM(JNIEnv *env, size_t size) {
+JNIEXPORT void JNICALL Java_com_hazelcast_internal_memory_impl_MemkindHeap_init0
+        (JNIEnv *env, jobject obj) {
     char errmsg[256];
-
-    jclass exClass = (*env)->FindClass(env, "java/lang/OutOfMemoryError");
-
-    sprintf(errmsg, "Failed to allocate %lu bytes!", size);
-    (*env)->ThrowNew(env, exClass, errmsg);
-}
-
-void throw_io_exception(JNIEnv *env, const char *msg) {
-    jclass exClass = (*env)->FindClass(env, "java/io/IOException");
-    (*env)->ThrowNew(env, exClass, msg);
-}
-
-void throw_runtime_exception(JNIEnv *env, const char *msg) {
-    jclass exClass = (*env)->FindClass(env, "java/lang/RuntimeException");
-    (*env)->ThrowNew(env, exClass, msg);
+    int rc = hz_init(errmsg);
+    if (rc != HEAP_SUCCESS) {
+        throw_runtime_exception(env, errmsg);
+    }
 }
 
 JNIEXPORT jlong JNICALL Java_com_hazelcast_internal_memory_impl_MemkindHeap_createPmemHeap0
@@ -80,10 +71,8 @@ JNIEXPORT jlong JNICALL Java_com_hazelcast_internal_memory_impl_MemkindHeap_allo
 }
 
 JNIEXPORT jlong JNICALL Java_com_hazelcast_internal_memory_impl_MemkindHeap_realloc0
-        (JNIEnv *env, jobject obj, jlong handle, jlong address, jlong size) {
-    struct hz_heap *heap = (struct hz_heap *) handle;
-
-    void *p = memkind_realloc(heap->kind, (void *) address, (size_t) size);
+        (JNIEnv *env, jobject obj, jlong address, jlong size) {
+    void *p = memkind_realloc(NULL, (void *) address, (size_t) size);
     if (p == NULL) {
         throw_OOM(env, (size_t) size);
     }
@@ -92,8 +81,6 @@ JNIEXPORT jlong JNICALL Java_com_hazelcast_internal_memory_impl_MemkindHeap_real
 }
 
 JNIEXPORT void JNICALL Java_com_hazelcast_internal_memory_impl_MemkindHeap_free0
-        (JNIEnv *env, jobject obj, jlong handle, jlong address) {
-    struct hz_heap *heap = (struct hz_heap *) handle;
-
-    memkind_free(heap->kind, (void *) address);
+        (JNIEnv *env, jobject obj, jlong address) {
+    memkind_free(NULL, (void *) address);
 }

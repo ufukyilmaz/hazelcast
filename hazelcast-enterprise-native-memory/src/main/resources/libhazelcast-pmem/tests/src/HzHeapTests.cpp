@@ -18,6 +18,71 @@ void temp_file_name(char *file_path);
 void destroy_heap(struct hz_heap *heap);
 
 
+TEST(InitTests, InitSetHog) {
+    char errmsg[256];
+    char file_path[FILENAME_MAX];
+    temp_file_name(file_path);
+    struct hz_heap *heap;
+
+    EXPECT_EQ(0, unsetenv("MEMKIND_HOG_MEMORY"));
+    int rc = hz_init(errmsg);
+
+    EXPECT_EQ(HEAP_SUCCESS, rc);
+    EXPECT_STREQ("1", secure_getenv("MEMKIND_HOG_MEMORY"));
+
+    destroy_heap(heap);
+    unsetenv("MEMKIND_HOG_MEMORY");
+}
+
+TEST(InitTests, InitHogAlreadySet) {
+    char errmsg[256];
+    char file_path[FILENAME_MAX];
+    temp_file_name(file_path);
+    struct hz_heap *heap;
+
+    EXPECT_EQ(0, setenv("MEMKIND_HOG_MEMORY", "1", 1));
+    int rc = hz_init(errmsg);
+
+    EXPECT_EQ(HEAP_SUCCESS, rc);
+    EXPECT_STREQ("1", secure_getenv("MEMKIND_HOG_MEMORY"));
+
+    destroy_heap(heap);
+    unsetenv("MEMKIND_HOG_MEMORY");
+}
+
+TEST(InitTests, InitHogAlreadySetToNonOne) {
+    char errmsg[256];
+    char file_path[FILENAME_MAX];
+    temp_file_name(file_path);
+    struct hz_heap *heap;
+
+    EXPECT_EQ(0, setenv("MEMKIND_HOG_MEMORY", "2", 1));
+    int rc = hz_init(errmsg);
+
+    EXPECT_EQ(HEAP_SUCCESS, rc);
+    EXPECT_STREQ("2", secure_getenv("MEMKIND_HOG_MEMORY"));
+
+    destroy_heap(heap);
+    unsetenv("MEMKIND_HOG_MEMORY");
+}
+
+TEST(InitTests, InitHogDontSet) {
+    char errmsg[256];
+    char file_path[FILENAME_MAX];
+    temp_file_name(file_path);
+    struct hz_heap *heap;
+
+    unsetenv("MEMKIND_HOG_MEMORY");
+    EXPECT_EQ(0, setenv("HZ_SET_HOG_MEMORY", "0", 1));
+    int rc = hz_init(errmsg);
+
+    EXPECT_EQ(HEAP_SUCCESS, rc);
+    EXPECT_STREQ(nullptr, secure_getenv("MEMKIND_HOG_MEMORY"));
+
+    destroy_heap(heap);
+    unsetenv("MEMKIND_HOG_MEMORY");
+}
+
 TEST(CreatePmemHeapTests, CreateHeapWithMemkindPmemMinSize) {
     char errmsg[256];
     char file_path[FILENAME_MAX];

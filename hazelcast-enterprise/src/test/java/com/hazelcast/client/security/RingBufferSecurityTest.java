@@ -6,9 +6,13 @@ import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.ringbuffer.Ringbuffer;
 import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+
+import static org.junit.Assert.assertEquals;
+
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,6 +45,19 @@ public class RingBufferSecurityTest {
         factory.newHazelcastInstance(config);
         HazelcastInstance client = factory.newHazelcastClient();
         client.getRingbuffer(testObjectName).add("value");
+    }
+
+    @Test
+    public void testRingBufferPermissionAll() {
+        final Config config = createConfig();
+        addPermission(config, testObjectName)
+        .addAction(ActionConstants.ACTION_ALL);
+        factory.newHazelcastInstance(config);
+        HazelcastInstance client = factory.newHazelcastClient();
+        Ringbuffer<Object> ringbuffer = client.getRingbuffer(testObjectName);
+        ringbuffer.add("value");
+        assertEquals(1, ringbuffer.size());
+        ringbuffer.destroy();
     }
 
     @Test

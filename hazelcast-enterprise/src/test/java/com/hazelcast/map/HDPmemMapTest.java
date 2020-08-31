@@ -4,11 +4,10 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.PersistentMemoryDirectoryConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.util.MutableInteger;
 import com.hazelcast.internal.util.StringUtil;
 import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -21,8 +20,8 @@ import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.internal.memory.impl.MemkindHeap.PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY;
 import static org.junit.Assert.assertEquals;
 
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelJVMTest.class})
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Category(QuickTest.class)
 public class HDPmemMapTest extends HazelcastTestSupport {
 
     private static final String NATIVE_MAP = "NativeMap";

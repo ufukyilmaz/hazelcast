@@ -7,5 +7,5 @@ import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(CompatibilityTest.class)
-public class QueueBackupCompatibilityTest extends QueueBackupTest {
+public class QueueMigrationCompatibilityTest extends QueueMigrationTest {
 }

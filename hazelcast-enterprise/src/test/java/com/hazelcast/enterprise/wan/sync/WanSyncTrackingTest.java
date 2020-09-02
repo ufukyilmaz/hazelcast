@@ -16,6 +16,8 @@ import com.hazelcast.internal.management.events.WanMerkleSyncFinishedEvent;
 import com.hazelcast.internal.management.events.WanSyncProgressUpdateEvent;
 import com.hazelcast.internal.management.events.WanSyncStartedEvent;
 import com.hazelcast.internal.util.MutableInteger;
+import com.hazelcast.map.impl.wan.WanEnterpriseMapMerkleTreeNode;
+import com.hazelcast.map.impl.wan.WanEnterpriseMapSyncEvent;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -24,6 +26,7 @@ import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.fw.Cluster;
 import com.hazelcast.wan.fw.WanReplication;
+import com.hazelcast.wan.impl.InternalWanEvent;
 import com.hazelcast.wan.impl.WanSyncStats;
 import org.junit.After;
 import org.junit.Before;
@@ -676,9 +679,26 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
     }
 
     public static class WanBatchSyncingPublisher extends WanBatchPublisher {
+        private TestContext testContext;
 
         private void setup(int suspendSyncAfterRecords, TestContext testContext) {
+            this.testContext = testContext;
             ((SyncingWanBatchSender) wanBatchSender).setup(testContext, suspendSyncAfterRecords);
+        }
+
+        @Override
+        protected void finalizeWanEventReplication(Collection<InternalWanEvent>... eventCollections) {
+            for (Collection<InternalWanEvent> wanEvents : eventCollections) {
+                wanEvents.forEach(e -> {
+                    if (e instanceof WanEnterpriseMapMerkleTreeNode) {
+                        testContext.sentCount.addAndGet(((WanEnterpriseMapMerkleTreeNode) e).getEntryCount());
+                    }  else if (e instanceof WanEnterpriseMapSyncEvent) {
+                        testContext.sentCount.incrementAndGet();
+                    }
+                });
+            }
+
+            super.finalizeWanEventReplication(eventCollections);
         }
     }
 
@@ -700,7 +720,6 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
                 }
             }
 
-            testContext.sentCount.addAndGet(syncEntryCount);
             return super.send(batchReplicationEvent, target);
         }
 

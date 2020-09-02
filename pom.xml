@@ -7,6 +7,7 @@
         <module>hazelcast-enterprise</module>
         <module>hazelcast-enterprise-hotrestart</module>
         <module>hazelcast-enterprise-all</module>
+        <module>distribution</module>
     </modules>
     <groupId>com.hazelcast</groupId>
     <artifactId>hazelcast-enterprise-root</artifactId>
@@ -34,7 +35,7 @@
         <license.extractor.version>1.4.1</license.extractor.version>
 
         <maven.compiler.plugin.version>2.5.1</maven.compiler.plugin.version>
-        <maven.assembly.plugin.version>2.4</maven.assembly.plugin.version>
+        <maven.assembly.plugin.version>3.3.0</maven.assembly.plugin.version>
         <maven.jar.plugin.version>2.4</maven.jar.plugin.version>
         <maven.bundle.plugin.version>2.4.0</maven.bundle.plugin.version>
         <maven.shade.plugin.version>2.2</maven.shade.plugin.version>
@@ -176,18 +177,6 @@
         </resources>
 
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>${maven.assembly.plugin.version}</version>
-                <configuration>
-                    <finalName>hazelcast-enterprise-${project.version}</finalName>
-                    <descriptors>
-                        <descriptor>src/main/assembly/hazelcast-enterprise-assembly.xml</descriptor>
-                    </descriptors>
-                    <appendAssemblyId>false</appendAssemblyId>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

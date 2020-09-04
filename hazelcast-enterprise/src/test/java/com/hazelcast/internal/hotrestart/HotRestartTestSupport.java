@@ -3,6 +3,7 @@ package com.hazelcast.internal.hotrestart;
 import com.hazelcast.cluster.Address;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.logging.Logger;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import org.junit.Before;
@@ -11,10 +12,12 @@ import org.junit.Rule;
 import java.io.File;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 import static com.hazelcast.test.Accessors.getNode;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.fail;
 
 public abstract class HotRestartTestSupport extends HazelcastTestSupport {
 
@@ -56,18 +59,25 @@ public abstract class HotRestartTestSupport extends HazelcastTestSupport {
             factory.terminateAll();
         }
 
-        final CountDownLatch latch = new CountDownLatch(newClusterSize);
+        Future[] futures = new Future[newClusterSize];
         for (int i = 0; i < newClusterSize; i++) {
-            spawn(new Runnable() {
+            futures[i] = spawn(new Runnable() {
                 @Override
                 public void run() {
                     Config config = configFn.get();
                     factory.newHazelcastInstance(config);
-                    latch.countDown();
                 }
             });
         }
-        assertOpenEventually(latch);
+        // Future.get() uncovers failures (ExecutionExcepion)
+        for (int i = 0; i < newClusterSize; i++) {
+            try {
+                futures[i].get(ASSERT_TRUE_EVENTUALLY_TIMEOUT, SECONDS);
+            } catch (Exception e) {
+                Logger.getLogger(getClass()).severe(e);
+                fail("Cluster restart failed! " + e);
+            }
+        }
 
         Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
         assertClusterSizeEventually(newClusterSize, instances);

@@ -29,7 +29,6 @@
                 </executions>
                 <configuration>
                     <outputDirectory>../target</outputDirectory>
-                    <archiveBaseDirectory>..</archiveBaseDirectory>
                     <finalName>hazelcast-enterprise-${project.version}</finalName>
                     <descriptors>
                         <descriptor>../src/main/assembly/hazelcast-enterprise-assembly.xml</descriptor>

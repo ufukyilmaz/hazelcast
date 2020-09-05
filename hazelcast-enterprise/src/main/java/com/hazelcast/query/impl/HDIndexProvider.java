@@ -19,7 +19,8 @@ public class HDIndexProvider implements IndexProvider {
         InternalSerializationService ss,
         IndexCopyBehavior copyBehavior,
         PerIndexStats stats,
-        StoreAdapter partitionStoreAdapter
+        StoreAdapter partitionStoreAdapter,
+        int partitionCount
     ) {
         // IndexCopyBehavior unused in HD, since HD indexes do not leak internal structures to the query result set.
         return new HDIndexImpl(config, (EnterpriseSerializationService) ss, extractors, stats, partitionStoreAdapter);

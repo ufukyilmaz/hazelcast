@@ -12,9 +12,16 @@ import com.hazelcast.query.impl.getters.Extractors;
  */
 public class HDGlobalIndexProvider implements IndexProvider {
     @Override
-    public InternalIndex createIndex(IndexConfig config, Extractors extractors, InternalSerializationService ss,
-                                     IndexCopyBehavior copyBehavior, PerIndexStats stats, StoreAdapter storeAdapter) {
+    public InternalIndex createIndex(
+        IndexConfig config,
+        Extractors extractors,
+        InternalSerializationService ss,
+        IndexCopyBehavior copyBehavior,
+        PerIndexStats stats,
+        StoreAdapter storeAdapter,
+        int partitionCount
+    ) {
         // IndexCopyBehavior unused in HD, since HD indexes do not leak internal structures to the query result set.
-        return new HDGlobalIndexImpl(config, (EnterpriseSerializationService) ss, extractors, stats);
+        return new HDGlobalIndexImpl(config, (EnterpriseSerializationService) ss, extractors, stats, partitionCount);
     }
 }

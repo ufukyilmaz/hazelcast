@@ -8,13 +8,10 @@ import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.monitor.impl.PerIndexStats;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.util.collection.PartitionIdSet;
 import com.hazelcast.query.impl.getters.Extractors;
 
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import static com.hazelcast.query.impl.HDIndexImpl.OnHeapEntryFactory;
-import static java.util.Collections.newSetFromMap;
 
 /**
  * Provides implementation of global off-heap indexes.
@@ -22,17 +19,19 @@ import static java.util.Collections.newSetFromMap;
 
 public class HDGlobalIndexImpl extends AbstractIndex {
 
-    private final Set<Integer> indexedPartitions = newSetFromMap(new ConcurrentHashMap<>());
-
+    private final GlobalIndexPartitionTracker partitionTracker;
 
     public HDGlobalIndexImpl(
             IndexConfig config,
             EnterpriseSerializationService ss,
             Extractors extractors,
-            PerIndexStats stats
+            PerIndexStats stats,
+            int partitionCount
     ) {
         // HD index does not use do any result set copying, thus we may pass NEVER here
         super(config, ss, extractors, IndexCopyBehavior.NEVER, stats, null);
+
+        partitionTracker = new GlobalIndexPartitionTracker(partitionCount);
     }
 
     @Override
@@ -67,7 +66,7 @@ public class HDGlobalIndexImpl extends AbstractIndex {
 
     @Override
     public boolean hasPartitionIndexed(int partitionId) {
-        return indexedPartitions.contains(partitionId);
+        return partitionTracker.isIndexed(partitionId);
     }
 
     @Override
@@ -75,24 +74,28 @@ public class HDGlobalIndexImpl extends AbstractIndex {
         // This check guarantees that all partitions are indexed
         // only if there is no concurrent migrations. Check migration stamp
         // to detect concurrent migrations if needed.
-        return ownedPartitionCount < 0 || indexedPartitions.size() == ownedPartitionCount;
+        return ownedPartitionCount < 0 || partitionTracker.indexedCount() == ownedPartitionCount;
+    }
+
+    @Override
+    public void beginPartitionUpdate() {
+        partitionTracker.beginPartitionUpdate();
     }
 
     @Override
     public void markPartitionAsIndexed(int partitionId) {
-        assert !indexedPartitions.contains(partitionId);
-        indexedPartitions.add(partitionId);
+        partitionTracker.partitionIndexed(partitionId);
     }
 
     @Override
     public void markPartitionAsUnindexed(int partitionId) {
-        indexedPartitions.remove(partitionId);
+        partitionTracker.partitionUnindexed(partitionId);
     }
 
     @Override
     public void clear() {
         super.clear();
-        indexedPartitions.clear();
+        partitionTracker.clear();
     }
 
     @Override
@@ -101,4 +104,13 @@ public class HDGlobalIndexImpl extends AbstractIndex {
         super.destroy();
     }
 
+    @Override
+    public long getPartitionStamp(PartitionIdSet expectedPartitionIds) {
+        return partitionTracker.getPartitionStamp(expectedPartitionIds);
+    }
+
+    @Override
+    public boolean validatePartitionStamp(long stamp) {
+        return partitionTracker.validatePartitionStamp(stamp);
+    }
 }

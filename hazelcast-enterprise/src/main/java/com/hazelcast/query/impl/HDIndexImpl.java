@@ -7,6 +7,7 @@ import com.hazelcast.internal.monitor.impl.PerIndexStats;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.internal.util.collection.PartitionIdSet;
 import com.hazelcast.map.impl.StoreAdapter;
 import com.hazelcast.query.impl.getters.Extractors;
 
@@ -73,6 +74,11 @@ public class HDIndexImpl extends AbstractIndex {
     }
 
     @Override
+    public void beginPartitionUpdate() {
+        // No-op.
+    }
+
+    @Override
     public void markPartitionAsIndexed(int partitionId) {
         assert indexedPartition == UNINDEXED;
         indexedPartition = partitionId;
@@ -81,6 +87,16 @@ public class HDIndexImpl extends AbstractIndex {
     @Override
     public void markPartitionAsUnindexed(int partitionId) {
         indexedPartition = UNINDEXED;
+    }
+
+    @Override
+    public long getPartitionStamp(PartitionIdSet expectedPartitionIds) {
+        return GlobalIndexPartitionTracker.STAMP_INVALID;
+    }
+
+    @Override
+    public boolean validatePartitionStamp(long stamp) {
+        return false;
     }
 
     /**

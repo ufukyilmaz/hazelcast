@@ -42,12 +42,6 @@ public class MemkindHeap {
             "libnuma.so.1",
             "libpmem.so.1"
     };
-    /**
-     * The flag exists for unit tests only to enable testing in the environment where there is
-     * no non-volatile memory installed.
-     */
-    private static final boolean PERSISTENT_MEMORY_CHECK_ENABLED =
-            !"true".equalsIgnoreCase(System.getProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY, "false"));
 
     private static final ILogger LOGGER = Logger.getLogger(MemkindHeap.class);
     private final int numaNode;
@@ -87,7 +81,7 @@ public class MemkindHeap {
             deleteFile(pmemFilePath);
             throw new HazelcastException("Unable to create persistent memory heap at " + pmemDir, e);
         }
-        if (PERSISTENT_MEMORY_CHECK_ENABLED && !isPmem0(heapHandle)) {
+        if (isPersistentMemoryCheckEnabled() && !isPmem0(heapHandle)) {
             LOGGER.severe(pmemDir + " is not a persistent memory. Check persistent-memory-directory configuration and restart "
                     + "member again.");
             closeHeap(heapHandle, pmemDir);
@@ -95,6 +89,10 @@ public class MemkindHeap {
             throw new HazelcastException(pmemFilePath.toAbsolutePath() + " is not a persistent memory");
         }
         return new MemkindHeap(heapHandle, numaNode, pmemDir);
+    }
+
+    private static boolean isPersistentMemoryCheckEnabled() {
+        return !"true".equalsIgnoreCase(System.getProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY, "false"));
     }
 
     private static Path parentIfExists(Path path) {

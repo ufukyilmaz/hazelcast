@@ -8,28 +8,34 @@ import com.hazelcast.internal.memory.impl.MemkindMallocFactory;
 import com.hazelcast.internal.memory.impl.MemkindUtil;
 import com.hazelcast.internal.memory.impl.UnsafeMallocFactory;
 import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.OverridePropertyRule;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.runners.Parameterized;
+import org.junit.Rule;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.util.Collection;
 
 import static com.hazelcast.internal.memory.PmemTestUtil.firstOf;
 import static com.hazelcast.internal.memory.impl.MemkindHeap.PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY;
+import static com.hazelcast.test.OverridePropertyRule.set;
 import static java.util.Arrays.asList;
 
 public class ParameterizedMemoryTest extends HazelcastTestSupport {
 
-    @Parameterized.Parameter
+    @Rule
+    public final OverridePropertyRule overrideTaskSecondsRule = set(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY, "true");
+
+    @Parameter
     public AllocationSource allocationSource;
 
-    @Parameterized.Parameters(name = "persistentMemory: {0}")
+    @Parameters(name = "persistentMemory: {0}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
                 {AllocationSource.UNSAFE},
                 {AllocationSource.MEMKIND_PMEM},
                 {AllocationSource.MEMKIND_DRAM},
-                });
+        });
     }
 
     @AfterClass
@@ -84,16 +90,6 @@ public class ParameterizedMemoryTest extends HazelcastTestSupport {
     static LibMalloc newLibMalloc(AllocationSource allocationSource) {
         LibMallocFactory libMallocFactory = newLibMallocFactory(allocationSource);
         return libMallocFactory.create(1 << 28);
-    }
-
-    @BeforeClass
-    public static void init() {
-        System.setProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY, "true");
-    }
-
-    @AfterClass
-    public static void cleanup() {
-        System.clearProperty(PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY);
     }
 
     void checkPlatform() {

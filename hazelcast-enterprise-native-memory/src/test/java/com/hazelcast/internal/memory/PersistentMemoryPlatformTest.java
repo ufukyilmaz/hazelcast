@@ -8,6 +8,7 @@ import com.hazelcast.internal.memory.impl.MemkindMallocFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -22,7 +23,7 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastSerialParametersRunnerFactory.class)
-@Category(QuickTest.class)
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class PersistentMemoryPlatformTest extends ParameterizedMemoryTest {
 
     private final MemorySize nativeMemorySize = new MemorySize(32, MemoryUnit.MEGABYTES);

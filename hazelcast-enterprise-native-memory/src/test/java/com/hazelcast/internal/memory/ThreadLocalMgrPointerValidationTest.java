@@ -2,7 +2,7 @@ package com.hazelcast.internal.memory;
 
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.nio.Bits;
-import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
+import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -11,6 +11,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.HazelcastMemoryManager.SIZE_INVALID;
@@ -25,7 +26,7 @@ import static com.hazelcast.internal.memory.ThreadLocalPoolingMemoryManager.mark
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParallelParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastSerialParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class ThreadLocalMgrPointerValidationTest extends ParameterizedMemoryTest {
 

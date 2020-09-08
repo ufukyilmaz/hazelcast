@@ -402,7 +402,7 @@ public class WanBatchPublisher extends AbstractWanReplication implements Runnabl
                 : sender;
     }
 
-    private WanBatchSender createBaseWanBatchSender(Node node) {
+    protected WanBatchSender createBaseWanBatchSender(Node node) {
         String senderClass = System.getProperty(WAN_BATCH_SENDER_CLASS);
         if (isNullOrEmpty(senderClass)) {
             return new DefaultWanBatchSender();

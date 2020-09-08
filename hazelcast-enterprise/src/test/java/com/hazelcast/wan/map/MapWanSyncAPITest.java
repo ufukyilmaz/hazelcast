@@ -1,6 +1,7 @@
 package com.hazelcast.wan.map;
 
 import com.hazelcast.HDTestSupport;
+import com.hazelcast.cluster.Address;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConsistencyCheckStrategy;
 import com.hazelcast.config.InMemoryFormat;
@@ -8,14 +9,18 @@ import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.impl.replication.DefaultWanBatchSender;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchPublisher;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchSender;
+import com.hazelcast.enterprise.wan.impl.replication.WanEventBatch;
 import com.hazelcast.enterprise.wan.impl.replication.WanMerkleTreeSyncStats;
 import com.hazelcast.enterprise.wan.impl.sync.SyncFailedException;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.monitor.WanSyncState;
 import com.hazelcast.internal.partition.IPartition;
-import com.hazelcast.internal.util.EmptyStatement;
 import com.hazelcast.internal.util.RootCauseMatcher;
 import com.hazelcast.map.IMap;
+import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -29,7 +34,6 @@ import com.hazelcast.wan.impl.WanSyncStats;
 import com.hazelcast.wan.impl.WanSyncStatus;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -44,9 +48,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CountDownLatch;
 import java.util.function.Supplier;
 
 import static com.hazelcast.config.ConsistencyCheckStrategy.MERKLE_TREES;
@@ -60,6 +62,7 @@ import static com.hazelcast.wan.fw.WanMapTestSupport.fillMap;
 import static com.hazelcast.wan.fw.WanMapTestSupport.verifyMapReplicated;
 import static com.hazelcast.wan.fw.WanReplication.replicate;
 import static com.hazelcast.wan.fw.WanTestSupport.waitForSyncToComplete;
+import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationPublisher;
 import static com.hazelcast.wan.fw.WanTestSupport.wanReplicationService;
 import static com.hazelcast.wan.map.WanBatchPublisherMapTest.isAllMembersConnected;
 import static com.hazelcast.wan.map.WanMapTestSupport.assertKeysNotInEventually;
@@ -158,8 +161,7 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
     public InMemoryFormat inMemoryFormat;
 
     @Test
-    @Ignore
-    public void testConcurrentSync() throws InterruptedException, ExecutionException {
+    public void testConcurrentSync() throws InterruptedException {
         clusterA.startAClusterMember();
         clusterB.startAClusterMember();
 
@@ -168,39 +170,33 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
                 .withSetupName(REPLICATION_NAME)
                 .withConsistencyCheckStrategy(consistencyCheckStrategy)
                 .withMaxConcurrentInvocations(maxConcurrentInvocations)
+                .withWanPublisher(WanBatchSyncSuspendingPublisher.class)
                 .setup();
         clusterA.addWanReplication(toBReplication);
-
-        fillMap(clusterA, MAP_NAME, 0, 1000);
-        verifyMapReplicated(clusterA, clusterB, MAP_NAME);
         clusterA.stopWanReplicationOnAllMembers(toBReplication);
+        fillMap(clusterA, MAP_NAME, 0, 100);
 
-        AtomicBoolean stop = new AtomicBoolean();
+        CountDownLatch syncSuspendedLatch = new CountDownLatch(1);
+        CountDownLatch syncResumedLatch = new CountDownLatch(1);
+        clusterA.forEachMember(member -> {
+            WanBatchSyncSuspendingPublisher batchReplication =
+                    (WanBatchSyncSuspendingPublisher) wanReplicationPublisher(member, toBReplication);
+            batchReplication.setup(syncSuspendedLatch, syncResumedLatch);
+        });
+
         HazelcastInstance memberA = clusterA.getAMember();
         IMap<Object, Object> mapA = memberA.getMap(MAP_NAME);
+        clusterA.syncMapOnMember(toBReplication, MAP_NAME, memberA);
+        syncSuspendedLatch.await();
+
         Random rnd = new Random();
-        Future<?> syncFuture = spawn(() -> {
-            while (!stop.get()) {
-                try {
-                    clusterA.syncMapOnMember(toBReplication, MAP_NAME, memberA);
-                } catch (SyncFailedException e) {
-                    EmptyStatement.ignore(e);
-                }
-            }
-        });
+        for (int i = 0; i < 100; i++) {
+            mapA.remove(i);
+            mapA.put(i, new byte[rnd.nextInt(1024)]);
+        }
+        syncResumedLatch.countDown();
 
-        Future<?> mutationFuture = spawn(() -> {
-            while (!stop.get()) {
-                for (int i = 0; i < 1000; i++) {
-                    mapA.remove(i);
-                    mapA.put(i, new byte[rnd.nextInt(1024)]);
-                }
-            }
-        });
-
-        sleepAndStop(stop, 30);
-        syncFuture.get();
-        mutationFuture.get();
+        assertTrueEventually(() -> assertTrue(clusterB.getAMember().getMap(MAP_NAME).size() > 0));
     }
 
 
@@ -541,5 +537,39 @@ public class MapWanSyncAPITest extends HazelcastTestSupport {
                 }
             }
         });
+    }
+
+    public static class WanBatchSyncSuspendingPublisher extends WanBatchPublisher {
+        public void setup(CountDownLatch suspendSync, CountDownLatch resumeSync) {
+            ((SyncSuspendingWanBatchSender) wanBatchSender).setup(suspendSync, resumeSync);
+        }
+
+        @Override
+        protected WanBatchSender createBaseWanBatchSender(Node node) {
+            return new SyncSuspendingWanBatchSender();
+        }
+    }
+
+    public static class SyncSuspendingWanBatchSender extends DefaultWanBatchSender {
+        private volatile CountDownLatch syncSuspendedLatch;
+        private volatile CountDownLatch syncResumeLatch;
+
+        @Override
+        public InternalCompletableFuture<Boolean> send(WanEventBatch batchReplicationEvent, Address target) {
+
+            try {
+                syncSuspendedLatch.countDown();
+                syncResumeLatch.await();
+            } catch (InterruptedException e) {
+                ignore(e);
+            }
+
+            return super.send(batchReplicationEvent, target);
+        }
+
+        public void setup(CountDownLatch syncSuspendedLatch, CountDownLatch syncResumeLatch) {
+            this.syncSuspendedLatch = syncSuspendedLatch;
+            this.syncResumeLatch = syncResumeLatch;
+        }
     }
 }

@@ -6,7 +6,9 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.replication.DefaultWanBatchSender;
 import com.hazelcast.enterprise.wan.impl.replication.WanBatchPublisher;
+import com.hazelcast.enterprise.wan.impl.replication.WanBatchSender;
 import com.hazelcast.enterprise.wan.impl.replication.WanEventBatch;
+import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.management.ManagementCenterEventListener;
 import com.hazelcast.internal.management.events.Event;
 import com.hazelcast.internal.management.events.WanConsistencyCheckFinishedEvent;
@@ -123,7 +125,6 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
                 .withConsistencyCheckStrategy(consistencyCheckStrategy)
                 .withReplicationBatchSize(100)
                 .withWanPublisher(WanBatchSyncingPublisher.class)
-                .withWanBatchSender(SyncingWanBatchSender.class)
                 .withMaxConcurrentInvocations(maxConcurrentInvocations)
                 .setup();
 
@@ -684,6 +685,11 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
         private void setup(int suspendSyncAfterRecords, TestContext testContext) {
             this.testContext = testContext;
             ((SyncingWanBatchSender) wanBatchSender).setup(testContext, suspendSyncAfterRecords);
+        }
+
+        @Override
+        protected WanBatchSender createBaseWanBatchSender(Node node) {
+            return new SyncingWanBatchSender();
         }
 
         @Override

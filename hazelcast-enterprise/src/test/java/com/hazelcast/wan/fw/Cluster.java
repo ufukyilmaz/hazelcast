@@ -64,7 +64,9 @@ public class Cluster {
 
     public void forEachMember(Consumer<HazelcastInstance> consumer) {
         for (HazelcastInstance instance : clusterMembers) {
-            consumer.accept(instance);
+            if (instance != null && instance.getLifecycleService().isRunning()) {
+                consumer.accept(instance);
+            }
         }
     }
 

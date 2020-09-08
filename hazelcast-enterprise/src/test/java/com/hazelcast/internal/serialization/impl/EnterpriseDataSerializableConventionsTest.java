@@ -1,7 +1,6 @@
 package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.cache.impl.wan.WanCacheEntryView;
-import com.hazelcast.internal.util.JavaVersion;
 import com.hazelcast.sql.impl.calcite.validate.types.HazelcastIntegerType;
 import com.hazelcast.sql.impl.calcite.validate.types.HazelcastObjectType;
 import com.hazelcast.sql.impl.calcite.validate.types.HazelcastTemporalType;
@@ -26,13 +25,8 @@ public class EnterpriseDataSerializableConventionsTest extends DataSerializableC
             "com.hazelcast.com.google.common",
             "com.hazelcast.org.apache.calcite",
             "com.hazelcast.org.codehaus",
-            "com.hazelcast.org.slf4j"
-    };
-
-    // snakeyaml classes are compiled for java target 1.8
-    private static final String[] WHITELISTED_JDK8_CLASS_NAMES = new String[] {
-            "com.hazelcast.org.snakeyaml.engine.v1.exceptions.Mark",
-            "com.hazelcast.org.snakeyaml.engine.v1.representer.BaseRepresenter$1",
+            "com.hazelcast.org.slf4j",
+            "com.hazelcast.org.snakeyaml"
     };
 
     @Override
@@ -47,22 +41,6 @@ public class EnterpriseDataSerializableConventionsTest extends DataSerializableC
         classes.add(HazelcastIntegerType.class);
         classes.add(HazelcastObjectType.class);
         classes.add(HazelcastTemporalType.class);
-
-        if (JavaVersion.isAtLeast(JavaVersion.JAVA_8)) {
-            // only resolve those classes when tests are executed with Java 8 or later
-            for (String className : WHITELISTED_JDK8_CLASS_NAMES) {
-                addToWhiteList(classes, className);
-            }
-        }
         return classes;
-    }
-
-    // whitelist class accessible only by class name
-    private void addToWhiteList(Set<Class> whitelist, String className) {
-        try {
-            whitelist.add(Class.forName(className));
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

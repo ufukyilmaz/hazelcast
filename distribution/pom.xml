@@ -12,6 +12,11 @@
     <artifactId>hazelcast-enterprise-distribution</artifactId>
     <packaging>pom</packaging>
 
+    <properties>
+        <hazelcast.root>../../hazelcast</hazelcast.root>
+        <script.dir>${hazelcast.root}/hazelcast/target/classes</script.dir>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -29,7 +34,6 @@
                 </executions>
                 <configuration>
                     <outputDirectory>../target</outputDirectory>
-                    <archiveBaseDirectory>..</archiveBaseDirectory>
                     <finalName>hazelcast-enterprise-${project.version}</finalName>
                     <descriptors>
                         <descriptor>../src/main/assembly/hazelcast-enterprise-assembly.xml</descriptor>

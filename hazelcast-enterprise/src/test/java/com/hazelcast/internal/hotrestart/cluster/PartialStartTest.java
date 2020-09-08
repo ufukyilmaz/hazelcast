@@ -299,7 +299,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
             terminateWithOverwrittenACTIVEClusterState(instance);
         }
 
-        overwriteUpdatedPartitionTable(instances[0]);
+        overwriteUpdatedPartitionTable(instances[0], survivingInstanceReplicaIndices);
         terminateWithOverwrittenACTIVEClusterState(instances[0]);
 
 
@@ -350,7 +350,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
             terminateWithOverwrittenACTIVEClusterState(instance);
         }
 
-        overwriteUpdatedPartitionTable(instances[0]);
+        overwriteUpdatedPartitionTable(instances[0], survivingInstanceReplicaIndices);
         terminateWithOverwrittenACTIVEClusterState(instances[0]);
 
         instances = restartInstances(addresses, NO_LISTENERS, PARTIAL_RECOVERY_MOST_RECENT);
@@ -400,7 +400,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
             terminateWithOverwrittenACTIVEClusterState(instance);
         }
 
-        overwriteUpdatedPartitionTable(instances[0]);
+        overwriteUpdatedPartitionTable(instances[0], survivingInstanceReplicaIndices);
         terminateWithOverwrittenACTIVEClusterState(instances[0]);
 
         instances = restartInstances(addresses, NO_LISTENERS, PARTIAL_RECOVERY_MOST_RECENT);
@@ -501,6 +501,11 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
     }
 
     private void overwriteUpdatedPartitionTable(HazelcastInstance instance) {
+        overwriteUpdatedPartitionTable(instance, null);
+    }
+
+    private void overwriteUpdatedPartitionTable(HazelcastInstance instance, int[] survivingReplicaIndexes) {
+        InternalPartitionService partitionService = getPartitionService(instance);
         PartitionReplica[] replicas0 = PartitionTableUtil.getReplicas(instance, 0);
         for (int i = 1, j = instance.getPartitionService().getPartitions().size(); i < j; i++) {
             PartitionReplica[] otherReplicas = PartitionTableUtil.getReplicas(instance, i);
@@ -511,6 +516,18 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
             PartitionTableUtil.updateReplicas(instance, 0, otherReplicas);
             PartitionTableUtil.updateReplicas(instance, i, replicas0);
             break;
+        }
+        if (survivingReplicaIndexes != null) {
+            for (int i = 0; i < survivingReplicaIndexes.length; i++) {
+                // partition replicas whose ownership was shifted to higher index replicas
+                // due to partition table overwriting should be only expected to be found
+                // in maps/caches with that high number of backups
+                InternalPartition partition = partitionService.getPartition(i);
+                int newReplicaIndex = partition.getReplicaIndex(PartitionReplica.from(getNode(instance).getLocalMember()));
+                if (newReplicaIndex > survivingReplicaIndexes[i]) {
+                    survivingReplicaIndexes[i] = newReplicaIndex;
+                }
+            }
         }
     }
 

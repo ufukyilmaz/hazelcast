@@ -63,7 +63,7 @@ public class SecurityContextImpl implements SecurityContext {
     public SecurityContextImpl(Node node) {
         super();
         this.node = node;
-        logger = node.getLogger("com.hazelcast.enterprise.security");
+        logger = node.getLogger("com.hazelcast.security");
         logger.log(Level.INFO, "Initializing Hazelcast Enterprise security context.");
 
         SecurityConfig securityConfig = node.config.getSecurityConfig();

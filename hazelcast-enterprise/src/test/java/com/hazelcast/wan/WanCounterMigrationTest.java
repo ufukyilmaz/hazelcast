@@ -156,9 +156,9 @@ public class WanCounterMigrationTest extends HazelcastTestSupport {
 
         sourceCluster.resumeWanReplicationOnAllMembers(wanReplication);
 
-        verifyEventCountersAreEventuallyZero(sourceCluster, wanReplication);
         verifyMapReplicated(sourceCluster, targetCluster, MAP_NAME);
         verifyCacheReplicated(sourceCluster, targetCluster, CACHE_NAME);
+        verifyEventCountersAreEventuallyZero(sourceCluster, wanReplication);
     }
 
     @Test
@@ -180,9 +180,9 @@ public class WanCounterMigrationTest extends HazelcastTestSupport {
 
         sourceCluster.resumeWanReplicationOnAllMembers(wanReplication);
 
-        verifyEventCountersAreEventuallyZero(sourceCluster, wanReplication);
         verifyMapReplicated(sourceCluster, targetCluster, MAP_NAME);
         verifyCacheReplicated(sourceCluster, targetCluster, CACHE_NAME);
+        verifyEventCountersAreEventuallyZero(sourceCluster, wanReplication);
     }
 
     @Test
@@ -205,9 +205,9 @@ public class WanCounterMigrationTest extends HazelcastTestSupport {
 
         sourceCluster.resumeWanReplicationOnAllMembers(wanReplication);
 
-        verifyEventCountersAreEventuallyZero(sourceCluster, wanReplication);
         verifyMapReplicated(sourceCluster, targetCluster, MAP_NAME);
         verifyCacheReplicated(sourceCluster, targetCluster, CACHE_NAME);
+        verifyEventCountersAreEventuallyZero(sourceCluster, wanReplication);
     }
 
     @Test
@@ -231,9 +231,9 @@ public class WanCounterMigrationTest extends HazelcastTestSupport {
 
         sourceCluster.resumeWanReplicationOnAllMembers(wanReplication);
 
-        verifyEventCountersAreEventuallyZero(sourceCluster, wanReplication);
         verifyMapReplicated(sourceCluster, targetCluster, MAP_NAME);
         verifyCacheReplicated(sourceCluster, targetCluster, CACHE_NAME);
+        verifyEventCountersAreEventuallyZero(sourceCluster, wanReplication);
     }
 
     @Test

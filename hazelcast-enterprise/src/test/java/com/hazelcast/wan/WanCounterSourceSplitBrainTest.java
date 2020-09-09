@@ -51,6 +51,7 @@ import static java.util.Arrays.asList;
 @UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
 @Category(QuickTest.class)
 public class WanCounterSourceSplitBrainTest extends HazelcastTestSupport {
+    private static final int REPLICATION_STALL_TOLERANCE_SECS = 120;
     private static final String MAP_NAME = "map";
     private static final String CACHE_NAME = "cache";
     private static final String REPLICATION_NAME = "wanReplication";
@@ -180,9 +181,9 @@ public class WanCounterSourceSplitBrainTest extends HazelcastTestSupport {
 
         sourceCluster.resumeWanReplicationOnAllMembers(wanReplication);
 
+        verifyMapReplicated(sourceCluster, targetCluster, MAP_NAME, REPLICATION_STALL_TOLERANCE_SECS);
+        verifyCacheReplicated(sourceCluster, targetCluster, CACHE_NAME, REPLICATION_STALL_TOLERANCE_SECS);
         verifyEventCountersAreEventuallyZero(sourceCluster, wanReplication);
-        verifyMapReplicated(sourceCluster, targetCluster, MAP_NAME);
-        verifyCacheReplicated(sourceCluster, targetCluster, CACHE_NAME);
     }
 
     private void registerIsolatedNodeMergeListener(CountDownLatch mergedLatch) {

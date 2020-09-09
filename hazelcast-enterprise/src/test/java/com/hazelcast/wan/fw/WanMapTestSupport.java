@@ -10,6 +10,7 @@ import com.hazelcast.test.TaskProgress;
 
 import java.util.concurrent.CountDownLatch;
 
+import static com.hazelcast.test.HazelcastTestSupport.ASSERT_COMPLETES_STALL_TOLERANCE;
 import static com.hazelcast.test.HazelcastTestSupport.assertCompletesEventually;
 
 public class WanMapTestSupport {
@@ -60,14 +61,20 @@ public class WanMapTestSupport {
         }
     }
 
-    public static void verifyMapReplicated(Cluster sourceCluster, Cluster targetCluster, String mapName) {
+    public static void verifyMapReplicated(Cluster sourceCluster, Cluster targetCluster, String mapName,
+                                           long completionStallToleranceSecs) {
         HazelcastInstance sourceClusterInstance = sourceCluster.getAMember();
         final IMap<Object, Object> sourceMap = sourceClusterInstance.getMap(mapName);
 
         HazelcastInstance targetClusterInstance = targetCluster.getAMember();
         final IMap<Object, Object> targetMap = targetClusterInstance.getMap(mapName);
 
-        assertCompletesEventually(new ReplicationProgressCheckerTask(sourceMap, targetMap));
+        assertCompletesEventually(new ReplicationProgressCheckerTask(sourceMap, targetMap), completionStallToleranceSecs);
+
+    }
+
+    public static void verifyMapReplicated(Cluster sourceCluster, Cluster targetCluster, String mapName) {
+        verifyMapReplicated(sourceCluster, targetCluster, mapName, ASSERT_COMPLETES_STALL_TOLERANCE);
     }
 
     private static class ReplicationProgressCheckerTask implements ProgressCheckerTask {

@@ -17,6 +17,7 @@ import javax.cache.spi.CachingProvider;
 import java.net.URI;
 import java.util.Properties;
 
+import static com.hazelcast.test.HazelcastTestSupport.ASSERT_COMPLETES_STALL_TOLERANCE;
 import static com.hazelcast.test.HazelcastTestSupport.assertCompletesEventually;
 
 public class WanCacheTestSupport {
@@ -72,10 +73,14 @@ public class WanCacheTestSupport {
     }
 
     public static void verifyCacheReplicated(Cluster sourceCluster, Cluster targetCluster, String cacheName) {
+        verifyCacheReplicated(sourceCluster, targetCluster, cacheName, ASSERT_COMPLETES_STALL_TOLERANCE);
+    }
+
+    public static void verifyCacheReplicated(Cluster sourceCluster, Cluster targetCluster, String cacheName, long completionStallToleranceSecs) {
         final ICache<Integer, String> sourceCache = getOrCreateCache(sourceCluster, cacheName);
         final ICache<Integer, String> targetCache = getOrCreateCache(targetCluster, cacheName);
 
-        assertCompletesEventually(new ReplicationProgressCheckerTask(sourceCache, targetCache));
+        assertCompletesEventually(new ReplicationProgressCheckerTask(sourceCache, targetCache), completionStallToleranceSecs);
     }
 
     private static class ReplicationProgressCheckerTask implements ProgressCheckerTask {

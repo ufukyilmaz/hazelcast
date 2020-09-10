@@ -12,6 +12,8 @@ import com.hazelcast.internal.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -21,6 +23,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 
+import static com.hazelcast.cache.jsr.JsrTestUtil.assertNoMBeanLeftovers;
 import static com.hazelcast.test.Accessors.getNode;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -43,10 +46,22 @@ public class CacheForceStartTest extends AbstractCacheHotRestartTest {
 
     private boolean triggerForceStart = false;
 
+    private ICache<Integer, Object> cache;
+
+    @AfterClass
+    public static void tearDownClass() {
+        assertNoMBeanLeftovers();
+    }
+
+    @After
+    public void tearDown() {
+        cache.unwrap(ICache.class).destroy();
+    }
+
     @Test
     public void test() {
         newInstances(CLUSTER_SIZE);
-        ICache<Integer, Object> cache = createCache();
+        cache = createCache();
 
         for (int key = 0; key < KEY_COUNT; key++) {
             String value = randomString();

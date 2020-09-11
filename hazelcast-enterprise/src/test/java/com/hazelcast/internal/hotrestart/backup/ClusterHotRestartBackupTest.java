@@ -19,7 +19,6 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 
@@ -39,8 +38,11 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
         final int clusterSize = 3;
         resetFixture(-1, clusterSize);
 
-        final HashMap<Integer, String> expectedMap = new HashMap<Integer, String>();
+        final HashMap<Integer, String> expectedMap = new HashMap<>();
         fillMap(expectedMap);
+
+        // forces flushing of member list to disk
+        resetFixture(-1, clusterSize);
 
         final Collection<HazelcastInstance> instances = getAllHazelcastInstances();
 
@@ -72,7 +74,7 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
     }
 
     @Test
-    public void testClusterHotRestartBackupInterrupt() throws IOException {
+    public void testClusterHotRestartBackupInterrupt() {
         final int clusterSize = 3;
         resetFixture(-1, clusterSize);
         final HashMap<Integer, String> expectedMap = new HashMap<>();
@@ -95,7 +97,7 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
         fillMap(expectedMap);
 
         final Collection<HazelcastInstance> instances = getAllHazelcastInstances();
-        final HazelcastInstance[] instancesArr = instances.toArray(new HazelcastInstance[instances.size()]);
+        final HazelcastInstance[] instancesArr = instances.toArray(new HazelcastInstance[0]);
 
         final int backupSeq = 0;
         runBackupOnNode(instancesArr[2], backupSeq);
@@ -124,10 +126,10 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
         fillMap(expectedMap);
 
         final Collection<HazelcastInstance> instances = getAllHazelcastInstances();
-        final HazelcastInstance[] instancesArr = instances.toArray(new HazelcastInstance[instances.size()]);
+        final HazelcastInstance[] instancesArr = instances.toArray(new HazelcastInstance[0]);
 
         final HotBackupService backupService = (HotBackupService) getNode(instancesArr[1])
-                                                                           .getNodeExtension().getHotRestartService();
+                .getNodeExtension().getHotRestartService();
         backupService.prepareBackup(getAddress(instancesArr[2]), UuidUtil.newSecureUUID(), Long.MAX_VALUE);
 
         try {

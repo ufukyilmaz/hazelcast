@@ -17,7 +17,6 @@ import java.io.File;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.function.Supplier;
 
 import static com.hazelcast.internal.hotrestart.encryption.TestHotRestartEncryptionUtils.withBasicEncryptionAtRestConfig;
 import static com.hazelcast.test.Accessors.getNode;
@@ -30,7 +29,7 @@ public abstract class AbstractHotRestartBackupTest extends HotRestartTestSupport
 
     @Parameters(name = "encrypted:{0}")
     public static Object[] data() {
-        return new Object[] { false, true };
+        return new Object[]{false, true};
     }
 
     @Parameter
@@ -78,12 +77,7 @@ public abstract class AbstractHotRestartBackupTest extends HotRestartTestSupport
     void resetFixture(long backupSeqToLoad, int clusterSize, boolean setBackupDir) {
         this.startFromBackupSeq = backupSeqToLoad;
         this.setBackupDir = setBackupDir;
-        restartCluster(clusterSize, new Supplier<Config>() {
-            @Override
-            public Config get() {
-                return makeConfig();
-            }
-        });
+        restartCluster(clusterSize, this::makeConfig);
         map = getFirstInstance().getMap(MAP_NAME);
     }
 
@@ -100,18 +94,15 @@ public abstract class AbstractHotRestartBackupTest extends HotRestartTestSupport
     }
 
     void waitForBackupToFinish(final Collection<HazelcastInstance> instances) {
-        assertEqualsEventually(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                for (HazelcastInstance instance : instances) {
-                    final HotRestartIntegrationService hotRestartService =
-                            (HotRestartIntegrationService) getNode(instance).getNodeExtension().getInternalHotRestartService();
-                    if (hotRestartService.isBackupInProgress()) {
-                        return false;
-                    }
+        assertEqualsEventually((Callable<Object>) () -> {
+            for (HazelcastInstance instance : instances) {
+                final HotRestartIntegrationService hotRestartService =
+                        (HotRestartIntegrationService) getNode(instance).getNodeExtension().getInternalHotRestartService();
+                if (hotRestartService.isBackupInProgress()) {
+                    return false;
                 }
-                return true;
             }
+            return true;
         }, true);
     }
 

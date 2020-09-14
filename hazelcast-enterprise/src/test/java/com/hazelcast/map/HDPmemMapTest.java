@@ -18,7 +18,10 @@ import org.junit.runner.RunWith;
 import static com.hazelcast.HDTestSupport.getHDConfig;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.internal.memory.impl.MemkindHeap.PERSISTENT_MEMORY_CHECK_DISABLED_PROPERTY;
+import static com.hazelcast.internal.util.JVMUtil.is32bitJVM;
+import static com.hazelcast.internal.util.OsHelper.isLinux;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
@@ -26,7 +29,6 @@ public class HDPmemMapTest extends HazelcastTestSupport {
 
     private static final String NATIVE_MAP = "NativeMap";
     private static final int INITIAL_MAP_SIZE = 10_000;
-
 
     @BeforeClass
     public static void init() {
@@ -49,6 +51,7 @@ public class HDPmemMapTest extends HazelcastTestSupport {
 
     @Test
     public void endToEndTest() {
+        assumeTrue(checkPlatform());
         Config hdConfig = getHDConfig();
         configurePmemDirectories(hdConfig.getNativeMemoryConfig(), PERSISTENT_MEMORY_DIRECTORIES);
         hdConfig.getMapConfig(NATIVE_MAP).setInMemoryFormat(NATIVE);
@@ -90,5 +93,9 @@ public class HDPmemMapTest extends HazelcastTestSupport {
 
         int expectedMapSize = INITIAL_MAP_SIZE - (INITIAL_MAP_SIZE / 5);
         assertEquals(expectedMapSize, map.size());
+    }
+
+    static boolean checkPlatform() {
+        return isLinux() && !is32bitJVM();
     }
 }

@@ -182,11 +182,12 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
         WanSyncContext<FullWanSyncStats> syncContext = syncContextMap.get(sync.getUuid());
         String mapName = sync.getMapName();
         int partitionId = sync.getPartitionId();
-        int remainingEventCount = syncContext.getSyncCounter(mapName, partitionId).decrementAndGet();
+
         FullWanSyncStats syncStats = syncContext.getSyncStats(mapName);
         syncStats.onSyncRecord();
 
         updateSerializingExecutor.execute(() -> {
+            int remainingEventCount = syncContext.getSyncCounter(mapName, partitionId).decrementAndGet();
             if (remainingEventCount == 0) {
                 int partitionsSynced = syncStats.onSyncPartition();
 
@@ -205,7 +206,7 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
         if (syncStats.getPartitionsToSync() == partitionsSynced) {
             syncContext.onMapSynced();
             syncStats.onSyncComplete();
-            logSyncStats(syncStats);
+            logSyncStats(syncStats, mapName);
             writeMcSyncFinishedEvent(syncContext.getUuid(), mapName, syncStats);
             cleanupSyncContextMap();
         }
@@ -221,14 +222,15 @@ public class WanPublisherFullSyncSupport implements WanPublisherSyncSupport {
         }
     }
 
-    private void logSyncStats(FullWanSyncStats stats) {
-        String syncStatsMsg = String.format("Synchronization finished%n%n"
+    private void logSyncStats(FullWanSyncStats stats, String mapName) {
+        String syncStatsMsg = String.format("Synchronization finished for map '%s' %n%n"
                         + "Synchronization statistics:%n"
                         + "\t Synchronization UUID: %s%n"
                         + "\t Duration: %d secs%n"
                         + "\t Total records synchronized: %d%n"
                         + "\t Total partitions synchronized: %d%n",
-                stats.getUuid(), stats.getDurationSecs(), stats.getRecordsSynced(), stats.getPartitionsSynced());
+                mapName, stats.getUuid(), stats.getDurationSecs(), stats.getRecordsSynced(),
+                stats.getPartitionsSynced());
         logger.info(syncStatsMsg);
     }
 

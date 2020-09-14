@@ -201,15 +201,18 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
         int partitionId = node.getPartitionId();
         int nodeEntryCount = node.getEntryCount();
         String mapName = sync.getMapName();
-        int remainingEventCount = syncContext.getSyncCounter(mapName, partitionId).addAndGet(-nodeEntryCount);
         WanMerkleTreeSyncStats syncStats = syncContext.getSyncStats(mapName);
 
-        updateOnPartitionSync(syncContext, nodeEntryCount, mapName, remainingEventCount, syncStats);
+        updateOnPartitionSync(syncContext, nodeEntryCount, mapName, syncStats, partitionId);
     }
 
-    private void updateOnPartitionSync(WanSyncContext<WanMerkleTreeSyncStats> syncContext, int nodeEntryCount, String mapName,
-                                       int remainingEventCount, WanMerkleTreeSyncStats syncStats) {
+    private void updateOnPartitionSync(WanSyncContext<WanMerkleTreeSyncStats> syncContext,
+                                       int nodeEntryCount, String mapName,
+                                       WanMerkleTreeSyncStats syncStats,
+                                       int partitionId) {
         updateSerializingExecutor.execute(() -> {
+            int remainingEventCount = syncContext.getSyncCounter(mapName, partitionId)
+                                                 .addAndGet(-nodeEntryCount);
             syncStats.onSyncLeaf(nodeEntryCount);
 
             if (remainingEventCount == 0) {
@@ -228,7 +231,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
         if (syncStats.getPartitionsToSync() == syncStats.getPartitionsSynced()) {
             syncContext.onMapSynced();
             syncStats.onSyncComplete();
-            logSyncStats(syncStats);
+            logSyncStats(syncStats, mapName);
             writeManagementCenterSyncFinishedEvent(syncContext.getUuid(), mapName, syncStats);
             cleanupSyncContextMap();
         }
@@ -399,14 +402,14 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
                 //
                 // in this case we need to book the partition as processed
                 // and emit the MC update event for the partition
-                updateOnPartitionSync(syncContext, 0, mapName, 0, stats);
+                updateOnPartitionSync(syncContext, 0, mapName, stats, partitionId);
             }
             processedPartitions.add(partitionId);
         }
     }
 
-    private void logSyncStats(WanMerkleTreeSyncStats stats) {
-        String syncStatsMsg = String.format("Synchronization finished%n%n"
+    private void logSyncStats(WanMerkleTreeSyncStats stats, String mapName) {
+        String syncStatsMsg = String.format("Synchronization finished for map '%s' %n%n"
                         + "Merkle synchronization statistics:%n"
                         + "\t Synchronization UUID: %s%n"
                         + "\t Duration: %d secs%n"
@@ -417,6 +420,7 @@ public class WanPublisherMerkleTreeSyncSupport implements WanPublisherSyncSuppor
                         + "\t StdDev of records per Merkle tree node: %.2f%n"
                         + "\t Minimum records per Merkle tree node: %d%n"
                         + "\t Maximum records per Merkle tree node: %d%n",
+                mapName,
                 stats.getUuid(), stats.getDurationSecs(), stats.getRecordsSynced(), stats.getPartitionsSynced(),
                 stats.getNodesSynced(), stats.getAvgEntriesPerLeaf(), stats.getStdDevEntriesPerLeaf(),
                 stats.getMinLeafEntryCount(), stats.getMaxLeafEntryCount());

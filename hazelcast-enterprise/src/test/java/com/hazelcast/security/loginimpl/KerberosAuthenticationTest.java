@@ -1,11 +1,13 @@
 package com.hazelcast.security.loginimpl;
 
+import static com.hazelcast.TestEnvironmentUtil.isIbmJvm;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSize;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 import static com.hazelcast.test.KerberosUtils.createKerberosJaasRealmConfig;
 import static com.hazelcast.test.KerberosUtils.createKeytab;
 import static java.lang.Boolean.TRUE;
+import static java.util.Arrays.asList;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
@@ -39,8 +41,11 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import com.hazelcast.TestEnvironmentUtil;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.test.TestAwareClientFactory;
 import com.hazelcast.config.Config;
@@ -55,7 +60,7 @@ import com.hazelcast.config.security.KerberosIdentityConfig;
 import com.hazelcast.config.security.LdapAuthenticationConfig;
 import com.hazelcast.config.security.RealmConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.security.impl.KerberosCredentialsFactoryTest;
 import com.hazelcast.spi.properties.ClusterProperty;
@@ -87,7 +92,8 @@ import com.hazelcast.test.annotation.QuickTest;
         },
         searchBaseDn = "dc=hazelcast,dc=com")
 @ApplyLdifFiles({"hazelcast.com.ldif"})
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({ QuickTest.class })
 public class KerberosAuthenticationTest {
 
@@ -106,16 +112,24 @@ public class KerberosAuthenticationTest {
     @ClassRule
     public static OverridePropertyRule propKrb5Conf = OverridePropertyRule.clear("java.security.krb5.conf");
 
+    @Parameter
+    public boolean simplifiedConfig;
+
+    @Parameters(name = "simplifiedConfig:{0}")
+    public static Iterable<Boolean> parameters() {
+        return asList(false, true);
+    }
+
     @BeforeClass
     public static void beforeClass() throws Exception {
-        TestEnvironmentUtil.assumeNoIbmJvm();
         assumeLocalhostIsCanonical();
         kdc = ServerAnnotationProcessor.getKdcServer(serverRule.getDirectoryService(), 10088);
         serverRule.getLdapServer().setSearchBaseDn("dc=hazelcast,dc=com");
         assertTrueEventually(() -> kdc.isStarted());
         KerberosUtils.injectDummyReplayCache(kdc);
         File krb5Conf = tempDir.newFile("krb5.conf");
-        IOUtil.copy(KerberosCredentialsFactoryTest.class.getResourceAsStream("/krb5.conf"), krb5Conf);
+        String krb5ConfResource = isIbmJvm() ? "/ibm-krb5.conf" : "/krb5.conf";
+        IOUtil.copy(KerberosCredentialsFactoryTest.class.getResourceAsStream(krb5ConfResource), krb5Conf);
         propKrb5Conf.setOrClearProperty(krb5Conf.getAbsolutePath());
 
         keytabJduke = createKeytab("jduke@HAZELCAST.COM", "theduke", tempDir.newFile("jduke.keytab"));
@@ -143,45 +157,66 @@ public class KerberosAuthenticationTest {
 
     @Test
     public void testAuthenticationWithDefaultName() throws Exception {
-        KerberosIdentityConfig kerbIdentity = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
-                .setSecurityRealm("krb5Initiator");
-        testAuthenticationInternal(kerbIdentity, "hz/127.0.0.1@HAZELCAST.COM", keytab127001);
+        testAuthenticationInternal(false, "hz/127.0.0.1@HAZELCAST.COM", keytab127001);
     }
 
     @Test
     public void testAuthenticationWithCanonicalHost() throws Exception {
-        KerberosIdentityConfig kerbIdentity = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
-                .setSecurityRealm("krb5Initiator").setUseCanonicalHostname(TRUE);
-        testAuthenticationInternal(kerbIdentity, "hz/localhost@HAZELCAST.COM", keytabLocalhost);
+        testAuthenticationInternal(true, "hz/localhost@HAZELCAST.COM", keytabLocalhost);
     }
 
-    protected void testAuthenticationInternal(KerberosIdentityConfig kerbIdentity, String memberSpn, File memberKeytab) {
-        KerberosAuthenticationConfig kerbtAuthn = new KerberosAuthenticationConfig().setSecurityRealm("krb5Acceptor");
+    protected void testAuthenticationInternal(boolean useCanonicalHost, String memberSpn, File memberKeytab) {
+        String memberKeytabFile = memberKeytab.getAbsolutePath();
+
         Config config = createConfig("jduke@HAZELCAST.COM");
+        ClientConfig clientConfig = createClientConfig();
+        ClientConfig unauthzClientConfig = createClientConfig();
+        if (simplifiedConfig) {
+            KerberosIdentityConfig kerbIdentityMember = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
+                    .setPrincipal(memberSpn).setKeytabFile(memberKeytabFile).setUseCanonicalHostname(useCanonicalHost);
+            KerberosAuthenticationConfig kerbtAuthn = new KerberosAuthenticationConfig().setKeytabFile(memberKeytabFile)
+                    .setPrincipal(memberSpn);
+            config.getSecurityConfig().setClientRealmConfig("kerberos",
+                    new RealmConfig().setKerberosAuthenticationConfig(kerbtAuthn).setKerberosIdentityConfig(kerbIdentityMember))
+                    .setMemberRealm("kerberos");
 
-        config.getSecurityConfig()
-                .setClientRealmConfig("kerberos",
-                        new RealmConfig().setKerberosAuthenticationConfig(kerbtAuthn).setKerberosIdentityConfig(kerbIdentity))
-                .setMemberRealm("kerberos")
-                .addRealmConfig("krb5Initiator",
-                        createKerberosJaasRealmConfig(memberSpn, memberKeytab.getAbsolutePath(), true))
-                .addRealmConfig("krb5Acceptor",
-                        createKerberosJaasRealmConfig(memberSpn, memberKeytab.getAbsolutePath(), false));
+            KerberosIdentityConfig kerbIdentityClient = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
+                    .setPrincipal("jduke").setKeytabFile(keytabJduke.getAbsolutePath())
+                    .setUseCanonicalHostname(useCanonicalHost);
+            clientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentityClient);
 
+            KerberosIdentityConfig kerbIdentityUnauthzClient = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
+                    .setPrincipal("josef").setKeytabFile(keytabJosef.getAbsolutePath())
+                    .setUseCanonicalHostname(useCanonicalHost);
+
+            unauthzClientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentityUnauthzClient);
+        } else {
+            KerberosIdentityConfig kerbIdentity = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
+                    .setSecurityRealm("krb5Initiator").setUseCanonicalHostname(useCanonicalHost);
+            KerberosAuthenticationConfig kerbtAuthn = new KerberosAuthenticationConfig().setSecurityRealm("krb5Acceptor");
+
+            config.getSecurityConfig()
+                    .setClientRealmConfig("kerberos",
+                            new RealmConfig()
+                                    .setKerberosAuthenticationConfig(kerbtAuthn).setKerberosIdentityConfig(kerbIdentity))
+                    .setMemberRealm("kerberos")
+                    .addRealmConfig("krb5Initiator",
+                            createKerberosJaasRealmConfig(memberSpn, memberKeytab.getAbsolutePath(), true))
+                    .addRealmConfig("krb5Acceptor",
+                            createKerberosJaasRealmConfig(memberSpn, memberKeytab.getAbsolutePath(), false));
+
+            clientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
+                    createKerberosJaasRealmConfig("jduke", keytabJduke.getAbsolutePath(), true));
+
+            unauthzClientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
+                    createKerberosJaasRealmConfig("josef@HAZELCAST.COM", keytabJosef.getAbsolutePath(), true));
+        }
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
         assertClusterSize(2, hz1, hz2);
 
-        ClientConfig clientConfig = createClientConfig();
-        clientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
-                createKerberosJaasRealmConfig("jduke", keytabJduke.getAbsolutePath(), true));
-
         HazelcastInstance client = factory.newHazelcastClient(clientConfig);
         client.getMap("test").put("key", "value");
-
-        ClientConfig unauthzClientConfig = createClientConfig();
-        unauthzClientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
-                createKerberosJaasRealmConfig("josef@HAZELCAST.COM", keytabJosef.getAbsolutePath(), true));
 
         HazelcastInstance unauhtzClient = factory.newHazelcastClient(unauthzClientConfig);
         expected.expect(AccessControlException.class);
@@ -194,31 +229,53 @@ public class KerberosAuthenticationTest {
                 .setSystemUserPassword("secret").setUrl(getLdapServerUrl()).setRoleMappingAttribute("cn")
                 .setUserFilter("(krb5PrincipalName={login})").setSkipAuthentication(TRUE);
 
-        KerberosAuthenticationConfig kerbClientAuthn = new KerberosAuthenticationConfig();
-        kerbClientAuthn.setSecurityRealm("krb5Acceptor").setSkipRole(true).setLdapAuthenticationConfig(ldapConfig);
-
         Config config = createConfig("Java Duke", "josef@HAZELCAST.COM");
-        config.getSecurityConfig()
-                .setClientRealmConfig("kerberosClientAuthn", new RealmConfig().setKerberosAuthenticationConfig(kerbClientAuthn))
-                .addRealmConfig("krb5Acceptor",
-                        createKerberosJaasRealmConfig("hz/127.0.0.1@HAZELCAST.COM", keytab127001.getAbsolutePath(), false));
+        ClientConfig clientConfig = createClientConfig();
+        ClientConfig unauthzClientConfig = createClientConfig();
+
+        String memberPrincipal = isIbmJvm() ? "hz/127.0.0.1@HAZELCAST.COM" : "*";
+        if (simplifiedConfig) {
+            KerberosAuthenticationConfig kerbClientAuthn = new KerberosAuthenticationConfig().setSkipRole(true)
+                    .setLdapAuthenticationConfig(ldapConfig).setKeytabFile(keytab127001.getAbsolutePath());
+            // OpenJDK: Let's skip filling the principal name here, the '*' should be used by the GSSAPILoginModule logic
+            if (isIbmJvm()) {
+                kerbClientAuthn.setPrincipal(memberPrincipal);
+            }
+
+            config.getSecurityConfig()
+                    .setClientRealmConfig("kerberosClientAuthn", new RealmConfig().setKerberosAuthenticationConfig(kerbClientAuthn));
+
+            KerberosIdentityConfig kerbIdentityClient = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
+                    .setPrincipal("jduke").setKeytabFile(keytabJduke.getAbsolutePath());
+            clientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentityClient);
+
+            KerberosIdentityConfig kerbIdentityUnauthzClient = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
+                    .setPrincipal("josef@HAZELCAST.COM").setKeytabFile(keytabJosef.getAbsolutePath());
+            unauthzClientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentityUnauthzClient);
+        } else {
+            KerberosAuthenticationConfig kerbClientAuthn = new KerberosAuthenticationConfig();
+            kerbClientAuthn.setSecurityRealm("krb5Acceptor").setSkipRole(true).setLdapAuthenticationConfig(ldapConfig);
+
+            config.getSecurityConfig()
+                    .setClientRealmConfig("kerberosClientAuthn", new RealmConfig().setKerberosAuthenticationConfig(kerbClientAuthn))
+                    .addRealmConfig("krb5Acceptor",
+                            createKerberosJaasRealmConfig(memberPrincipal, keytab127001.getAbsolutePath(), false));
+
+            KerberosIdentityConfig kerbIdentity = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
+                    .setSecurityRealm("krb5Initiator");
+            clientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
+                    createKerberosJaasRealmConfig("jduke", keytabJduke.getAbsolutePath(), true));
+
+            unauthzClientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
+                    createKerberosJaasRealmConfig("josef@HAZELCAST.COM", keytabJosef.getAbsolutePath(), true));
+        }
 
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
         assertClusterSize(2, hz1, hz2);
 
-        KerberosIdentityConfig kerbIdentity = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
-                .setSecurityRealm("krb5Initiator");
-        ClientConfig clientConfig = createClientConfig();
-        clientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
-                createKerberosJaasRealmConfig("jduke", keytabJduke.getAbsolutePath(), true));
-
         HazelcastInstance client = factory.newHazelcastClient(clientConfig);
         client.getMap("test").put("key", "value");
-
-        ClientConfig unauthzClientConfig = createClientConfig();
-        unauthzClientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
-                createKerberosJaasRealmConfig("josef@HAZELCAST.COM", keytabJosef.getAbsolutePath(), true));
 
         HazelcastInstance unauhtzClient = factory.newHazelcastClient(unauthzClientConfig);
         expected.expect(AccessControlException.class);
@@ -227,6 +284,8 @@ public class KerberosAuthenticationTest {
 
     @Test
     public void testClientAuthnWithLdapRoleMappingGssApi() throws Exception {
+        // We need the Kerberos initiator configuration for the authentication to LDAP (GSSAPI). It doesn't matter if simplified
+        // configuration is used on the Kerberos authentication side, LDAP needs the realm configuration.
         RealmConfig krb5InitiatorRealm = createKerberosJaasRealmConfig("josef@HAZELCAST.COM", keytabJosef.getAbsolutePath(), true);
         LdapAuthenticationConfig ldapConfig =
                 new LdapAuthenticationConfig()
@@ -237,32 +296,51 @@ public class KerberosAuthenticationTest {
                 .setUserFilter("(krb5PrincipalName={login})")
                 .setSkipAuthentication(TRUE);
 
-        KerberosAuthenticationConfig kerbClientAuthn = new KerberosAuthenticationConfig();
-        kerbClientAuthn.setSecurityRealm("krb5Acceptor").setSkipRole(true).setLdapAuthenticationConfig(ldapConfig);
-
         Config config = createConfig("Java Duke", "josef@HAZELCAST.COM");
-        config.getSecurityConfig()
-            .setClientRealmConfig("kerberosClientAuthn", new RealmConfig().setKerberosAuthenticationConfig(kerbClientAuthn))
-            .addRealmConfig("krb5Initiator", krb5InitiatorRealm)
-            .addRealmConfig("krb5Acceptor",
-                createKerberosJaasRealmConfig("hz/127.0.0.1@HAZELCAST.COM", keytab127001.getAbsolutePath(), false));
+        ClientConfig clientConfig = createClientConfig();
+        ClientConfig unauthzClientConfig = createClientConfig();
+
+        if (simplifiedConfig) {
+            KerberosAuthenticationConfig kerbClientAuthn = new KerberosAuthenticationConfig()
+                    .setSkipRole(true).setLdapAuthenticationConfig(ldapConfig).setPrincipal("hz/127.0.0.1@HAZELCAST.COM")
+                    .setKeytabFile(keytab127001.getAbsolutePath());
+
+            config.getSecurityConfig()
+                .setClientRealmConfig("kerberosClientAuthn", new RealmConfig().setKerberosAuthenticationConfig(kerbClientAuthn))
+                .addRealmConfig("krb5Initiator", krb5InitiatorRealm);
+
+            KerberosIdentityConfig kerbIdentity = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
+                    .setPrincipal("jduke").setKeytabFile(keytabJduke.getAbsolutePath());
+            clientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity);
+
+            KerberosIdentityConfig kerbIdentityUnauthz = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
+                    .setPrincipal("josef").setKeytabFile(keytabJosef.getAbsolutePath());
+            unauthzClientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentityUnauthz);
+        } else {
+            KerberosAuthenticationConfig kerbClientAuthn = new KerberosAuthenticationConfig();
+            kerbClientAuthn.setSecurityRealm("krb5Acceptor").setSkipRole(true).setLdapAuthenticationConfig(ldapConfig);
+
+            config.getSecurityConfig()
+                .setClientRealmConfig("kerberosClientAuthn", new RealmConfig().setKerberosAuthenticationConfig(kerbClientAuthn))
+                .addRealmConfig("krb5Initiator", krb5InitiatorRealm)
+                .addRealmConfig("krb5Acceptor",
+                    createKerberosJaasRealmConfig("hz/127.0.0.1@HAZELCAST.COM", keytab127001.getAbsolutePath(), false));
+
+            KerberosIdentityConfig kerbIdentity = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
+                    .setSecurityRealm("krb5Initiator");
+            clientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
+                    createKerberosJaasRealmConfig("jduke", keytabJduke.getAbsolutePath(), true));
+
+            unauthzClientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
+                    krb5InitiatorRealm);
+        }
 
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
         assertClusterSize(2, hz1, hz2);
 
-        KerberosIdentityConfig kerbIdentity = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
-                .setSecurityRealm("krb5Initiator");
-        ClientConfig clientConfig = createClientConfig();
-        clientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
-                createKerberosJaasRealmConfig("jduke", keytabJduke.getAbsolutePath(), true));
-
         HazelcastInstance client = factory.newHazelcastClient(clientConfig);
         client.getMap("test").put("key", "value");
-
-        ClientConfig unauthzClientConfig = createClientConfig();
-        unauthzClientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
-                krb5InitiatorRealm);
 
         HazelcastInstance unauhtzClient = factory.newHazelcastClient(unauthzClientConfig);
         expected.expect(AccessControlException.class);
@@ -271,33 +349,54 @@ public class KerberosAuthenticationTest {
 
     @Test
     public void testFailedMemberAuthentication() throws Exception {
-        KerberosIdentityConfig kerbIdentity1 = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
-                .setSecurityRealm("krb5Initiator");
-
-        KerberosAuthenticationConfig kerbtAuthn = new KerberosAuthenticationConfig();
-        kerbtAuthn.setSecurityRealm("krb5Acceptor");
         Config config1 = createConfig();
-
-        config1.getSecurityConfig()
-                .setClientRealmConfig("kerberos",
-                        new RealmConfig().setKerberosAuthenticationConfig(kerbtAuthn).setKerberosIdentityConfig(kerbIdentity1))
-                .setMemberRealm("kerberos")
-                .addRealmConfig("krb5Initiator",
-                        createKerberosJaasRealmConfig("hz/127.0.0.1@HAZELCAST.COM", keytab127001.getAbsolutePath(), true))
-                .addRealmConfig("krb5Acceptor",
-                        createKerberosJaasRealmConfig("hz/127.0.0.1@HAZELCAST.COM", keytab127001.getAbsolutePath(), false));
-
-        KerberosIdentityConfig kerbIdentity2 = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
-                .setSecurityRealm("krb5Initiator").setSpn("jduke");
         Config config2 = createConfig();
-        config2.getSecurityConfig()
-                .setClientRealmConfig("kerberos",
-                        new RealmConfig().setKerberosAuthenticationConfig(kerbtAuthn).setKerberosIdentityConfig(kerbIdentity2))
-                .setMemberRealm("kerberos")
-                .addRealmConfig("krb5Initiator",
-                        createKerberosJaasRealmConfig("hz/127.0.0.1@HAZELCAST.COM", keytab127001.getAbsolutePath(), true))
-                .addRealmConfig("krb5Acceptor",
-                        createKerberosJaasRealmConfig("hz/127.0.0.1@HAZELCAST.COM", keytab127001.getAbsolutePath(), false));
+
+        if (simplifiedConfig) {
+            KerberosIdentityConfig kerbIdentity1 = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
+                    .setPrincipal("hz/127.0.0.1@HAZELCAST.COM").setKeytabFile(keytab127001.getAbsolutePath());
+
+            KerberosAuthenticationConfig kerbtAuthn = new KerberosAuthenticationConfig()
+                    .setPrincipal("hz/127.0.0.1@HAZELCAST.COM").setKeytabFile(keytab127001.getAbsolutePath());
+
+            config1.getSecurityConfig().setClientRealmConfig("kerberos",
+                    new RealmConfig().setKerberosAuthenticationConfig(kerbtAuthn).setKerberosIdentityConfig(kerbIdentity1))
+                    .setMemberRealm("kerberos");
+
+            KerberosIdentityConfig kerbIdentity2 = new KerberosIdentityConfig().setRealm("HAZELCAST.COM").setSpn("jduke")
+                    .setPrincipal("hz/127.0.0.1@HAZELCAST.COM").setKeytabFile(keytab127001.getAbsolutePath());
+            config2.getSecurityConfig().setClientRealmConfig("kerberos",
+                    new RealmConfig().setKerberosAuthenticationConfig(kerbtAuthn).setKerberosIdentityConfig(kerbIdentity2))
+                    .setMemberRealm("kerberos");
+        } else {
+            KerberosIdentityConfig kerbIdentity1 = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
+                    .setSecurityRealm("krb5Initiator");
+
+            KerberosAuthenticationConfig kerbtAuthn = new KerberosAuthenticationConfig();
+            kerbtAuthn.setSecurityRealm("krb5Acceptor");
+
+            config1.getSecurityConfig()
+                    .setClientRealmConfig("kerberos",
+                            new RealmConfig()
+                                    .setKerberosAuthenticationConfig(kerbtAuthn).setKerberosIdentityConfig(kerbIdentity1))
+                    .setMemberRealm("kerberos")
+                    .addRealmConfig("krb5Initiator",
+                            createKerberosJaasRealmConfig("hz/127.0.0.1@HAZELCAST.COM", keytab127001.getAbsolutePath(), true))
+                    .addRealmConfig("krb5Acceptor",
+                            createKerberosJaasRealmConfig("hz/127.0.0.1@HAZELCAST.COM", keytab127001.getAbsolutePath(), false));
+
+            KerberosIdentityConfig kerbIdentity2 = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
+                    .setSecurityRealm("krb5Initiator").setSpn("jduke");
+            config2.getSecurityConfig()
+                    .setClientRealmConfig("kerberos",
+                            new RealmConfig()
+                                    .setKerberosAuthenticationConfig(kerbtAuthn).setKerberosIdentityConfig(kerbIdentity2))
+                    .setMemberRealm("kerberos")
+                    .addRealmConfig("krb5Initiator",
+                            createKerberosJaasRealmConfig("hz/127.0.0.1@HAZELCAST.COM", keytab127001.getAbsolutePath(), true))
+                    .addRealmConfig("krb5Acceptor",
+                            createKerberosJaasRealmConfig("hz/127.0.0.1@HAZELCAST.COM", keytab127001.getAbsolutePath(), false));
+        }
 
         factory.newHazelcastInstance(config1);
         expected.expect(IllegalStateException.class);
@@ -306,62 +405,97 @@ public class KerberosAuthenticationTest {
 
     @Test
     public void testFailedClientAuthentication() throws Exception {
-        KerberosAuthenticationConfig kerbtAuthn = new KerberosAuthenticationConfig();
-        kerbtAuthn.setSecurityRealm("krb5Acceptor");
         Config config = createConfig("jduke@HAZELCAST.COM");
+        ClientConfig clientConfig = createClientConfig();
+        if (simplifiedConfig) {
+            KerberosAuthenticationConfig kerbtAuthn = new KerberosAuthenticationConfig()
+                    .setPrincipal("hz/127.0.0.1@HAZELCAST.COM").setKeytabFile(keytab127001.getAbsolutePath());
 
-        config.getSecurityConfig()
-                .setClientRealmConfig("kerberos", new RealmConfig().setKerberosAuthenticationConfig(kerbtAuthn))
-                .addRealmConfig("krb5Acceptor",
-                        createKerberosJaasRealmConfig("hz/127.0.0.1@HAZELCAST.COM", keytab127001.getAbsolutePath(), false));
+            config.getSecurityConfig().setClientRealmConfig("kerberos",
+                    new RealmConfig().setKerberosAuthenticationConfig(kerbtAuthn));
+
+            KerberosIdentityConfig kerbIdentity = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
+                    .setSpn("jduke@HAZELCAST.COM").setPrincipal("jduke").setKeytabFile(keytabJduke.getAbsolutePath());
+            clientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity);
+        } else {
+            KerberosAuthenticationConfig kerbtAuthn = new KerberosAuthenticationConfig();
+            kerbtAuthn.setSecurityRealm("krb5Acceptor");
+
+            config.getSecurityConfig()
+                    .setClientRealmConfig("kerberos", new RealmConfig().setKerberosAuthenticationConfig(kerbtAuthn))
+                    .addRealmConfig("krb5Acceptor",
+                            createKerberosJaasRealmConfig("hz/127.0.0.1@HAZELCAST.COM", keytab127001.getAbsolutePath(), false));
+
+            KerberosIdentityConfig kerbIdentity = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
+                    .setSecurityRealm("krb5Initiator").setSpn("jduke@HAZELCAST.COM");
+            clientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
+                    createKerberosJaasRealmConfig("jduke", keytabJduke.getAbsolutePath(), true));
+        }
 
         factory.newHazelcastInstance(config);
-
-        KerberosIdentityConfig kerbIdentity = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
-                .setSecurityRealm("krb5Initiator").setSpn("jduke@HAZELCAST.COM");
-        ClientConfig clientConfig = createClientConfig();
-        clientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
-                createKerberosJaasRealmConfig("jduke", keytabJduke.getAbsolutePath(), true));
-
         expected.expect(IllegalStateException.class);
         factory.newHazelcastClient(clientConfig);
     }
 
     @Test
     public void testJaasLoginModuleStack() throws Exception {
-        LoginModuleConfig kerberosConfig = new LoginModuleConfig(GssApiLoginModule.class.getName(), LoginModuleUsage.REQUIRED)
-                .setProperty("securityRealm", "krb5Acceptor");
-        LoginModuleConfig ldapConfig = new LoginModuleConfig(LdapLoginModule.class.getName(), LoginModuleUsage.REQUIRED)
-                .setProperty(Context.SECURITY_AUTHENTICATION, "simple")
-                .setProperty(Context.SECURITY_PRINCIPAL, "uid=admin,ou=system")
-                .setProperty(Context.SECURITY_CREDENTIALS, "secret").setProperty(Context.PROVIDER_URL, getLdapServerUrl())
-                .setProperty("roleMappingMode", "reverse").setProperty("roleMappingAttribute", "member")
-                .setProperty("roleNameAttribute", "cn").setProperty("roleRecursionMaxDepth", "5")
-                .setProperty("userFilter", "(krb5PrincipalName={login})").setProperty("skipAuthentication", "true");
-
         Config config = createConfig("Dev");
-        config.getSecurityConfig().setClientRealmConfig("kerberosClientAuthn",
-                new RealmConfig().setJaasAuthenticationConfig(
-                        new JaasAuthenticationConfig().addLoginModuleConfig(kerberosConfig).addLoginModuleConfig(ldapConfig)))
-                .addRealmConfig("krb5Acceptor",
-                        createKerberosJaasRealmConfig("hz/127.0.0.1@HAZELCAST.COM", keytab127001.getAbsolutePath(), false));
+        ClientConfig clientConfig = createClientConfig();
+        ClientConfig unauthzClientConfig = createClientConfig();
 
+        if (simplifiedConfig) {
+            LoginModuleConfig kerberosConfig = new LoginModuleConfig(GssApiLoginModule.class.getName(),
+                    LoginModuleUsage.REQUIRED).setProperty("principal", "hz/127.0.0.1@HAZELCAST.COM").setProperty("keytabFile",
+                            keytab127001.getAbsolutePath());
+            LoginModuleConfig ldapConfig = new LoginModuleConfig(LdapLoginModule.class.getName(), LoginModuleUsage.REQUIRED)
+                    .setProperty(Context.SECURITY_AUTHENTICATION, "simple")
+                    .setProperty(Context.SECURITY_PRINCIPAL, "uid=admin,ou=system")
+                    .setProperty(Context.SECURITY_CREDENTIALS, "secret").setProperty(Context.PROVIDER_URL, getLdapServerUrl())
+                    .setProperty("roleMappingMode", "reverse").setProperty("roleMappingAttribute", "member")
+                    .setProperty("roleNameAttribute", "cn").setProperty("roleRecursionMaxDepth", "5")
+                    .setProperty("userFilter", "(krb5PrincipalName={login})").setProperty("skipAuthentication", "true");
+
+            config.getSecurityConfig().setClientRealmConfig("kerberosClientAuthn",
+                    new RealmConfig().setJaasAuthenticationConfig(new JaasAuthenticationConfig()
+                            .addLoginModuleConfig(kerberosConfig).addLoginModuleConfig(ldapConfig)));
+            KerberosIdentityConfig kerbIdentity = new KerberosIdentityConfig().setRealm("HAZELCAST.COM").setPrincipal("jduke")
+                    .setKeytabFile(keytabJduke.getAbsolutePath());
+            clientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity);
+
+            KerberosIdentityConfig kerbIdentityUnauthz = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
+                    .setPrincipal("josef@HAZELCAST.COM").setKeytabFile(keytabJosef.getAbsolutePath());
+            unauthzClientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentityUnauthz);
+        } else {
+            LoginModuleConfig kerberosConfig = new LoginModuleConfig(GssApiLoginModule.class.getName(),
+                    LoginModuleUsage.REQUIRED).setProperty("securityRealm", "krb5Acceptor");
+            LoginModuleConfig ldapConfig = new LoginModuleConfig(LdapLoginModule.class.getName(), LoginModuleUsage.REQUIRED)
+                    .setProperty(Context.SECURITY_AUTHENTICATION, "simple")
+                    .setProperty(Context.SECURITY_PRINCIPAL, "uid=admin,ou=system")
+                    .setProperty(Context.SECURITY_CREDENTIALS, "secret").setProperty(Context.PROVIDER_URL, getLdapServerUrl())
+                    .setProperty("roleMappingMode", "reverse").setProperty("roleMappingAttribute", "member")
+                    .setProperty("roleNameAttribute", "cn").setProperty("roleRecursionMaxDepth", "5")
+                    .setProperty("userFilter", "(krb5PrincipalName={login})").setProperty("skipAuthentication", "true");
+
+            config.getSecurityConfig()
+                    .setClientRealmConfig("kerberosClientAuthn",
+                            new RealmConfig().setJaasAuthenticationConfig(new JaasAuthenticationConfig()
+                                    .addLoginModuleConfig(kerberosConfig).addLoginModuleConfig(ldapConfig)))
+                    .addRealmConfig("krb5Acceptor",
+                            createKerberosJaasRealmConfig("hz/127.0.0.1@HAZELCAST.COM", keytab127001.getAbsolutePath(), false));
+            KerberosIdentityConfig kerbIdentity = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
+                    .setSecurityRealm("krb5Initiator");
+            clientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
+                    createKerberosJaasRealmConfig("jduke", keytabJduke.getAbsolutePath(), true));
+
+            unauthzClientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
+                    createKerberosJaasRealmConfig("josef@HAZELCAST.COM", keytabJosef.getAbsolutePath(), true));
+        }
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
         assertClusterSize(2, hz1, hz2);
 
-        KerberosIdentityConfig kerbIdentity = new KerberosIdentityConfig().setRealm("HAZELCAST.COM")
-                .setSecurityRealm("krb5Initiator");
-        ClientConfig clientConfig = createClientConfig();
-        clientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
-                createKerberosJaasRealmConfig("jduke", keytabJduke.getAbsolutePath(), true));
-
         HazelcastInstance client = factory.newHazelcastClient(clientConfig);
         client.getMap("test").put("key", "value");
-
-        ClientConfig unauthzClientConfig = createClientConfig();
-        unauthzClientConfig.getSecurityConfig().setKerberosIdentityConfig(kerbIdentity).addRealmConfig("krb5Initiator",
-                createKerberosJaasRealmConfig("josef@HAZELCAST.COM", keytabJosef.getAbsolutePath(), true));
 
         HazelcastInstance unauhtzClient = factory.newHazelcastClient(unauthzClientConfig);
         expected.expect(AccessControlException.class);

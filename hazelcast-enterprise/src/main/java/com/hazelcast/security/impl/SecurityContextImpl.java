@@ -92,6 +92,10 @@ public class SecurityContextImpl implements SecurityContext {
 
         memberConfiguration = new LoginConfigurationDelegate(securityConfig.getRealmLoginModuleConfigs(memberRealm));
         clientConfiguration = new LoginConfigurationDelegate(securityConfig.getRealmLoginModuleConfigs(clientRealm));
+        if (logger.isFineEnabled()) {
+            logger.fine("Member Login configuration: " + memberConfiguration);
+            logger.fine("Client Login configuration: " + clientConfiguration);
+        }
         final List<SecurityInterceptorConfig> interceptorConfigs = securityConfig.getSecurityInterceptorConfigs();
         interceptors = new ArrayList<>(interceptorConfigs.size());
         for (SecurityInterceptorConfig interceptorConfig : interceptorConfigs) {

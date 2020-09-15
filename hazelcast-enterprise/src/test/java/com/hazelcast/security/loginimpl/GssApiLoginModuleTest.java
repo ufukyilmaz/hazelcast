@@ -41,6 +41,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 
 import com.hazelcast.TestEnvironmentUtil;
+import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.security.ClusterIdentityPrincipal;
 import com.hazelcast.security.ClusterRolePrincipal;
@@ -147,6 +148,18 @@ public class GssApiLoginModuleTest {
         assertNotNull(kerberosCredentials);
         expected.expect(LoginException.class);
         doLogin(kerberosCredentials, subject, Collections.emptyMap());
+    }
+
+    @Test
+    public void testAuthenticationFailsWhenRealmAndPrincipal() throws Exception {
+        Subject subject = new Subject();
+        Credentials kerberosCredentials = getKerberosCredentials("jduke", "jduke.keytab");
+        assertNotNull(kerberosCredentials);
+        Map<String, String> options = new HashMap<>();
+        options.put(GssApiLoginModule.OPTION_SECURITY_REALM, "foo");
+        options.put(GssApiLoginModule.OPTION_PRINCIPAL, "test");
+        expected.expect(InvalidConfigurationException.class);
+        doLogin(kerberosCredentials, subject, options);
     }
 
     protected void doLogin(Credentials credentials, Subject subject, Map<String, ?> options) throws LoginException {

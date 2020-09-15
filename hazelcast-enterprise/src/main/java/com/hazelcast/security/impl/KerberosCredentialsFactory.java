@@ -1,9 +1,13 @@
 package com.hazelcast.security.impl;
 
+import static com.hazelcast.security.impl.SecurityUtil.createKerberosJaasRealmConfig;
+import static com.hazelcast.security.impl.SecurityUtil.getRunAsSubject;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.PrivilegedAction;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
@@ -15,6 +19,7 @@ import org.ietf.jgss.Oid;
 
 import com.hazelcast.cluster.Address;
 import com.hazelcast.config.InvalidConfigurationException;
+import com.hazelcast.config.security.RealmConfig;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.security.Credentials;
@@ -60,6 +65,24 @@ public class KerberosCredentialsFactory implements ICredentialsFactory {
     public static final String PROPERTY_USE_CANONICAL_HOSTNAME = "useCanonicalHostname";
 
     /**
+     * Property name which allows (together with the {@link #PROPERTY_PRINCIPAL}) simplification of security realm
+     * configurations. For basic scenarios you don't need to specify the {@link #PROPERTY_SECURITY_REALM}, but you can instead
+     * define directly kerberos principal name and keytab file path with credentials for given principal.
+     * <p>
+     * This property is only used when the {@link #PROPERTY_SECURITY_REALM} is not configured.
+     */
+    public static final String PROPERTY_KEYTAB_FILE = "keytabFile";
+
+    /**
+     * Property name which allows (together with the {@link #PROPERTY_KEYTAB_FILE}) simplification of security realm
+     * configurations. For basic scenarios you don't need to specify the {@link #PROPERTY_SECURITY_REALM}, but you can instead
+     * define directly kerberos principal name and keytab file path with credentials for given principal.
+     * <p>
+     * This property is only used when the {@link #PROPERTY_SECURITY_REALM} is not configured.
+     */
+    public static final String PROPERTY_PRINCIPAL = "principal";
+
+    /**
      * Default value for {@link #PROPERTY_PREFIX} property.
      */
     public static final String DEFAULT_VALUE_PREFIX = "hz/";
@@ -73,6 +96,8 @@ public class KerberosCredentialsFactory implements ICredentialsFactory {
         }
     }
 
+    private static final AtomicBoolean KRB5_REALM_GENERATED_WARNING_PRINTED = new AtomicBoolean(false);
+
     private final ILogger logger = Logger.getLogger(KerberosCredentialsFactory.class);
 
     private volatile String spn;
@@ -81,6 +106,8 @@ public class KerberosCredentialsFactory implements ICredentialsFactory {
     private volatile boolean useCanonicalHostname;
 
     private volatile String securityRealm;
+    private volatile String keytabFile;
+    private volatile String principal;
     private volatile CallbackHandler callbackHandler;
 
     @Override
@@ -94,10 +121,16 @@ public class KerberosCredentialsFactory implements ICredentialsFactory {
         serviceNamePrefix = properties.getProperty(PROPERTY_PREFIX);
         serviceRealm = properties.getProperty(PROPERTY_REALM);
         securityRealm = properties.getProperty(PROPERTY_SECURITY_REALM);
+        keytabFile = properties.getProperty(PROPERTY_KEYTAB_FILE);
+        principal = properties.getProperty(PROPERTY_PRINCIPAL);
         useCanonicalHostname = Boolean.parseBoolean(properties.getProperty(PROPERTY_USE_CANONICAL_HOSTNAME));
         if (spn != null && serviceNamePrefix != null) {
             throw new InvalidConfigurationException(
                     "Service name must not be configured together with the service name prefix.");
+        }
+        if (securityRealm != null && (principal != null || keytabFile != null)) {
+            throw new InvalidConfigurationException(
+                    "The principal and keytabFile must not be configured when securityRealm is used.");
         }
         if (serviceNamePrefix == null) {
             serviceNamePrefix = DEFAULT_VALUE_PREFIX;
@@ -117,7 +150,19 @@ public class KerberosCredentialsFactory implements ICredentialsFactory {
         if (serviceRealm != null) {
             serviceName = serviceName + "@" + serviceRealm;
         }
-        Subject subject = SecurityUtil.getRunAsSubject(callbackHandler, securityRealm);
+        Subject subject;
+        if (securityRealm != null) {
+            subject = SecurityUtil.getRunAsSubject(callbackHandler, securityRealm);
+        } else {
+            RealmConfig realmConfig = createKerberosJaasRealmConfig(principal, keytabFile, true);
+            if (realmConfig != null && KRB5_REALM_GENERATED_WARNING_PRINTED.compareAndSet(false, true)) {
+                logger.warning("Using generated Kerberos initiator realm configuration is not intended for production use. "
+                        + "It's recommended to properly configure the Krb5LoginModule manually to fit your needs. "
+                        + "Following configuration was generated from provided keytab and principal properties:\n"
+                        + SecurityUtil.generateRealmConfigXml(realmConfig, "krb5Initiator"));
+            }
+            subject = getRunAsSubject(callbackHandler, realmConfig);
+        }
         if (logger.isFineEnabled()) {
             logger.fine("Creating KerberosCredentials for serviceName=" + serviceName + ", Subject=" + subject);
         }

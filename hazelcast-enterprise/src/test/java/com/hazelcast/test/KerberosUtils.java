@@ -18,11 +18,9 @@ import org.apache.directory.shared.kerberos.KerberosTime;
 import org.apache.directory.shared.kerberos.codec.types.EncryptionType;
 import org.apache.directory.shared.kerberos.components.EncryptionKey;
 
-import com.hazelcast.config.LoginModuleConfig;
-import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
-import com.hazelcast.config.security.JaasAuthenticationConfig;
 import com.hazelcast.config.security.RealmConfig;
 import com.hazelcast.logging.Logger;
+import com.hazelcast.security.impl.SecurityUtil;
 
 public final class KerberosUtils {
 
@@ -32,16 +30,12 @@ public final class KerberosUtils {
      *
      * @param principal principal to be authenticated
      * @param keytabPath file path to a keytab containing principal's secret
-     * @param isInitiator TODO
+     * @param isInitiator true means client side of the kerberos protocol is generated
      * @return {@link RealmConfig} instance
      */
     public static RealmConfig createKerberosJaasRealmConfig(String principal, String keytabPath, boolean isInitiator) {
-        return new RealmConfig().setJaasAuthenticationConfig(new JaasAuthenticationConfig().addLoginModuleConfig(
-                new LoginModuleConfig("com.sun.security.auth.module.Krb5LoginModule", LoginModuleUsage.REQUIRED)
-                        .setProperty("refreshKrb5Config", "true").setProperty("useTicketCache", "false")
-                        .setProperty("doNotPrompt", "true").setProperty("useKeyTab", "true").setProperty("storeKey", "true")
-                        .setProperty("debug", "true").setProperty("principal", principal).setProperty("keyTab", keytabPath)
-                        .setProperty("isInitiator", Boolean.toString(isInitiator))));
+        RealmConfig krbRealm = SecurityUtil.createKerberosJaasRealmConfig(principal, keytabPath, isInitiator);
+        return krbRealm;
     }
 
     /**

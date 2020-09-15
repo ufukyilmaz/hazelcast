@@ -1,6 +1,11 @@
 package com.hazelcast.security.impl;
 
+import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.config.PermissionConfig;
+import com.hazelcast.config.ConfigXmlGenerator;
+import com.hazelcast.config.ConfigXmlGenerator.XmlGenerator;
+import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
+import com.hazelcast.config.security.JaasAuthenticationConfig;
 import com.hazelcast.config.security.RealmConfig;
 import com.hazelcast.internal.util.AddressUtil;
 import com.hazelcast.logging.ILogger;
@@ -38,14 +43,22 @@ import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
+
+import static com.hazelcast.internal.util.StringUtil.lowerCaseInternal;
+
+import java.io.File;
 import java.io.IOException;
 import java.util.Set;
 
 /**
  * Helper methods related to Hazelcast security routines.
  */
-@SuppressWarnings("checkstyle:classdataabstractioncoupling")
+@SuppressWarnings({ "checkstyle:classdataabstractioncoupling", "checkstyle:ClassFanOutComplexity" })
 public final class SecurityUtil {
+
+    private static final String TEMP_LOGIN_CONTEXT_NAME = "realmConfigLogin";
+    private static final String FQCN_KRB5LOGINMODULE_SUN = "com.sun.security.auth.module.Krb5LoginModule";
+    private static final String FQCN_KRB5LOGINMODULE_IBM = "com.ibm.security.auth.module.Krb5LoginModule";
 
     private static final ILogger LOGGER = Logger.getLogger(SecurityUtil.class);
 
@@ -157,18 +170,88 @@ public final class SecurityUtil {
             LOGGER.info("Unable to retrieve the RealmConfig", e);
             return null;
         }
-        RealmConfig realmConfig = cb.getRealmConfig();
+        return getRunAsSubject(callbackHandler, cb.getRealmConfig());
+    }
+
+    /**
+     * Runs JAAS authentication ({@link LoginContext#login()}) on given {@link RealmConfig}.
+     * Return either the authenticated {@link Subject} when the authentication passes or {@code null}.
+     *
+     * @param callbackHandler handler used to retrieve the {@link RealmConfig}
+     * @return {@link Subject} when the authentication passes, {@code null} otherwise
+     */
+    public static Subject getRunAsSubject(CallbackHandler callbackHandler, RealmConfig realmConfig) {
         if (realmConfig == null) {
+            if (LOGGER.isFineEnabled()) {
+                LOGGER.fine("The realmConfig is not provided.");
+            }
             return null;
         }
         LoginConfigurationDelegate loginConfiguration = new LoginConfigurationDelegate(realmConfig.asLoginModuleConfigs());
         try {
-            LoginContext lc = new LoginContext(securityRealm, new Subject(), callbackHandler, loginConfiguration);
+            LoginContext lc = new LoginContext(TEMP_LOGIN_CONTEXT_NAME, new Subject(), callbackHandler, loginConfiguration);
             lc.login();
             return lc.getSubject();
         } catch (LoginException e) {
-            LOGGER.info("Authentication failed in realm " + securityRealm, e);
+            LOGGER.info("Authentication failed.", e);
             return null;
+        }
+    }
+
+    public static RealmConfig createKerberosJaasRealmConfig(String principal, String keytabPath, boolean isInitiator) {
+        if (keytabPath == null) {
+            if (LOGGER.isFineEnabled()) {
+                LOGGER.fine("The keytab path is not provided.");
+            }
+            return null;
+        }
+        LoginModuleConfig krb5LoginModuleConfig;
+        if (isIbmJvm()) {
+            krb5LoginModuleConfig = new LoginModuleConfig(FQCN_KRB5LOGINMODULE_IBM, LoginModuleUsage.REQUIRED)
+                    .setProperty("useKeytab", new File(keytabPath).toURI().toString())
+                    .setProperty("credsType", isInitiator ? "both" : "acceptor");
+        } else {
+            krb5LoginModuleConfig = new LoginModuleConfig(FQCN_KRB5LOGINMODULE_SUN, LoginModuleUsage.REQUIRED)
+                    .setOrClear("keyTab", keytabPath).setProperty("doNotPrompt", "true")
+                    .setProperty("useKeyTab", "true")
+                    .setProperty("storeKey", "true")
+                    .setProperty("isInitiator", Boolean.toString(isInitiator));
+        }
+        krb5LoginModuleConfig
+            .setOrClear("principal", principal)
+            .setProperty("refreshKrb5Config", "true");
+        RealmConfig kerberosRealmConfig = new RealmConfig()
+                .setJaasAuthenticationConfig(new JaasAuthenticationConfig().addLoginModuleConfig(krb5LoginModuleConfig));
+        if (LOGGER.isFineEnabled()) {
+            LOGGER.fine(
+                    "A helper security realm for Kerberos keytab-based authentication was generated: " + kerberosRealmConfig);
+        }
+        return kerberosRealmConfig;
+    }
+
+    public static String generateRealmConfigXml(RealmConfig realmConfig, String realmName) {
+        StringBuilder xmlBuilder = new StringBuilder();
+        XmlGenerator gen = new XmlGenerator(xmlBuilder);
+        SecurityXmlGenerator cfgGen = new SecurityXmlGenerator();
+        cfgGen.securityRealmGenerator(gen, realmName, realmConfig);
+        return cfgGen.format(xmlBuilder.toString(), 2);
+    }
+
+    private static boolean isIbmJvm() {
+        String vendor = System.getProperty("java.vendor");
+        return vendor != null && lowerCaseInternal(vendor).startsWith("ibm");
+    }
+
+    private static class SecurityXmlGenerator extends ConfigXmlGenerator {
+
+        @Override
+        protected void securityRealmGenerator(XmlGenerator gen, String name, RealmConfig c) {
+            super.securityRealmGenerator(gen, name, c);
+        }
+
+        @Override
+        protected String format(String input, int indent) {
+            return super.format(input, indent);
         }
     }
 }

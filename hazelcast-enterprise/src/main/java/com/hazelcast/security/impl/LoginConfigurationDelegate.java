@@ -6,6 +6,8 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag;
 import javax.security.auth.login.Configuration;
+
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,5 +54,10 @@ public final class LoginConfigurationDelegate extends Configuration {
 
     @Override
     public void refresh() {
+    }
+
+    @Override
+    public String toString() {
+        return "LoginConfigurationDelegate [loginModuleConfigs=" + Arrays.toString(loginModuleConfigs) + "]";
     }
 }

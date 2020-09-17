@@ -158,6 +158,22 @@ public class LdapAuthenticationTest {
     }
 
     @Test
+    public void testReverseRoleMappingReproducer() throws Exception {
+        LdapAuthenticationConfig ldapConfig = new LdapAuthenticationConfig();
+        ldapConfig.setRoleMappingMode(LdapRoleMappingMode.REVERSE);
+        ldapConfig.setRoleMappingAttribute("member");
+        ldapConfig.setRoleNameAttribute("cn");
+        ldapConfig.setRoleRecursionMaxDepth(5);
+        ldapConfig.setUserFilter("(uid={login})");
+        Config config = createConfig(ldapConfig, "Admin");
+        factory.newHazelcastInstance(config);
+
+        factory.newHazelcastClient(createClientConfig("jduke", "theduke"));
+        expected.expect(IllegalStateException.class);
+        factory.newHazelcastClient(createClientConfig("jduke", "wrongPassword"));
+    }
+
+    @Test
     public void testAuthenticateByPasswordAttribute() throws Exception {
         Assume.assumeTrue("This scenario is only valid for LdapLoginModule", useSystemUser);
         LdapAuthenticationConfig ldapConfig = new LdapAuthenticationConfig();

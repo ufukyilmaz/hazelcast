@@ -203,6 +203,7 @@ public class LdapLoginModule extends BasicLdapLoginModule {
             throw new FailedLoginException("Anonymous bind is not allowed");
         }
         final Properties env = new Properties();
+        env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
         env.putAll(options);
         env.setProperty(Context.SECURITY_AUTHENTICATION, "simple");
         env.setProperty(Context.SECURITY_PRINCIPAL, principalDn);

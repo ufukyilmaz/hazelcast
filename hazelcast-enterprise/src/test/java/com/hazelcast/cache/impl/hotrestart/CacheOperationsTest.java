@@ -3,10 +3,10 @@ package com.hazelcast.cache.impl.hotrestart;
 import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.cache.ICache;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import static com.hazelcast.cache.jsr.JsrTestUtil.assertNoMBeanLeftovers;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -54,7 +55,12 @@ public class CacheOperationsTest extends AbstractCacheHotRestartTest {
         warmupCacheAndHotRestart();
     }
 
-    private void  warmupCacheAndHotRestart() {
+    @AfterClass
+    public static void tearDownClass() {
+        assertNoMBeanLeftovers();
+    }
+
+    private void warmupCacheAndHotRestart() {
         for (int i = 0; i < 3; i++) {
             for (int key = 0; key < KEY_COUNT; key++) {
                 cache.put(key, randomString());
@@ -187,7 +193,7 @@ public class CacheOperationsTest extends AbstractCacheHotRestartTest {
         cache.put(0, randomString());
         cache.put(KEY_COUNT, randomString());
 
-        Map<Integer, String> values = new HashMap<Integer, String>();
+        Map<Integer, String> values = new HashMap<>();
         for (int i = 0; i < KEY_COUNT; i++) {
             values.put(i, randomString());
         }
@@ -203,12 +209,7 @@ public class CacheOperationsTest extends AbstractCacheHotRestartTest {
         ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(1, 1, 1, TimeUnit.MILLISECONDS);
         cache.put(0, randomString(), expiryPolicy);
 
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                assertNull(cache.get(0));
-            }
-        });
+        assertTrueEventually(() -> assertNull(cache.get(0)));
     }
 
     @Test
@@ -216,29 +217,19 @@ public class CacheOperationsTest extends AbstractCacheHotRestartTest {
         ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(1, 1, 1, TimeUnit.MILLISECONDS);
         cache.put(0, randomString());
         cache.setExpiryPolicy(0, expiryPolicy);
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                assertNull(cache.get(0));
-            }
-        });
+        assertTrueEventually(() -> assertNull(cache.get(0)));
     }
 
     @Test
     public void testSetExpiryPolicyMultiple() {
         ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(1, 1, 1, TimeUnit.MILLISECONDS);
-        Set<Integer> keys = new HashSet<Integer>();
+        Set<Integer> keys = new HashSet<>();
         for (int i = 0; i < 50; i++) {
             cache.put(i, randomString());
             keys.add(i);
         }
         cache.setExpiryPolicy(keys, expiryPolicy);
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                assertNull(cache.get(0));
-            }
-        });
+        assertTrueEventually(() -> assertNull(cache.get(0)));
     }
 
     @Test

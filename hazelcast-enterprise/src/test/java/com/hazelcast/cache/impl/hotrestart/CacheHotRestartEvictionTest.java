@@ -17,6 +17,7 @@ import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -34,6 +35,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static com.hazelcast.cache.jsr.JsrTestUtil.assertNoMBeanLeftovers;
 import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.config.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.spi.properties.ClusterProperty.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
@@ -67,6 +69,11 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
     @Override
     MemorySize getNativeMemorySize() {
         return new MemorySize(256, MemoryUnit.MEGABYTES);
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+        assertNoMBeanLeftovers();
     }
 
     @Test

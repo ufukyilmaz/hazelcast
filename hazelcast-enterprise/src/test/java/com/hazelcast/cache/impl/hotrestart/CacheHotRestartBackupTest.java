@@ -13,6 +13,7 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -26,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.cache.jsr.JsrTestUtil.assertNoMBeanLeftovers;
 import static com.hazelcast.test.Accessors.getNode;
 import static com.hazelcast.test.Accessors.getNodeEngineImpl;
 import static java.util.Arrays.asList;
@@ -49,6 +51,11 @@ public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
     private int clusterSize;
     private int backupCount;
     private ICache<Integer, String> cache;
+
+    @AfterClass
+    public static void tearDownClass() {
+        assertNoMBeanLeftovers();
+    }
 
     @Override
     protected void setupCacheInternal() {

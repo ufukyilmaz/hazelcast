@@ -8,6 +8,7 @@ import com.hazelcast.spi.impl.proxyservice.InternalProxyService;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -21,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import static com.hazelcast.cache.jsr.JsrTestUtil.assertNoMBeanLeftovers;
 import static com.hazelcast.test.Accessors.getNodeEngineImpl;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.hasItem;
@@ -48,6 +50,11 @@ public class CacheHotRestartTest extends AbstractCacheHotRestartTest {
     public int clusterSize;
 
     private ICache<Integer, String> cache;
+
+    @AfterClass
+    public static void tearDownClass() {
+        assertNoMBeanLeftovers();
+    }
 
     @Test
     public void testPut() {
@@ -129,7 +136,7 @@ public class CacheHotRestartTest extends AbstractCacheHotRestartTest {
         newInstances(clusterSize);
         cache = createCache();
         String fullCacheName = cache.getPrefixedName();
-        fillCache(new HashMap<Integer, String>());
+        fillCache(new HashMap<>());
 
         HazelcastInstance[] instances = restartInstances(clusterSize);
         for (HazelcastInstance instance : instances) {

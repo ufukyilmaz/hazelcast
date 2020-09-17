@@ -5,10 +5,10 @@ import com.hazelcast.cache.ICache;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -19,6 +19,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 import javax.cache.expiry.ExpiryPolicy;
 import java.util.Collection;
 
+import static com.hazelcast.cache.jsr.JsrTestUtil.assertNoMBeanLeftovers;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
@@ -38,6 +39,11 @@ public class CacheHotRestartExpiryTest extends AbstractCacheHotRestartTest {
         });
     }
 
+    @AfterClass
+    public static void tearDownClass() {
+        assertNoMBeanLeftovers();
+    }
+
     @Test
     public void test() {
         int expireAfter = 10;
@@ -52,12 +58,9 @@ public class CacheHotRestartExpiryTest extends AbstractCacheHotRestartTest {
 
         sleepAtLeastMillis(expireAfter);
         final ICache<Integer, String> finalCache = cache;
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                for (int key = 0; key < KEY_COUNT; key++) {
-                    assertNull(finalCache.get(key));
-                }
+        assertTrueEventually(() -> {
+            for (int key = 0; key < KEY_COUNT; key++) {
+                assertNull(finalCache.get(key));
             }
         });
         assertEquals(0, cache.size());

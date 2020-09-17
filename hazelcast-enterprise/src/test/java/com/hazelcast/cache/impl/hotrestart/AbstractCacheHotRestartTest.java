@@ -20,7 +20,6 @@ import org.junit.runners.Parameterized.Parameter;
 
 import javax.cache.CacheManager;
 import javax.cache.configuration.Configuration;
-import java.util.function.Supplier;
 
 import static com.hazelcast.HDTestSupport.getICache;
 import static com.hazelcast.cache.CacheTestSupport.createServerCachingProvider;
@@ -63,30 +62,15 @@ public abstract class AbstractCacheHotRestartTest extends HotRestartTestSupport 
     }
 
     HazelcastInstance newHazelcastInstance() {
-        return newHazelcastInstance(new Supplier<Config>() {
-            @Override
-            public Config get() {
-                return makeConfig();
-            }
-        });
+        return newHazelcastInstance(this::makeConfig);
     }
 
     HazelcastInstance newHazelcastInstance(final Config config) {
-        return newHazelcastInstance(new Supplier<Config>() {
-            @Override
-            public Config get() {
-                return withHotRestart(config);
-            }
-        });
+        return newHazelcastInstance(() -> withHotRestart(config));
     }
 
     HazelcastInstance[] restartInstances(int clusterSize) {
-        return restartCluster(clusterSize, new Supplier<Config>() {
-            @Override
-            public Config get() {
-                return makeConfig();
-            }
-        });
+        return restartCluster(clusterSize, this::makeConfig);
     }
 
     HazelcastInstance[] newInstances(int clusterSize) {
@@ -119,9 +103,9 @@ public abstract class AbstractCacheHotRestartTest extends HotRestartTestSupport 
 
         if (memoryFormat == NATIVE) {
             config.getNativeMemoryConfig()
-                    .setEnabled(true)
-                    .setSize(getNativeMemorySize())
-                    .setMetadataSpacePercentage(20);
+                  .setEnabled(true)
+                  .setSize(getNativeMemorySize())
+                  .setMetadataSpacePercentage(20);
         }
 
         if (encrypted) {
@@ -172,10 +156,10 @@ public abstract class AbstractCacheHotRestartTest extends HotRestartTestSupport 
         CacheConfig<K, V> cacheConfig = new CacheConfig<K, V>()
                 .setBackupCount(backupCount)
                 .setEvictionConfig(evictionConfig);
-        cacheConfig.setStatisticsEnabled(true);
+        cacheConfig.setStatisticsEnabled(false);
         cacheConfig.getHotRestartConfig()
-                .setEnabled(true)
-                .setFsync(fsyncEnabled);
+                   .setEnabled(true)
+                   .setFsync(fsyncEnabled);
         if (memoryFormat == NATIVE) {
             cacheConfig.setInMemoryFormat(NATIVE);
         }

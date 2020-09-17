@@ -6,6 +6,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -15,6 +16,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Collection;
 
+import static com.hazelcast.cache.jsr.JsrTestUtil.assertNoMBeanLeftovers;
 import static java.util.Arrays.asList;
 
 @RunWith(Parameterized.class)
@@ -33,37 +35,33 @@ public class CacheHotRestartCloseDestroyTest extends AbstractCacheHotRestartTest
         });
     }
 
+    @AfterClass
+    public static void tearDownClass() {
+        assertNoMBeanLeftovers();
+    }
+
     @Test
     public void test_clear() {
-        test(new CacheAction() {
-            @Override
-            public int run(ICache cache) {
-                cache.clear();
-                return 0;
-            }
+        test(cache -> {
+            cache.clear();
+            return 0;
         });
     }
 
     @Test
     public void test_destroy() {
-        test(new CacheAction() {
-            @Override
-            public int run(ICache cache) {
-                cache.destroy();
-                return 0;
-            }
+        test(cache -> {
+            cache.destroy();
+            return 0;
         });
     }
 
     @Test
     public void test_close() {
-        test(new CacheAction() {
-            @Override
-            public int run(ICache cache) {
-                int size = cache.size();
-                cache.close();
-                return size;
-            }
+        test(cache -> {
+            int size = cache.size();
+            cache.close();
+            return size;
         });
     }
 

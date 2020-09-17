@@ -11,9 +11,9 @@ import com.hazelcast.spi.merge.HigherHitsMergePolicy;
 import com.hazelcast.spi.merge.LatestAccessMergePolicy;
 import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.merge.PutIfAbsentMergePolicy;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.AfterClass;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -23,6 +23,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 import java.util.Collection;
 
 import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.cache.jsr.JsrTestUtil.assertNoMBeanLeftovers;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
@@ -36,6 +37,11 @@ import static java.util.Arrays.asList;
 public class HDCacheSplitBrainTest extends CacheSplitBrainTest {
 
     private static final MemorySize MEMORY_SIZE = new MemorySize(128, MemoryUnit.MEGABYTES);
+
+    @AfterClass
+    public static void tearDownClass() {
+        assertNoMBeanLeftovers();
+    }
 
     @Parameters(name = "format:{0}, mergePolicy:{1}")
     public static Collection<Object[]> parameters() {
@@ -61,29 +67,24 @@ public class HDCacheSplitBrainTest extends CacheSplitBrainTest {
 
         Config config = getHDConfig(super.config(), POOLED, MEMORY_SIZE);
         config.getCacheConfig(cacheNameA)
-                .setInMemoryFormat(inMemoryFormat)
-                .setEvictionConfig(evictionConfig)
-                .setBackupCount(1)
-                .setAsyncBackupCount(0)
-                .setStatisticsEnabled(true)
-                .getMergePolicyConfig().setPolicy(mergePolicyClass.getName());
+              .setInMemoryFormat(inMemoryFormat)
+              .setEvictionConfig(evictionConfig)
+              .setBackupCount(1)
+              .setAsyncBackupCount(0)
+              .setStatisticsEnabled(false)
+              .getMergePolicyConfig().setPolicy(mergePolicyClass.getName());
         config.getCacheConfig(cacheNameB)
-                .setInMemoryFormat(inMemoryFormat)
-                .setEvictionConfig(evictionConfig)
-                .setBackupCount(1)
-                .setAsyncBackupCount(0)
-                .setStatisticsEnabled(true)
-                .getMergePolicyConfig().setPolicy(mergePolicyClass.getName());
+              .setInMemoryFormat(inMemoryFormat)
+              .setEvictionConfig(evictionConfig)
+              .setBackupCount(1)
+              .setAsyncBackupCount(0)
+              .setStatisticsEnabled(false)
+              .getMergePolicyConfig().setPolicy(mergePolicyClass.getName());
         return config;
     }
 
     @Override
     protected void onAfterSplitBrainHealed(final HazelcastInstance[] instances) {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() {
-                HDCacheSplitBrainTest.super.onAfterSplitBrainHealed(instances);
-            }
-        }, 30);
+        assertTrueEventually(() -> HDCacheSplitBrainTest.super.onAfterSplitBrainHealed(instances), 30);
     }
 }

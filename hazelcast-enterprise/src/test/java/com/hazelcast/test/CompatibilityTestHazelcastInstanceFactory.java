@@ -311,6 +311,7 @@ public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInst
             config = new Config();
         }
         String nextVersion = nextVersion();
+        checkJoinConfig(config, nextVersion);
         if (CURRENT_VERSION.equals(nextVersion)) {
             NodeContext nodeContext = new FirewallingNodeContext();
             HazelcastInstance hz = HazelcastInstanceFactory.newHazelcastInstance(config, config.getInstanceName(), nodeContext);
@@ -320,6 +321,21 @@ public class CompatibilityTestHazelcastInstanceFactory extends TestHazelcastInst
             HazelcastInstance hz = HazelcastStarter.newHazelcastInstance(nextVersion, config, true);
             instances.add(hz);
             return hz;
+        }
+    }
+
+    // RU_COMPAT_4_0
+    private void checkJoinConfig(Config config, String nextVersion) {
+        // With auto-detection being the default in 4.1, a config that has neither
+        // multicast nor tcp-ip join method enabled will result in 4.0 members starting
+        // standalone. For compatibility tests this is not desired, instead the
+        // multicast default join method is enabled.
+        // This temporary workaround should be removed in 4.2 dev cycle.
+        if (config.getNetworkConfig().getJoin().getAutoDetectionConfig().isEnabled()
+                && !config.getNetworkConfig().getJoin().getMulticastConfig().isEnabled()
+                && !config.getNetworkConfig().getJoin().getTcpIpConfig().isEnabled()
+                && !CURRENT_VERSION.equals(nextVersion)) {
+            config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(true);
         }
     }
 

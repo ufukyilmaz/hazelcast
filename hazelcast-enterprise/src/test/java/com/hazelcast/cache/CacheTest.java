@@ -30,6 +30,7 @@ import com.hazelcast.internal.nearcache.impl.invalidation.Invalidation;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -66,6 +67,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import static com.hazelcast.HDTestSupport.getICache;
 import static com.hazelcast.cache.CacheTestSupport.createServerCachingProvider;
+import static com.hazelcast.cache.jsr.JsrTestUtil.assertNoMBeanLeftovers;
 import static com.hazelcast.config.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.test.Accessors.getNode;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -80,6 +82,11 @@ import static org.junit.Assert.assertTrue;
 public class CacheTest extends AbstractCacheTest {
 
     private HazelcastInstance instance;
+
+    @AfterClass
+    public static void tearDownClass() {
+        assertNoMBeanLeftovers();
+    }
 
     @Override
     protected void onSetup() {
@@ -171,7 +178,7 @@ public class CacheTest extends AbstractCacheTest {
         final ICache<String, String> cache = createCache();
         final String key = "key";
         cache.put(key, "value1");
-        Future f = cache.getAsync(key).toCompletableFuture();
+        Future<?> f = cache.getAsync(key).toCompletableFuture();
         assertEquals("value1", f.get());
 
         cache.putAsync(key, "value2");

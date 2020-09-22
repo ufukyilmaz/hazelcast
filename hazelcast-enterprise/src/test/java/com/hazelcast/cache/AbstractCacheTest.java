@@ -82,7 +82,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
                 .setInMemoryFormat(inMemoryFormat)
                 .setEvictionConfig(evictionConfig);
 
-        cacheConfig.setStatisticsEnabled(true);
+        cacheConfig.setStatisticsEnabled(false);
 
         return cacheConfig;
     }

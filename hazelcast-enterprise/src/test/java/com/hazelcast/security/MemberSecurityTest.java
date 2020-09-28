@@ -27,9 +27,17 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.login.FailedLoginException;
+import javax.security.auth.login.LoginException;
+import javax.security.auth.spi.LoginModule;
 
 import static com.hazelcast.auditlog.AuditlogTypeIds.AUTHENTICATION_MEMBER;
 import static com.hazelcast.security.loginmodules.TestLoginModule.PROPERTY_PRINCIPALS_SIMPLE;
@@ -250,6 +258,75 @@ public class MemberSecurityTest extends HazelcastTestSupport {
     }
 
     /**
+     * Checks usage of the {@link HazelcastInstanceCallback} in {@link LoginModule}.
+     */
+    @Test
+    public void testAccessToInstanceNameInLoginModule() {
+        final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
+        String name1 = getTestMethodName() + "-1";
+        String name2 = getTestMethodName() + "-2";
+        assertClusterSizeEventually(2, factory.newHazelcastInstance(createInstanceNameLoginConfig(name1, name1)),
+                factory.newHazelcastInstance(createInstanceNameLoginConfig(name2, name2)));
+    }
+
+    /**
+     * Checks usage of the {@link HazelcastInstanceCallback} in {@link ICredentialsFactory}.
+     */
+    @Test
+    public void testAccessToInstanceNameInCredentialsFactory() {
+        final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
+        String name1 = getTestMethodName() + "-1";
+        String name2 = getTestMethodName() + "-2";
+        assertClusterSizeEventually(2, factory.newHazelcastInstance(createInstanceNameCredsConfig(name1, name1)),
+                factory.newHazelcastInstance(createInstanceNameCredsConfig(name2, name2)));
+    }
+
+    /**
+     * Checks usage of the {@link HazelcastInstanceCallback} in {@link LoginModule}.
+     */
+    @Test
+    public void testInstanceNameLoginModuleAuthnFail() {
+        final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
+        String name1 = getTestMethodName() + "-1";
+        String name2 = getTestMethodName() + "-2";
+        factory.newHazelcastInstance(createInstanceNameLoginConfig(name1, "foo"));
+        expected.expect(IllegalStateException.class);
+        factory.newHazelcastInstance(createInstanceNameLoginConfig(name2, "bar"));
+    }
+
+    /**
+     * Checks usage of the {@link HazelcastInstanceCallback} in {@link ICredentialsFactory}.
+     */
+    @Test
+    public void testInstanceNameInCredentialsFactoryFail() {
+        final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
+        String name1 = getTestMethodName() + "-1";
+        String name2 = getTestMethodName() + "-2";
+        factory.newHazelcastInstance(createInstanceNameCredsConfig(name1, "foo"));
+        expected.expect(IllegalStateException.class);
+        factory.newHazelcastInstance(createInstanceNameCredsConfig(name2, "bar"));
+    }
+
+    private Config createInstanceNameLoginConfig(String instanceName, String expectedName) {
+        Config config = smallInstanceConfig().setInstanceName(instanceName);
+        RealmConfig realmConfig = new RealmConfig().setJaasAuthenticationConfig(new JaasAuthenticationConfig()
+                .addLoginModuleConfig(new LoginModuleConfig(InstanceNameLoginModule.class.getName(), LoginModuleUsage.REQUIRED)
+                        .setProperty("expected", expectedName)));
+        config.getSecurityConfig().setEnabled(true).setMemberRealmConfig("memberRealm", realmConfig);
+        return config;
+    }
+
+    private Config createInstanceNameCredsConfig(String instanceName, String expectedName) {
+        Config config = smallInstanceConfig().setInstanceName(instanceName);
+        Properties props = new Properties();
+        props.setProperty("expected", expectedName);
+        RealmConfig realmConfig = new RealmConfig().setCredentialsFactoryConfig(
+                new CredentialsFactoryConfig(InstanceNameCredentialsFactory.class.getName()).setProperties(props));
+        config.getSecurityConfig().setEnabled(true).setMemberRealmConfig("memberRealm", realmConfig);
+        return config;
+    }
+
+    /**
      * Creates a member configuration with a member login module stack used - {@link DefaultLoginModule} as the first LoginModule and
      * {@link TestLoginModule} as the second.
      *
@@ -286,5 +363,67 @@ public class MemberSecurityTest extends HazelcastTestSupport {
         RealmConfig realmConfig = new RealmConfig().setJaasAuthenticationConfig(new JaasAuthenticationConfig().addLoginModuleConfig(loginModuleConfig));
         secCfg.setMemberRealmConfig("memberRealm", realmConfig);
         return config;
+    }
+
+    public static class InstanceNameLoginModule extends ClusterLoginModule {
+        String name;
+
+        @Override
+        protected boolean onLogin() throws LoginException {
+            HazelcastInstanceCallback cb = new HazelcastInstanceCallback();
+            try {
+                callbackHandler.handle(new Callback[] { cb });
+            } catch (IOException | UnsupportedCallbackException e) {
+                e.printStackTrace();
+            }
+            HazelcastInstance hz = cb.getHazelcastInstance();
+            name = hz != null ? hz.getName() : null;
+            String expected = getStringOption("expected", "");
+            if (!expected.equals(name)) {
+                throw new FailedLoginException("Unexpected instance name: " + name + ". The expected value is: " + expected);
+            }
+            return true;
+        }
+
+        @Override
+        protected String getName() {
+            return name;
+        }
+    }
+
+    public static class InstanceNameCredentialsFactory implements ICredentialsFactory {
+
+        private String name;
+        private String expected;
+
+        @Override
+        public void init(Properties properties) {
+            expected = properties.getProperty("expected", "");
+        }
+
+        @Override
+        public void configure(CallbackHandler callbackHandler) {
+            HazelcastInstanceCallback cb = new HazelcastInstanceCallback();
+            try {
+                callbackHandler.handle(new Callback[] { cb });
+            } catch (IOException | UnsupportedCallbackException e) {
+                e.printStackTrace();
+            }
+            HazelcastInstance hz = cb.getHazelcastInstance();
+            name = hz != null ? hz.getName() : null;
+        }
+
+        @Override
+        public Credentials newCredentials() {
+            if (!expected.equals(name)) {
+                throw new IllegalStateException("Unexpected instance name: " + name + ". The expected value is: " + expected);
+            }
+            return new UsernamePasswordCredentials(null, null);
+        }
+
+        @Override
+        public void destroy() {
+        }
+
     }
 }

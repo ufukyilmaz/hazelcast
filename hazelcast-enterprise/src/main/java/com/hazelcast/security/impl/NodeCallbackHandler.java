@@ -7,6 +7,7 @@ import javax.security.auth.callback.UnsupportedCallbackException;
 import com.hazelcast.config.security.RealmConfig;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.security.ConfigCallback;
+import com.hazelcast.security.HazelcastInstanceCallback;
 import com.hazelcast.security.LoggingServiceCallback;
 import com.hazelcast.security.RealmConfigCallback;
 import com.hazelcast.security.TokenDeserializerCallback;
@@ -44,6 +45,8 @@ public class NodeCallbackHandler implements CallbackHandler {
             ((TokenDeserializerCallback) cb).setTokenDeserializer(new TokenDeserializerImpl(node.getSerializationService()));
         } else if (cb instanceof LoggingServiceCallback) {
             ((LoggingServiceCallback) cb).setLoggingService(node.getLoggingService());
+        } else if (cb instanceof HazelcastInstanceCallback) {
+            ((HazelcastInstanceCallback) cb).setHazelcastInstance(node.hazelcastInstance);
         } else {
             throw new UnsupportedCallbackException(cb);
         }

@@ -28,7 +28,6 @@ import com.hazelcast.security.permission.RingBufferPermission;
 import com.hazelcast.security.permission.ScheduledExecutorPermission;
 import com.hazelcast.security.permission.SemaphorePermission;
 import com.hazelcast.security.permission.SetPermission;
-import com.hazelcast.security.permission.SqlPermission;
 import com.hazelcast.security.permission.TopicPermission;
 import com.hazelcast.security.permission.TransactionPermission;
 import com.hazelcast.security.permission.UserCodeDeploymentPermission;
@@ -108,8 +107,6 @@ public final class SecurityUtil {
                 return new RingBufferPermission(permissionConfig.getName(), actions);
             case RELIABLE_TOPIC:
                 return new ReliableTopicPermission(permissionConfig.getName(), actions);
-            case SQL:
-                return new SqlPermission();
             default:
                 throw new IllegalArgumentException(permissionConfig.getType().toString());
         }

@@ -20,7 +20,6 @@ import com.hazelcast.security.permission.RingBufferPermission;
 import com.hazelcast.security.permission.ScheduledExecutorPermission;
 import com.hazelcast.security.permission.SemaphorePermission;
 import com.hazelcast.security.permission.SetPermission;
-import com.hazelcast.security.permission.SqlPermission;
 import com.hazelcast.security.permission.TopicPermission;
 import com.hazelcast.security.permission.TransactionPermission;
 import com.hazelcast.test.HazelcastParallelClassRunner;
@@ -70,7 +69,6 @@ public class SecurityUtilTest extends HazelcastTestSupport {
         testCreatePermission(PermissionType.PN_COUNTER, PNCounterPermission.class);
         testCreatePermission(PermissionType.ALL, AllPermissions.class);
         testCreatePermission(PermissionType.CACHE, CachePermission.class);
-        testCreatePermission(PermissionType.SQL, SqlPermission.class);
         testCreatePermission(PermissionType.RING_BUFFER, RingBufferPermission.class);
     }
 

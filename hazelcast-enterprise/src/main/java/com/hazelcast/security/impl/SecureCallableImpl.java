@@ -61,13 +61,14 @@ import com.hazelcast.security.permission.ReplicatedMapPermission;
 import com.hazelcast.security.permission.ScheduledExecutorPermission;
 import com.hazelcast.security.permission.SemaphorePermission;
 import com.hazelcast.security.permission.SetPermission;
-import com.hazelcast.security.permission.SqlPermission;
 import com.hazelcast.security.permission.TopicPermission;
 import com.hazelcast.security.permission.TransactionPermission;
 import com.hazelcast.splitbrainprotection.SplitBrainProtectionService;
-import com.hazelcast.sql.SqlStatement;
 import com.hazelcast.sql.SqlResult;
 import com.hazelcast.sql.SqlService;
+import com.hazelcast.sql.SqlStatement;
+import com.hazelcast.sql.impl.SqlServiceImpl;
+import com.hazelcast.sql.impl.security.SqlSecurityContext;
 import com.hazelcast.topic.ITopic;
 import com.hazelcast.transaction.HazelcastXAResource;
 import com.hazelcast.transaction.TransactionContext;
@@ -453,7 +454,10 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
         @Nonnull
         @Override
         public SqlService getSql() {
-            return new SqlServiceDelegate(instance.getSql());
+            return new SqlServiceDelegate(
+                (SqlServiceImpl) instance.getSql(),
+                node.securityContext.createSqlContext(subject)
+            );
         }
     }
 
@@ -985,24 +989,33 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, Identifie
     }
 
     private class SqlServiceDelegate implements SqlService {
-        private final SqlService sqlService;
 
-        SqlServiceDelegate(SqlService sqlService) {
+        private final SqlServiceImpl sqlService;
+        private final SqlSecurityContext sqlSecurityContext;
+
+        SqlServiceDelegate(SqlServiceImpl sqlService, SqlSecurityContext sqlSecurityContext) {
             this.sqlService = sqlService;
+            this.sqlSecurityContext = sqlSecurityContext;
         }
 
         @Nonnull
         @Override
         public SqlResult execute(@Nonnull String sql, Object... params) {
-            checkPermission(new SqlPermission());
-            return sqlService.execute(sql, params);
+            SqlStatement statement = new SqlStatement(sql);
+
+            if (params != null) {
+                for (Object param : params) {
+                    statement.addParameter(param);
+                }
+            }
+
+            return execute(statement);
         }
 
         @Nonnull
         @Override
         public SqlResult execute(@Nonnull SqlStatement statement) {
-            checkPermission(new SqlPermission());
-            return sqlService.execute(statement);
+            return sqlService.execute(statement, sqlSecurityContext);
         }
     }
 }

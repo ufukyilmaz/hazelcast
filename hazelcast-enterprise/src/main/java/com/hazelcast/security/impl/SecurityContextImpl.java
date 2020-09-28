@@ -1,29 +1,5 @@
 package com.hazelcast.security.impl;
 
-import static com.hazelcast.internal.nio.IOUtil.closeResource;
-import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
-import static com.hazelcast.security.impl.SecurityServiceImpl.clonePermissionConfigs;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.AccessControlException;
-import java.security.Permission;
-import java.security.PermissionCollection;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
-
-import javax.security.auth.Subject;
-import javax.security.auth.login.Configuration;
-import javax.security.auth.login.LoginContext;
-import javax.security.auth.login.LoginException;
-
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
@@ -43,7 +19,32 @@ import com.hazelcast.security.Parameters;
 import com.hazelcast.security.SecureCallable;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityInterceptor;
+import com.hazelcast.sql.impl.security.SqlSecurityContext;
 
+import javax.security.auth.Subject;
+import javax.security.auth.login.Configuration;
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.AccessControlException;
+import java.security.Permission;
+import java.security.PermissionCollection;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
+
+import static com.hazelcast.internal.nio.IOUtil.closeResource;
+import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
+import static com.hazelcast.security.impl.SecurityServiceImpl.clonePermissionConfigs;
+
+@SuppressWarnings({"checkstyle:ClassDataAbstractionCoupling", "checkstyle:ClassFanOutComplexity"})
 public class SecurityContextImpl implements SecurityContext {
 
     private static final ThreadLocal<ParametersImpl> THREAD_LOCAL_PARAMETERS = new ThreadLocal<>();
@@ -242,6 +243,11 @@ public class SecurityContextImpl implements SecurityContext {
         } else {
             throw new IllegalStateException("Permissions could not be refreshed, another update is in progress.");
         }
+    }
+
+    @Override
+    public SqlSecurityContext createSqlContext(Subject subject) {
+        return new SqlSecurityContextImpl(this, subject);
     }
 
     public ILogger getLogger(String name) {

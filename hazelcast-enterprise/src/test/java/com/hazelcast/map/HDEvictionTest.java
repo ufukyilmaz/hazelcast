@@ -6,10 +6,16 @@ import com.hazelcast.config.IndexConfig;
 import com.hazelcast.config.IndexType;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizePolicy;
+import com.hazelcast.core.EntryAdapter;
+import com.hazelcast.core.EntryEvent;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.instance.impl.EnterpriseNodeExtension;
+import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.memory.MemoryStats;
+import com.hazelcast.map.impl.EnterpriseMapContainer;
+import com.hazelcast.map.impl.MapService;
+import com.hazelcast.map.impl.proxy.MapProxyImpl;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.ObjectDataInput;
@@ -26,17 +32,20 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hazelcast.HDTestSupport.getHDIndexConfig;
 import static com.hazelcast.config.EvictionPolicy.LFU;
 import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.STANDARD;
 import static com.hazelcast.map.impl.eviction.MapClearExpiredRecordsTask.PROP_TASK_PERIOD_SECONDS;
 import static com.hazelcast.memory.MemoryUnit.KILOBYTES;
+import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 import static com.hazelcast.spi.properties.ClusterProperty.GLOBAL_HD_INDEX_ENABLED;
 import static com.hazelcast.test.Accessors.getNode;
 import static java.lang.Integer.MAX_VALUE;
-import static java.lang.Math.max;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -88,7 +97,7 @@ public class HDEvictionTest extends EvictionTest {
     @Test
     @Override
     public void testEviction_increasingEntrySize() {
-        int maxSizeMB = 10;
+        int maxSizeMB = 2;
         String mapName = randomMapName();
 
         MapConfig mapConfig = new MapConfig(mapName + "*").setInMemoryFormat(InMemoryFormat.NATIVE);
@@ -101,24 +110,60 @@ public class HDEvictionTest extends EvictionTest {
         config.setProperty(ClusterProperty.PARTITION_COUNT.getName(), "1");
         config.setProperty(ClusterProperty.MAP_EVICTION_BATCH_SIZE.getName(), "2");
 
+        config.getNativeMemoryConfig().setSize(new MemorySize(128, MEGABYTES));
         HazelcastInstance instance = createHazelcastInstance(config);
+
         IMap<Integer, byte[]> map = instance.getMap(mapName);
 
         EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) getNode(instance).getNodeExtension();
         MemoryStats memoryStats = nodeExtension.getMemoryManager().getMemoryStats();
 
-        int perIterationIncrement = 2048;
-        long maxObservedNativeCost = 0;
-        for (int i = 0; i < 1000; i++) {
-            int payloadSizeBytes = i * perIterationIncrement;
-            map.put(i, new byte[payloadSizeBytes]);
-            maxObservedNativeCost = max(maxObservedNativeCost, memoryStats.getUsedNative());
-        }
+        AtomicInteger entryEvictedEventCount = new AtomicInteger(0);
+        map.addEntryListener(new EntryAdapter<Object, Object>() {
+            public void entryEvicted(EntryEvent event) {
+                entryEvictedEventCount.incrementAndGet();
+            }
+        }, false);
 
-        double toleranceFactor = 1.2d;
-        long maxAllowedNativeCost = (long) (MemoryUnit.MEGABYTES.toBytes(maxSizeMB) * toleranceFactor);
-        long minAllowedNativeCost = (long) (MemoryUnit.MEGABYTES.toBytes(maxSizeMB) / toleranceFactor);
-        assertBetween("Maximum cost", maxObservedNativeCost, minAllowedNativeCost, maxAllowedNativeCost);
+        int perIterationIncrement = 2048;
+        List<Integer> memoryCosts = calculateEntryMemoryCosts(instance);
+        long beforeUsedMemory = memoryStats.getUsedNative();
+        for (int i = 0; i < 100; i++) {
+            int payloadSizeBytes = i * perIterationIncrement;
+            long beforePutTotalUsed = memoryStats.getUsedNative() - beforeUsedMemory;
+            map.put(i, new byte[payloadSizeBytes]);
+
+            if (beforePutTotalUsed + memoryCosts.get(i) > MemoryUnit.MEGABYTES.toBytes(maxSizeMB)) {
+                assertTrueEventually(() -> assertTrue(entryEvictedEventCount.get() == 2));
+                entryEvictedEventCount.set(0);
+            } else {
+                assertTrue(entryEvictedEventCount.get() == 0);
+            }
+        }
+    }
+
+    private List<Integer> calculateEntryMemoryCosts(HazelcastInstance instance) {
+        String mapName = randomMapName();
+        // default no eviction
+        MapConfig mapConfig = new MapConfig(mapName + "*").setInMemoryFormat(InMemoryFormat.NATIVE);
+        Config config = getConfig().addMapConfig(mapConfig);
+        config.setProperty(ClusterProperty.PARTITION_COUNT.getName(), "1");
+        IMap<Integer, byte[]> map = instance.getMap(mapName);
+
+        List<Integer> liveSizes = new ArrayList<>();
+        int perIterationIncrement = 2048;
+
+        HiDensityStorageInfo hdStorageInfo = ((EnterpriseMapContainer) ((MapService)
+                ((MapProxyImpl) map).getService()).getMapServiceContext().getMapContainer(mapName)).getHdStorageInfo();
+        for (int i = 0; i < 100; i++) {
+            int payloadSizeBytes = i * perIterationIncrement;
+            long start = hdStorageInfo.getUsedMemory();
+            map.put(i, new byte[payloadSizeBytes]);
+            long end = hdStorageInfo.getUsedMemory();
+            int sizeOfJustAdded = (int) (end - start);
+            liveSizes.add(sizeOfJustAdded);
+        }
+        return liveSizes;
     }
 
     @Test

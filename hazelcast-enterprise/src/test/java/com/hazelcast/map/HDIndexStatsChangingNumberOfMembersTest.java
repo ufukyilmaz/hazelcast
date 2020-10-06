@@ -56,7 +56,6 @@ public class HDIndexStatsChangingNumberOfMembersTest extends IndexStatsChangingN
         IMap<Integer, Integer> map2 = instance2.getMap(mapName);
 
         addIndex(map1);
-        addIndex(map2);
 
         for (int i = 0; i < entryCount; ++i) {
             map1.put(i, i);
@@ -95,9 +94,8 @@ public class HDIndexStatsChangingNumberOfMembersTest extends IndexStatsChangingN
         // let's add another member
         HazelcastInstance instance3 = factory.newHazelcastInstance(config);
         IMap<Integer, Integer> map3 = instance3.getMap(mapName);
-        addIndex(map3);
 
-        waitAllForSafeState(instance1, instance2, instance3);
+        awaitStable(mapName, instance1, instance2, instance3);
 
         // check that local stats were not affected by adding new member to cluster
         assertEquals(originalMap1QueryCount, stats(map1).getQueryCount());
@@ -144,7 +142,7 @@ public class HDIndexStatsChangingNumberOfMembersTest extends IndexStatsChangingN
 
         // let's remove one member
         instance2.shutdown();
-        waitAllForSafeState(instance1, instance3);
+        awaitStable(mapName, instance1, instance3);
 
         // check that local stats were not affected by removing member from cluster
         assertEquals(originalMap1QueryCount, stats(map1).getQueryCount());
@@ -199,7 +197,6 @@ public class HDIndexStatsChangingNumberOfMembersTest extends IndexStatsChangingN
         IMap<Integer, Integer> map2 = instance2.getMap(mapName);
 
         addIndex(map1);
-        addIndex(map2);
 
         assertEquals(0, valueStats(map1).getInsertCount());
         assertEquals(0, valueStats(map1).getUpdateCount());
@@ -246,9 +243,8 @@ public class HDIndexStatsChangingNumberOfMembersTest extends IndexStatsChangingN
         // let's add another member
         HazelcastInstance instance3 = factory.newHazelcastInstance(config);
         IMap<Integer, Integer> map3 = instance3.getMap(mapName);
-        addIndex(map3);
 
-        waitAllForSafeState(instance1, instance2, instance3);
+        awaitStable(mapName, instance1, instance2, instance3);
 
         assertChange("insertCount", originalMap1InsertCount + originalMap2InsertCount,
                 valueStats(map1).getInsertCount() + valueStats(map2).getInsertCount());
@@ -296,7 +292,7 @@ public class HDIndexStatsChangingNumberOfMembersTest extends IndexStatsChangingN
 
         // let's remove one member
         instance2.shutdown();
-        waitAllForSafeState(instance1, instance3);
+        awaitStable(mapName, instance1, instance3);
 
         assertEquals(originalMap1InsertCount, valueStats(map1).getInsertCount());
         assertEquals(originalMap1UpdateCount, valueStats(map1).getUpdateCount());

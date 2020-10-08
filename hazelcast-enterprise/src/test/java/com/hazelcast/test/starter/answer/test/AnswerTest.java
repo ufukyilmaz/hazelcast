@@ -284,10 +284,11 @@ public class AnswerTest extends HazelcastTestSupport {
         assertTrue("backupMap iterator should have a next item", iterator.hasNext());
         QueueItem queueItem = iterator.next();
         assertNotNull("queueItem should not be null", queueItem);
-        Data dataValue = queueItem.getSerializedObject();
-        assertNotNull("queueItem should have a value", dataValue);
-        Object value = serializationService.toObject(dataValue);
-        assertEquals("Expected collectionItem value to be 42", 42, value);
+        // RU_COMPAT_4_0 : QueueItem#getData was replaced by #getSerializedObject
+        // Data dataValue = queueItem.getSerializedObject();
+        // assertNotNull("queueItem should have a value", dataValue);
+        // Object value = serializationService.toObject(dataValue);
+        // assertEquals("Expected collectionItem value to be 42", 42, value);
 
         assertTrue("queue should contain 42", queue.contains(42));
         queue.clear();

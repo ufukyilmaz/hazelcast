@@ -31,4 +31,33 @@ public class QueueStoreCompatibilityTest extends QueueStoreTest {
         // FIXME this test sometimes fails with "AssertionError: queue.poll() should not return null"
         // I guess the TransactionalQueue is not yet fully supported by the compatibility framework
     }
+
+    @Test
+    @Ignore
+    @Override
+    public void testRemoveAll() {
+        // RU_COMPAT_4_0 : uses VersionedObject, new in 4.1
+    }
+
+    @Test
+    @Ignore
+    @Override
+    public void testQueueStore() {
+        // RU_COMPAT_4_0 : uses VersionedObject, new in 4.1
+    }
+
+    @Test
+    @Ignore
+    @Override
+    public void testStoreId_whenNodeDown() {
+        // RU_COMPAT_4_0 : uses VersionedObject, new in 4.1
+    }
+
+    @Test
+    @Ignore
+    @Override
+    public void testQueueStoreFactory() {
+        // RU_COMPAT_4_0 : uses VersionedObject, new in 4.1
+    }
+
 }

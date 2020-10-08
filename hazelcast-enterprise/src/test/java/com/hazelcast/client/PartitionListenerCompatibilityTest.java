@@ -38,7 +38,7 @@ public class PartitionListenerCompatibilityTest extends HazelcastTestSupport {
 
     @Test
     public void testPartitionListener_oldClient() {
-        String oldestKnownVersion = "3.7";
+        String oldestKnownVersion = "4.0";
         String currentVersion = CompatibilityTestHazelcastInstanceFactory.getCurrentVersion();
 
         HazelcastInstance instance1 = factory.newHazelcastInstance(currentVersion, new Config());
@@ -50,7 +50,7 @@ public class PartitionListenerCompatibilityTest extends HazelcastTestSupport {
 
     @Test
     public void testPartitionListener_oldServer() {
-        String oldestKnownVersion = "3.7";
+        String oldestKnownVersion = "4.0";
         String currentVersion = CompatibilityTestHazelcastInstanceFactory.getCurrentVersion();
 
         HazelcastInstance instance1 = factory.newHazelcastInstance(oldestKnownVersion, new Config());

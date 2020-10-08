@@ -24,7 +24,7 @@ import org.junit.runners.Parameterized.Parameters;
 import java.io.Serializable;
 import java.util.Collection;
 
-import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.HDTestSupport.getHDIndexConfig;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.InMemoryFormat.OBJECT;
@@ -75,7 +75,7 @@ public class HDQueryCompatibilityTest {
         };
         factory = new CompatibilityTestHazelcastInstanceFactory(versions);
 
-        Config config = getHDConfig();
+        Config config = getHDIndexConfig();
         MapConfig mapConfig = config.getMapConfig(mapName);
         mapConfig.setInMemoryFormat(inMemoryFormat);
         if (indexConfig != null) {

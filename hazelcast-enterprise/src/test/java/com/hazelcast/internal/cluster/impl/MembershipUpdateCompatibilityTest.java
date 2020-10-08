@@ -318,6 +318,8 @@ public class MembershipUpdateCompatibilityTest extends HazelcastTestSupport {
             JoinConfig join = config.getNetworkConfig().getJoin();
             join.getMulticastConfig().setEnabled(false);
             join.getTcpIpConfig().setEnabled(true).clear().addMember("127.0.0.1");
+        } else {
+            config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(true);
         }
         return config;
     }

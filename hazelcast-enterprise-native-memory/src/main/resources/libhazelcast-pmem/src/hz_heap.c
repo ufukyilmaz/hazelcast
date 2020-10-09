@@ -93,7 +93,7 @@ int hz_create_heap(int kind_index, struct hz_heap **heap, char *errmsg) {
             kind = MEMKIND_HUGETLB;
             break;
         case KIND_PMEM_DAX_KMEM:
-            kind = MEMKIND_DAX_KMEM;
+            kind = MEMKIND_DAX_KMEM_ALL;
             break;
         default:
             sprintf(errmsg, "Unknown kind %d", kind_index);

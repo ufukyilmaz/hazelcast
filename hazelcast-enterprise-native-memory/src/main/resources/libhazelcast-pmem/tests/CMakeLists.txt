@@ -33,8 +33,11 @@ add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
 
 add_executable(hazelcast-pmem-tests
         src/HzHeapTests.cpp
+        src/HzNumaTests.cpp
         ${CMAKE_SOURCE_PATH}/hz_heap.c
-        ${CMAKE_SOURCE_PATH}/hz_heap.h)
+        ${CMAKE_SOURCE_PATH}/hz_heap.h
+        ${CMAKE_SOURCE_PATH}/hz_numa.c
+        ${CMAKE_SOURCE_PATH}/hz_numa.h)
 target_link_libraries(hazelcast-pmem-tests PUBLIC ${MEMKIND} ${NUMA} ${THREADS} ${PMEM} ${CMAKE_DL_LIBS} mcheck gtest gtest_main)
 add_test(NAME hazelcast-pmem-tests COMMAND hazelcast-pmem-tests WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 set_tests_properties(hazelcast-pmem-tests PROPERTIES ENVIRONMENT LD_LIBRARY_PATH=${LIB_PATH})

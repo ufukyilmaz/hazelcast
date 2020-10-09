@@ -29,6 +29,8 @@ add_library(hazelcast-pmem SHARED
         ${CMAKE_SOURCE_PATH}/com_hazelcast_internal_memory_impl_NUMA.h
         ${CMAKE_SOURCE_PATH}/hz_heap.c
         ${CMAKE_SOURCE_PATH}/hz_heap.h
+        ${CMAKE_SOURCE_PATH}/hz_numa.c
+        ${CMAKE_SOURCE_PATH}/hz_numa.h
         ${CMAKE_SOURCE_PATH}/util.c
         ${CMAKE_SOURCE_PATH}/util.h)
 

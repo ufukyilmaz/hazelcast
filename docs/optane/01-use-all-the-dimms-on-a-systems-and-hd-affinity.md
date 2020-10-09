@@ -136,6 +136,8 @@ Now we will discuss how the situation can be mitigated and how guarantees can be
 
 On top of these above, the JVM can be started with `-XX:+AlwaysPreTouch`, with fix heap size and young:old ratio. This makes the whole heap backed by physical memory by the time Hazelcast actually starts, therefore no JVM heap allocations happen during runtime. This does not affect the other JVM pools though, those can potentially still overflow to PMEM, unless the JVM process is memory bound.
 
+Guaranteeing that the JVM doesn't allocate PMEM memory in KMEM DAX mode is not enough, ensuring the kernel doesn't allocate either for its own data structures is crucial too. By default, the kernel is allowed to allocate on PMEM, which can lead to exceptionally hard to debug performance problems. Preventing kernel allocations on PMEM can be achieved by marking the persistent memory as "movable". This can be done when onlining the memory with `daxctl` and its `--movable` parameter. The `movable` attribute can be queried with `sudo daxctl list`. Note the `sudo`, `daxctl list` without running as root does not list the `movable` attribute.  
+
 #### Comparison of the FS DAX and the KMEM DAX Modes
 Both modes offer direct PMEM access bypassing the kernel, but they are fundamentally different, which is summarized in the following table.
 
@@ -634,3 +636,4 @@ The allocation overflowing follows the same very simple algorithm for both alloc
 * [Man page of fallocate](https://www.man7.org/linux/man-pages/man2/fallocate.2.html) (hole punching, search for
  `FALLOC_FL_PUNCH_HOLE`)
 * Blog post from Pivotal on overcommitting: [Virtual memory settings in Linux - The Problem with Overcommit](http://engineering.pivotal.io/post/virtual_memory_settings_in_linux_-_the_problem_with_overcommit/)
+* [Discussion on onlining PMEM as movable by default](https://github.com/pmem/ndctl/issues/110)

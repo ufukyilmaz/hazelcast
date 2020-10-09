@@ -1,4 +1,5 @@
 #include "com_hazelcast_internal_memory_impl_NUMA.h"
+#include "hz_numa.h"
 #include "util.h"
 #include <numa.h>
 #include <unistd.h>
@@ -30,7 +31,8 @@ JNIEXPORT jint JNICALL Java_com_hazelcast_internal_memory_impl_NUMA_currentThrea
     for (int node = 0; node <= numa_max_node() && bound_numa_node == NUMA_NODE_UNBOUNDED; ++node) {
         numa_bitmask_clearall(node_cpumask);
         numa_node_to_cpus(node, node_cpumask);
-        if (numa_bitmask_equal(thread_cpumask, node_cpumask)) {
+
+        if (hz_numa_node_bound(node_cpumask, thread_cpumask)) {
             bound_numa_node = node;
         }
     }

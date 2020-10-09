@@ -174,7 +174,7 @@ public class MapWanAntiEntropyTest extends HazelcastTestSupport {
     }
 
     private void givenSourceClusterWithData() {
-        clusterA.startClusterAndWaitForSafeState();
+        clusterA.startCluster();
         clusterB.startCluster();
         fillMap(clusterA, MAP_REPLICATED, 0, 10);
         fillMap(clusterA, MAP_NOT_REPLICATED, 0, 10);

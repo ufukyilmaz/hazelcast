@@ -102,6 +102,8 @@ public class Cluster {
         for (int i = 0; i < clusterMembers.length; i++) {
             startClusterMember(i, null);
         }
+        waitAllForSafeState(clusterMembers);
+        warmUpPartitions(clusterMembers);
     }
 
     public void bounceCluster() {
@@ -143,12 +145,6 @@ public class Cluster {
         for (int i = 0; i < clusterMembers.length; i++) {
             clusterMembers[i] = bouncedMembers.get(i);
         }
-    }
-
-    public void startClusterAndWaitForSafeState() {
-        startCluster();
-        waitAllForSafeState(clusterMembers);
-        warmUpPartitions(clusterMembers);
     }
 
     public HazelcastInstance startAClusterMember() {

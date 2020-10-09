@@ -157,7 +157,7 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
 
     @Test
     public void testWithOneMap() {
-        sourceCluster.startClusterAndWaitForSafeState();
+        sourceCluster.startCluster();
         targetCluster.startCluster();
 
         TestContext testContext = setupTestContext(400, MAP1_NAME);
@@ -175,7 +175,7 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
 
     @Test
     public void testWithOneEmptyMap() {
-        sourceCluster.startClusterAndWaitForSafeState();
+        sourceCluster.startCluster();
         targetCluster.startCluster();
 
         TestContext testContext = setupTestContext(Integer.MAX_VALUE, 0, MAP1_NAME);
@@ -186,7 +186,7 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
 
     @Test
     public void testWithTwoEmptyMaps() {
-        sourceCluster.startClusterAndWaitForSafeState();
+        sourceCluster.startCluster();
         targetCluster.startCluster();
 
         TestContext testContext = setupTestContext(Integer.MAX_VALUE, 0, MAP1_NAME, MAP2_NAME);
@@ -203,7 +203,7 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
 
     @Test
     public void testWithOneEntryInOneMap() {
-        sourceCluster.startClusterAndWaitForSafeState();
+        sourceCluster.startCluster();
         targetCluster.startCluster();
 
         TestContext testContext = setupTestContext(Integer.MAX_VALUE, 1, MAP1_NAME);
@@ -216,7 +216,7 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
 
     @Test
     public void testWithOneEntryInBothOfTwoMaps() {
-        sourceCluster.startClusterAndWaitForSafeState();
+        sourceCluster.startCluster();
         targetCluster.startCluster();
 
         TestContext testContext = setupTestContext(Integer.MAX_VALUE, 1, MAP1_NAME, MAP2_NAME);
@@ -231,7 +231,7 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
 
     @Test
     public void testWithAllMaps() {
-        sourceCluster.startClusterAndWaitForSafeState();
+        sourceCluster.startCluster();
         targetCluster.startCluster();
 
         TestContext testContext = setupTestContext(Integer.MAX_VALUE, MAP1_NAME, MAP2_NAME);
@@ -245,7 +245,7 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
 
     @Test
     public void testWithOneMapTwoSyncs() {
-        sourceCluster.startClusterAndWaitForSafeState();
+        sourceCluster.startCluster();
         targetCluster.startCluster();
 
         TestContext testContext = setupTestContext(400, MAP1_NAME);
@@ -275,7 +275,7 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
 
     @Test
     public void testWithAllMapsTwoSyncs() {
-        sourceCluster.startClusterAndWaitForSafeState();
+        sourceCluster.startCluster();
         targetCluster.startCluster();
 
         TestContext testContext = setupTestContext(MAP1_NAME, MAP2_NAME);
@@ -299,7 +299,7 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
 
     @Test
     public void testWithOneMapOverlappingSyncs() {
-        sourceCluster.startClusterAndWaitForSafeState();
+        sourceCluster.startCluster();
         HazelcastInstance sourceMemberOne = sourceCluster.getMembers()[0];
         HazelcastInstance sourceMemberTwo = sourceCluster.getMembers()[1];
         targetCluster.startCluster();

@@ -159,7 +159,7 @@ public class WanCounterSourceSplitBrainTest extends HazelcastTestSupport {
         // TODO remove this latch if the issue #2987 is fixed
         CountDownLatch isolatedNodesMergeLatch = new CountDownLatch(numberOfIsolatedNodes);
 
-        sourceCluster.startClusterAndWaitForSafeState();
+        sourceCluster.startCluster();
         sourceCluster.pauseWanReplicationOnAllMembers(wanReplication);
         targetCluster.startCluster();
 

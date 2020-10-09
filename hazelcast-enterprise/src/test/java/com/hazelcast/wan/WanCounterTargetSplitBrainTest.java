@@ -139,7 +139,7 @@ public class WanCounterTargetSplitBrainTest extends HazelcastTestSupport {
     @Test
     public void testCountersReachZeroAfterHealingFullSplit() {
         sourceCluster.startCluster();
-        targetCluster.startClusterAndWaitForSafeState();
+        targetCluster.startCluster();
 
         fillMap(sourceCluster, MAP_NAME, 0, 100);
         fillCache(sourceCluster, CACHE_NAME, 0, 100);

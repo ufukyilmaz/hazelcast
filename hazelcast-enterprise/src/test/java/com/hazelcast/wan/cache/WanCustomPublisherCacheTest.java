@@ -112,7 +112,7 @@ public class WanCustomPublisherCacheTest extends HazelcastTestSupport {
 
     @Test
     public void addUpdateRemoveEventsAreReplicated() {
-        sourceCluster.startClusterAndWaitForSafeState();
+        sourceCluster.startCluster();
 
         // ADD
         fillCache(sourceCluster, CACHE_NAME, 0, 100);

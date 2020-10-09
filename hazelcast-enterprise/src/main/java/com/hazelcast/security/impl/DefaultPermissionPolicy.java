@@ -34,6 +34,8 @@ import java.util.logging.Level;
 import static com.hazelcast.security.impl.SecurityUtil.addressMatches;
 import static com.hazelcast.security.impl.SecurityUtil.createPermission;
 import static java.lang.Thread.currentThread;
+import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableCollection;
 
 /**
  * The default {@link IPermissionPolicy}.
@@ -44,13 +46,15 @@ import static java.lang.Thread.currentThread;
 public class DefaultPermissionPolicy implements IPermissionPolicy {
 
     private static final String REGEX_ANY_ENDPOINT = "*.*.*.*";
+    private static final String REGEX_ANY_ENDPOINT_IPV6 = "*:*:*:*:*:*:*:*";
     private static final String REGEX_ANY_PRINCIPAL = "*";
     private static final ILogger LOGGER = Logger.getLogger(DefaultPermissionPolicy.class.getName());
     private static final PermissionCollection DENY_ALL = new DenyAllPermissionCollection();
     private static final PermissionCollection ALLOW_ALL = new AllPermissionsCollection(true);
     private static final String PRINCIPAL_STRING_SEP = ",";
 
-    private static final Collection<String> ALL_ENDPOINTS = Collections.singleton(REGEX_ANY_ENDPOINT);
+    private static final Collection<String> ALL_ENDPOINTS = unmodifiableCollection(
+            asList(REGEX_ANY_ENDPOINT, REGEX_ANY_ENDPOINT_IPV6));
 
     // configured permissions
     final ConcurrentMap<PrincipalKey, PermissionCollection> configPermissions

@@ -15,6 +15,8 @@ import java.util.Set;
 import javax.security.auth.Subject;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.PermissionConfig;
@@ -25,10 +27,15 @@ import com.hazelcast.security.ClusterRolePrincipal;
 import com.hazelcast.security.IPermissionPolicy;
 import com.hazelcast.security.permission.ListPermission;
 import com.hazelcast.security.permission.MapPermission;
+import com.hazelcast.test.HazelcastParallelClassRunner;
+import com.hazelcast.test.annotation.ParallelJVMTest;
+import com.hazelcast.test.annotation.QuickTest;
 
 /**
  * Unit tests for the {@link DefaultPermissionPolicy}.
  */
+@RunWith(HazelcastParallelClassRunner.class)
+@Category({ QuickTest.class, ParallelJVMTest.class })
 public class DefaultPermissionPolicyTest {
 
     /**

@@ -446,6 +446,9 @@ public class EnterpriseNodeExtension
     @Override
     @SuppressWarnings("checkstyle:npathcomplexity")
     public void afterStart() {
+        if (!node.isRunning()) {
+            return;
+        }
         if (license == null) {
             logger.log(Level.SEVERE, "Hazelcast Enterprise license could not be found!");
             node.shutdown(true);

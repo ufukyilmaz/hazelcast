@@ -41,19 +41,27 @@ import static org.junit.Assert.assertThat;
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class MapHotRestartTest extends AbstractMapHotRestartTest {
 
-    @Parameters(name = "memoryFormat:{0} fsync:{2} encrypted:{4} clusterSize:{5}")
+    @Parameters(name = "memoryFormat:{0} fsync:{2} encrypted:{4} clusterSize:{5} merkleTree:{6}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {InMemoryFormat.BINARY, KEY_COUNT, false, false, false, 1},
-                {InMemoryFormat.BINARY, KEY_COUNT, false, false, false, 3},
-                {InMemoryFormat.NATIVE, KEY_COUNT, false, false, false, 1},
-                {InMemoryFormat.NATIVE, KEY_COUNT, false, false, false, 3},
-                {InMemoryFormat.BINARY, KEY_COUNT, false, false, true, 1},
+                {InMemoryFormat.BINARY, KEY_COUNT, false, false, false, 1, false},
+                {InMemoryFormat.BINARY, KEY_COUNT, false, false, false, 1, true},
+                {InMemoryFormat.BINARY, KEY_COUNT, false, false, false, 3, false},
+                {InMemoryFormat.BINARY, KEY_COUNT, false, false, false, 3, true},
+                {InMemoryFormat.NATIVE, KEY_COUNT, false, false, false, 1, false},
+                {InMemoryFormat.NATIVE, KEY_COUNT, false, false, false, 1, true},
+                {InMemoryFormat.NATIVE, KEY_COUNT, false, false, false, 3, false},
+                {InMemoryFormat.NATIVE, KEY_COUNT, false, false, false, 3, true},
+                {InMemoryFormat.BINARY, KEY_COUNT, false, false, true, 1, false},
+                {InMemoryFormat.BINARY, KEY_COUNT, false, false, true, 1, true},
         });
     }
 
     @Parameter(5)
     public int clusterSize;
+
+    @Parameter(6)
+    public boolean merkleTreeEnabled;
 
     private IMap<Integer, String> map;
     private boolean addIndex;
@@ -244,6 +252,7 @@ public class MapHotRestartTest extends AbstractMapHotRestartTest {
         if (addIndex) {
             mapConfig.addIndexConfig(new IndexConfig(IndexType.HASH, QueryConstants.THIS_ATTRIBUTE_NAME.value()));
         }
+        config.getMapConfig(mapName).getMerkleTreeConfig().setEnabled(merkleTreeEnabled);
         return config;
     }
 }

@@ -401,7 +401,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
                     for (int replicaIndex = 0; replicaIndex <= totalBackupCount; replicaIndex++) {
                         PartitionReplica replica = partition.getReplica(replicaIndex);
 
-                        if (replica.isIdentical(localMember)) {
+                        if (replica != null && replica.isIdentical(localMember)) {
                             localPartitionsWithReplicaIndex.add(new int[]{partition.getPartitionId(), replicaIndex});
                             totalRebuildOperations++;
                         }

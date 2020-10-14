@@ -44,6 +44,7 @@ import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
+import static com.hazelcast.internal.util.StringUtil.formatXml;
 import static com.hazelcast.internal.util.StringUtil.lowerCaseInternal;
 
 import java.io.File;
@@ -234,7 +235,7 @@ public final class SecurityUtil {
         XmlGenerator gen = new XmlGenerator(xmlBuilder);
         SecurityXmlGenerator cfgGen = new SecurityXmlGenerator();
         cfgGen.securityRealmGenerator(gen, realmName, realmConfig);
-        return cfgGen.format(xmlBuilder.toString(), 2);
+        return formatXml(xmlBuilder.toString(), 2);
     }
 
     private static boolean isIbmJvm() {
@@ -247,11 +248,6 @@ public final class SecurityUtil {
         @Override
         protected void securityRealmGenerator(XmlGenerator gen, String name, RealmConfig c) {
             super.securityRealmGenerator(gen, name, c);
-        }
-
-        @Override
-        protected String format(String input, int indent) {
-            return super.format(input, indent);
         }
     }
 }

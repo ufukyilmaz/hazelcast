@@ -129,6 +129,15 @@ public class HDEvictionTest extends EvictionTest {
         List<Integer> memoryCosts = calculateEntryMemoryCosts(instance);
         long beforeUsedMemory = memoryStats.getUsedNative();
         for (int i = 0; i < 100; i++) {
+            // Make sure eviction and deferred memory reclamation are
+            // completed for the previous map.put(...), so memory stats
+            // return the up-to-date information. Eviction and memory
+            // reclamation are running on the partition thread, but they
+            // do their job after map.put(...) returns. The map.get(...)
+            // below serves as a barrier, it's running on the same
+            // partition thread.
+            map.get(i);
+
             int payloadSizeBytes = i * perIterationIncrement;
             long beforePutTotalUsed = memoryStats.getUsedNative() - beforeUsedMemory;
             map.put(i, new byte[payloadSizeBytes]);

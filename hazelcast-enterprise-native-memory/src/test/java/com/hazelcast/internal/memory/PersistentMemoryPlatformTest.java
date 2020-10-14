@@ -1,6 +1,7 @@
 package com.hazelcast.internal.memory;
 
 import com.hazelcast.config.NativeMemoryConfig;
+import com.hazelcast.config.PersistentMemoryConfig;
 import com.hazelcast.config.PersistentMemoryDirectoryConfig;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.LibMallocFactory;
@@ -16,6 +17,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
+import static com.hazelcast.config.PersistentMemoryMode.MOUNTED;
 import static com.hazelcast.internal.memory.PmemTestUtil.firstOf;
 import static com.hazelcast.internal.util.OsHelper.isLinux;
 import static org.junit.Assert.assertNotNull;
@@ -33,7 +35,10 @@ public class PersistentMemoryPlatformTest extends ParameterizedMemoryTest {
         NativeMemoryConfig config = new NativeMemoryConfig();
         PersistentMemoryDirectoryConfig directoryConfig = new PersistentMemoryDirectoryConfig(
                 firstOf(PERSISTENT_MEMORY_DIRECTORIES));
-        config.getPersistentMemoryConfig().addDirectoryConfig(directoryConfig);
+        PersistentMemoryConfig pmemConfig = config.getPersistentMemoryConfig();
+        pmemConfig.setEnabled(true);
+        pmemConfig.setMode(MOUNTED);
+        pmemConfig.addDirectoryConfig(directoryConfig);
         LibMallocFactory libMallocFactory = new MemkindMallocFactory(config);
 
         LibMalloc libMalloc = null;

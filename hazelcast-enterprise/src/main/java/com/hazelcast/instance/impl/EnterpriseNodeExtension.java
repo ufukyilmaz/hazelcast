@@ -640,7 +640,7 @@ public class EnterpriseNodeExtension
             final FreeMemoryChecker freeMemoryChecker = new FreeMemoryChecker(node.getProperties());
 
             logger.info("Creating " + type + " native memory manager with " + size.toPrettyString() + " size");
-            LibMallocFactory libMallocFactory = createLibMallocFactory(node, memoryConfig, freeMemoryChecker);
+            LibMallocFactory libMallocFactory = createLibMallocFactory(memoryConfig, freeMemoryChecker);
             if (type == NativeMemoryConfig.MemoryAllocatorType.STANDARD) {
                 if (isHotRestartEnabled()) {
                     throw new InvalidConfigurationException("MemoryAllocatorType.STANDARD cannot be used when Hot Restart "
@@ -659,7 +659,7 @@ public class EnterpriseNodeExtension
         }
     }
 
-    private static LibMallocFactory createLibMallocFactory(Node node, NativeMemoryConfig config,
+    private static LibMallocFactory createLibMallocFactory(NativeMemoryConfig config,
                                                            FreeMemoryChecker freeMemoryChecker) {
         if (!MemkindUtil.shouldUseMemkindMalloc(config)) {
             // RAM via Unsafe

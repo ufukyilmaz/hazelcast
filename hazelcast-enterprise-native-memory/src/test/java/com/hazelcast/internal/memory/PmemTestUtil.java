@@ -1,8 +1,11 @@
 package com.hazelcast.internal.memory;
 
 import com.hazelcast.config.NativeMemoryConfig;
+import com.hazelcast.config.PersistentMemoryConfig;
 import com.hazelcast.config.PersistentMemoryDirectoryConfig;
 import com.hazelcast.internal.util.StringUtil;
+
+import static com.hazelcast.config.PersistentMemoryMode.MOUNTED;
 
 public class PmemTestUtil {
     public static String firstOf(String pmemDirectories) {
@@ -16,8 +19,11 @@ public class PmemTestUtil {
         assert !StringUtil.isNullOrEmptyAfterTrim(pmemDirectories);
 
         int node = 0;
+        PersistentMemoryConfig pmemConfig = config.getPersistentMemoryConfig();
+        pmemConfig.setEnabled(true);
+        pmemConfig.setMode(MOUNTED);
         for (String pmemDirectory : pmemDirectories.split(",")) {
-            config.getPersistentMemoryConfig().addDirectoryConfig(new PersistentMemoryDirectoryConfig(pmemDirectory, node++));
+            pmemConfig.addDirectoryConfig(new PersistentMemoryDirectoryConfig(pmemDirectory, node++));
         }
     }
 }

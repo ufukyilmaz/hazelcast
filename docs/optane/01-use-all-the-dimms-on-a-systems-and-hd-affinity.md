@@ -198,7 +198,7 @@ The following example shows an example for the XML configuration:
         <!-- Single directory as introduced in 4.0, deprecated -->
         <persistent-memory-directory>/mnt/pmem</persistent-memory-directory>
         <!-- Multiple directories and extensible since 4.1 -->
-        <persistent-memory>
+        <persistent-memory enabled="true" mode="MOUNTED">
             <directories>
                 <directory numa-node="0">/mnt/pmem0/</directory>
                 <directory numa-node="1">/mnt/pmem1/</directory>
@@ -218,7 +218,9 @@ hazelcast:
     # Single directory as introduced in 4.0, deprecated 
     persistent-memory-directory: /mnt/pmem
     # Multiple directories and extensible since 4.1
-    persistent-memory:
+    persistent-memory:                                 
+      enabled: true
+      mode: MOUNTED
       directories:
         - directory: /mnt/pmem0
           numa-node: 0
@@ -228,12 +230,70 @@ hazelcast:
 ##### Programmatic Configuration
 The Java configuration reflects the above changes and introduces the following persistent memory configuration classes.
 
+The introduced two persistent memory operational modes in the new `PersistentMemoryMode`:
+```java
+/**
+ * The enumeration of the supported persistent memory operational modes.
+ */
+public enum PersistentMemoryMode {
+    /**
+     * The persistent memory is mounted into the file system (aka FS DAX mode).
+     */
+    MOUNTED,
+
+    /**
+     * The persistent memory is onlined as system memory (aka KMEM DAX mode).
+     */
+    SYSTEM_MEMORY;
+}
+```
+
 The public API of the `PersistentMemoryConfig` is as follows.
 ```java
 /**
  * Configuration class for persistent memory devices (e.g. Intel Optane).
  */
 public class PersistentMemoryConfig {
+
+    /**
+     * Returns if the persistent memory is enabled.
+     *
+     * @return {@code true} if persistent memory allocation is enabled, {@code false} otherwise.
+     */
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    /**
+     * Enables or disables persistent memory.
+     *
+     * @return this {@link NativeMemoryConfig} instance
+     */
+    public PersistentMemoryConfig setEnabled(boolean enabled) {
+        this.enabled = enabled;
+        return this;
+    }
+
+    /**
+     * Returns the mode in which the persistent memory should be used.
+     * @return the mode
+     */
+    @Nonnull
+    public PersistentMemoryMode getMode() {
+        return mode;
+    }
+
+    /**
+     * Sets the mode in which the persistent memory should be used. The default
+     * mode is {@link PersistentMemoryMode#MOUNTED}.
+     *
+     * @param mode The mode of the persistent memory
+     * @throws NullPointerException if {@code mode} is {@code null}
+     */
+    public void setMode(@Nonnull PersistentMemoryMode mode) {
+        this.mode = requireNonNull(mode);
+    }
+
     /**
      * Constructs an instance with copying the fields of the provided
      * {@link PersistentMemoryConfig}.
@@ -440,6 +500,7 @@ Note that we deprecate the API we introduced in 4.0 for setting the single direc
 
 ##### Validating the Configuration
 We have the following validation rules for the configuration:
+* Specifying directories is allowed only if the `mode=MOUNTED`
 * The directories have to be unique
 * The NUMA nodes defined on the directories have to be unique or not set  
 * If NUMA node is set at least on one directory, the NUMA nodes have to be set on all directories
@@ -467,7 +528,7 @@ void memkind_free(memkind_t kind, void *ptr);
 Memkind have static kinds that the users can use out of the box without any initialization of such kinds. Examples of these kinds:
 * **MEMKIND_DEFAULT**: the kind to use for allocating DRAM backed memory with regular page size
 * **MEMKIND_HUGETLB**: the kind to use for allocating DRAM backed memory with huge page size
-* **MEMKIND_DAX_KMEM**: the kind to use for allocating PMEM backed memory if the PMEM is onlined as system memory   
+* **MEMKIND_DAX_KMEM_ALL**: the kind to use for allocating PMEM backed memory if the PMEM is onlined as system memory   
 
 An example of allocating memory with these kind is as easy as the following example that allocates 64MB of memory:
 ```c 
@@ -481,14 +542,13 @@ The users can use dynamic kinds that need to be defined in runtime. The PMEM kin
 * **PMEM**: the kind to use for allocating PMEM backed memory if the PMEM is used in FS DAX mode    
 * **MEMKIND_DEFAULT**: the kind to use for allocating DRAM backed memory with regular page size
 * **MEMKIND_HUGETLB**: the kind to use for allocating DRAM backed memory with huge page size
-* **MEMKIND_DAX_KMEM**: the kind to use for allocating PMEM backed memory if the PMEM is onlined as system memory   
+* **MEMKIND_DAX_KMEM_ALL**: the kind to use for allocating PMEM backed memory if the PMEM is onlined as system memory   
 
-We have official configuration only for the PMEM kind, through the previously mentioned configuration options. The rest is currently available only with undocumented system arguments. This is because the `MEMKIND_DEFAULT` and `MEMKIND_HUGETLB` kinds are supported for testing and experimantation purpose, while officially supporting `MEMKIND_DAX_KMEM` mode is not yet decided. 
+We have official configuration for the `PMEM` and for the `MEMKIND_DAX_KMEM_ALL` kind, through the previously mentioned configuration options. The rest is currently available only with undocumented system arguments. This is because the `MEMKIND_DEFAULT` and `MEMKIND_HUGETLB` kinds are supported for testing and experimantation purpose. 
   
 Using the kinds can be enabled with the following system arguments:
 * **MEMKIND_DEFAULT**: `-Dhazelcast.hd.memkind=true`   
 * **MEMKIND_HUGETLB**: `-Dhazelcast.hd.memkind.hugepages=true`   
-* **MEMKIND_DAX_KMEM**: `-Dhazelcast.hd.memkind.dax.kmem=true`   
  
 Setting any of these arguments makes all HD allocations to be served with the associated Memkind kind.  
  
@@ -593,6 +653,10 @@ It needs be mentioned that only allocation requests can overflow, reallocation r
  
 ##### Heap Detection 
 Since the allocations can be served from any PMEM heap, on freeing we need to address the right heap with the free and the reallocation requests. Tracking this though would come with either external (separate datastructure) or internal (end of memory block) fragmentation. Memkind offers this functionality both for `memkind_realloc()` and for `memkind_free()` with just leaving the kind `NULL`. It will force Memkind to lookup its internal structures and choose its right kind to serve the request. All it needs is to guarantee that the block behind the pointer was allocated with Memkind and that it is a valid pointer (wasn't freed before). If the memory block was allocated with a different allocator, was freed before or was allocated from an already destroyed kind the behavior is unspecified and it's very likely causes a segmentation fault, crashing the JVM. Since we know for sure that all memory blocks are allocated with Memkind, we need to ensure only that we don't double-free, which is the responsibility of the memory managers. If later we implement a tiered storage we need to take extra care of this though and possibly the safest option will be to use Memkind for every kind of memory allocation behind HD.  
+     
+#### Setting Up the KMEM DAX Mode     
+     
+The KMEM DAX mode is not fully supported with the bundled custom Memkind library build. To enable it, the official Memkind v1.10.0+ should be downloaded with the operating system's package manager or should be built from source. Then the `libmemkind.so` needs to be preloaded when starting the JVM: `LD_PRELOAD=<abs_path_to_memkind_lib> java ...`. Then the operating system's dynamic linker will not load `libhazelcast-pmem.so`'s `libmemkind.so` direct dependency that Hazelcast unpacks from the Hazelcast enterprise jar. Instead, the already loaded version will be used. If in the configuration the `persistent-memory` is configured with `mode=SYSTEM_MEMORY`, KMEM DAX mode will be used.  
      
 #### Performance Analysis
 

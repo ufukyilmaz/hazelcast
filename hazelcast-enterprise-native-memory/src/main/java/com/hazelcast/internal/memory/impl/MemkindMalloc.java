@@ -1,15 +1,13 @@
 package com.hazelcast.internal.memory.impl;
 
 import com.hazelcast.config.NativeMemoryConfig;
+import com.hazelcast.config.PersistentMemoryConfig;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 
-import static com.hazelcast.internal.memory.impl.MemkindKind.DRAM;
-import static com.hazelcast.internal.memory.impl.MemkindKind.DRAM_HUGEPAGES;
-import static com.hazelcast.internal.memory.impl.MemkindKind.PMEM_DAX_KMEM;
+import static com.hazelcast.config.PersistentMemoryMode.SYSTEM_MEMORY;
+import static com.hazelcast.internal.memory.impl.MemkindUtil.configuredKindForMemkindMalloc;
 import static com.hazelcast.internal.memory.impl.MemkindUtil.useMemkind;
-import static com.hazelcast.internal.memory.impl.MemkindUtil.useMemkindDaxKmem;
-import static com.hazelcast.internal.memory.impl.MemkindUtil.useMemkindHugePages;
 
 /**
  * {@link LibMalloc} implementation for all supported kind of Memkind
@@ -27,16 +25,11 @@ public final class MemkindMalloc extends AbstractMemkindMalloc {
     }
 
     static MemkindMalloc create(NativeMemoryConfig config, long size) {
-        assert useMemkind();
+        PersistentMemoryConfig pmemConfig = config.getPersistentMemoryConfig();
+        boolean systemMemMode = pmemConfig.getMode() == SYSTEM_MEMORY;
+        assert systemMemMode && pmemConfig.isEnabled() || useMemkind();
 
-        final MemkindKind kind;
-        if (useMemkindDaxKmem()) {
-            kind = PMEM_DAX_KMEM;
-        } else if (useMemkindHugePages()) {
-            kind = DRAM_HUGEPAGES;
-        } else {
-            kind = DRAM;
-        }
+        MemkindKind kind = configuredKindForMemkindMalloc(pmemConfig);
 
         LOGGER.info("Using Memkind memory allocator with " + kind.name() + " kind");
         MemkindHeap heap = MemkindHeap.createHeap(kind, size);

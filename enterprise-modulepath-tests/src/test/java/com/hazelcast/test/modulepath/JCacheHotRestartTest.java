@@ -15,6 +15,7 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 
 import com.hazelcast.cluster.ClusterState;
@@ -30,6 +31,7 @@ import com.hazelcast.instance.impl.HazelcastInstanceFactory;
  * <a href="https://github.com/hazelcast/hazelcast-code-samples/tree/v3.10/enterprise/hot-restart/src/main/java">hot-restart
  * code samples</a>.
  */
+@Category(ModulePathTest.class)
 public class JCacheHotRestartTest {
 
     @Rule

@@ -6,8 +6,10 @@ import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.impl.HazelcastInstanceFactory;
+
 import org.junit.After;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -25,6 +27,7 @@ import static org.junit.Assert.assertTrue;
  * Basic test which checks if correct Hazelcast modules are on the modulepath. It also checks that Hazelcast members and clients
  * are able to start and form a cluster.
  */
+@Category(ModulePathTest.class)
 public class SmokeEnterpriseModulePathTest {
 
     @After

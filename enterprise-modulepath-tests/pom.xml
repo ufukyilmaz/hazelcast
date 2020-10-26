@@ -20,6 +20,17 @@
         <maven.compiler.source>9</maven.compiler.source>
         <maven.compiler.target>9</maven.compiler.target>
 
+        <javaModuleArgs>
+            --add-exports java.base/jdk.internal.ref=com.hazelcast.core
+            --add-opens java.base/java.nio=com.hazelcast.core
+            --add-opens java.base/sun.nio.ch=com.hazelcast.core
+            --add-opens java.base/java.lang=com.hazelcast.core
+            --add-opens jdk.management/com.sun.management.internal=com.hazelcast.core
+            --add-opens java.management/sun.management=com.hazelcast.core
+            --add-exports java.xml/jdk.xml.internal=com.hazelcast.core
+            --illegal-access=warn
+        </javaModuleArgs>
+
         <!-- needed for CheckStyle -->
         <main.basedir>${project.parent.basedir}</main.basedir>
     </properties>
@@ -45,42 +56,6 @@
                         <phase>none</phase>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${maven.surefire.plugin.version}</version>
-                <configuration combine.self="override">
-                    <!-- 
-                    Hot Restart related arguments:
-                        export java.base/jdk.internal.ref
-                        open java.base/java.nio
-                        open java.base/sun.nio.ch
-                    Operating system metrics related:
-                        open jdk.management/com.sun.management.internal
-
-                    Avoid warnings caused by reflection in
-                    FilteringClassLoader:
-                        open java.base/java.lang
-                    TimedMemberStateFactoryHelper:
-                        open java.management/sun.management
-                     -->
-                    <argLine>
-                        ${vmHeapSettings}
-                        ${extraVmArgs}
-                        -ea
-                        --add-exports java.base/jdk.internal.ref=com.hazelcast.core
-                        --add-opens java.base/java.nio=com.hazelcast.core
-                        --add-opens java.base/sun.nio.ch=com.hazelcast.core
-                        --add-opens java.base/java.lang=com.hazelcast.core
-                        --add-opens jdk.management/com.sun.management.internal=com.hazelcast.core
-                        --add-opens java.management/sun.management=com.hazelcast.core
-                        --illegal-access=warn
-                        -Dhazelcast.hidensity.check.freememory=false
-                        -Dhazelcast.phone.home.enabled=false
-                        -Dhazelcast.logging.type=log4j2
-                        -Dlog4j.skipJansi=true
-                    </argLine>
-                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -115,51 +90,8 @@
                         <version>${maven.surefire.plugin.version}</version>
                         <executions>
                             <execution>
-                                <id>singlejvm</id>
-                                <phase>test</phase>
-                                <goals>
-                                    <goal>test</goal>
-                                </goals>
-                                <configuration combine.self="override">
-                                    <properties>
-                                        <vmHeapSettings>-Xms128m -Xmx1G</vmHeapSettings>
-                                    </properties>
-                                    <!-- the argLine variable is needed for JaCoco -->
-                                    <argLine>
-                                        ${vmHeapSettings}
-                                        ${extraVmArgs}
-                                        ${javaModuleArgs}
-                                        -Dsun.nio.ch.bugLevel
-                                        -ea
-                                        --add-exports java.base/jdk.internal.ref=com.hazelcast.core
-                                        --add-opens java.base/java.nio=com.hazelcast.core
-                                        --add-opens java.base/sun.nio.ch=com.hazelcast.core
-                                        --add-opens java.base/java.lang=com.hazelcast.core
-                                        --add-opens jdk.management/com.sun.management.internal=com.hazelcast.core
-                                        --add-opens java.management/sun.management=com.hazelcast.core
-                                        -Dhazelcast.operation.thread.count=16
-                                        -Dhazelcast.hidensity.check.freememory=false
-                                        -Dhazelcast.phone.home.enabled=false
-                                        -Dhazelcast.logging.type=none
-                                        -Dhazelcast.test.use.network=false
-                                        -Dlog4j.skipJansi=true
-                                    </argLine>
-                                    <includes>
-                                        <include>**/**.java</include>
-                                    </includes>
-                                    <excludes>
-                                        <exclude>**/jsr/**.java</exclude>
-                                    </excludes>
-                                    <groups>
-                                        com.hazelcast.test.annotation.QuickTest,
-                                        com.hazelcast.test.modulepath.ModulePathTest
-                                    </groups>
-                                    <excludedGroups>
-                                        com.hazelcast.test.annotation.SlowTest,
-                                        com.hazelcast.test.annotation.NightlyTest,
-                                        com.hazelcast.test.annotation.ParallelJVMTest
-                                    </excludedGroups>
-                                </configuration>
+                                <id>default-test</id>
+                                <phase>none</phase>
                             </execution>
                         </executions>
                     </plugin>

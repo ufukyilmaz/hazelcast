@@ -11,10 +11,20 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.util.Collection;
+
+/**
+ * Tests for HD concurrent index with SQL.
+ */
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HDSqlIndexTest extends SqlIndexAbstractTest {
+    @Parameterized.Parameters(name = "indexType:{0}, composite:{1}, field1:{2}, field2:{3}")
+    public static Collection<Object[]> parameters() {
+        return parametersQuick();
+    }
+
     @Override
     protected Config getConfig() {
         return HDTestSupport.getHDIndexConfig();

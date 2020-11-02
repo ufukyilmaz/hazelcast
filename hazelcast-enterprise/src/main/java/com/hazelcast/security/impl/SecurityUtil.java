@@ -29,6 +29,7 @@ import com.hazelcast.security.permission.MultiMapPermission;
 import com.hazelcast.security.permission.PNCounterPermission;
 import com.hazelcast.security.permission.QueuePermission;
 import com.hazelcast.security.permission.ReliableTopicPermission;
+import com.hazelcast.security.permission.ReplicatedMapPermission;
 import com.hazelcast.security.permission.RingBufferPermission;
 import com.hazelcast.security.permission.ScheduledExecutorPermission;
 import com.hazelcast.security.permission.SemaphorePermission;
@@ -121,6 +122,8 @@ public final class SecurityUtil {
                 return new RingBufferPermission(permissionConfig.getName(), actions);
             case RELIABLE_TOPIC:
                 return new ReliableTopicPermission(permissionConfig.getName(), actions);
+            case REPLICATEDMAP:
+                return new ReplicatedMapPermission(permissionConfig.getName(), actions);
             default:
                 throw new IllegalArgumentException(permissionConfig.getType().toString());
         }

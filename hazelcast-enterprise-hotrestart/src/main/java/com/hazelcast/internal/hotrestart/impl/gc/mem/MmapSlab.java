@@ -1,11 +1,13 @@
 package com.hazelcast.internal.hotrestart.impl.gc.mem;
 
-import com.hazelcast.internal.nio.Disposable;
 import com.hazelcast.hotrestart.HotRestartException;
+import com.hazelcast.internal.nio.Disposable;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -34,6 +36,9 @@ import static com.hazelcast.internal.util.QuickMath.nextPowerOfTwo;
  */
 final class MmapSlab implements Disposable {
 
+    private static final MethodHandle MAP0;
+    private static final MethodHandle UNMAP0;
+    private static final boolean MAP0_HAS_SYNC_ARG;
     private static final int MAPMODE_RW = 1;
 
     private final int mmapPageSize;
@@ -47,6 +52,35 @@ final class MmapSlab implements Disposable {
     private int blockCount;
     private int usedBlockCount;
     private final File mappedFile;
+
+    static {
+        try {
+            boolean map0HasSyncArg = false;
+            Class<?> klass = Class.forName("sun.nio.ch.FileChannelImpl");
+            // no private lookup in JDK 8, so need to obtain ref to method
+            // reflectively and unreflect to MethodHandle
+            Method reflectedMap0;
+            try {
+                reflectedMap0 = klass.getDeclaredMethod("map0", int.class, long.class, long.class);
+            } catch (NoSuchMethodException e) {
+                // Since JDK 14 the method changed signature
+                reflectedMap0 = klass.getDeclaredMethod("map0", int.class, long.class, long.class, boolean.class);
+                map0HasSyncArg = true;
+            }
+            reflectedMap0.setAccessible(true);
+            MAP0 = MethodHandles.lookup().unreflect(reflectedMap0);
+
+            Method reflectedUnmap0;
+            reflectedUnmap0 = klass.getDeclaredMethod("unmap0", long.class, long.class);
+            reflectedUnmap0.setAccessible(true);
+            UNMAP0 = MethodHandles.lookup().unreflect(reflectedUnmap0);
+            MAP0_HAS_SYNC_ARG = map0HasSyncArg;
+        } catch (ClassNotFoundException cnfe) {
+            throw new HotRestartException("Reflection error accessing sun.nio.ch.FileChannelImpl", cnfe);
+        } catch (IllegalAccessException | NoSuchMethodException exc) {
+            throw new HotRestartException("Reflection error accessing sun.nio.ch.FileChannelImpl methods map0 / unmap0", exc);
+        }
+    }
 
     MmapSlab(File baseDir, long blockSize) {
         this.blockSize = blockSize;
@@ -139,22 +173,20 @@ final class MmapSlab implements Disposable {
         try {
             raf.setLength(newFileSize);
             final FileChannel chan = raf.getChannel();
-            final Method map0 = chan.getClass().getDeclaredMethod("map0", int.class, long.class, long.class);
-            map0.setAccessible(true);
             final long fileposOfNewBuffer = blockCount * blockSize;
             final long offsetOfBufIntoMmapPage = fileposOfNewBuffer % mmapPageSize;
             final long fileposOfMappedRegion = fileposOfNewBuffer - offsetOfBufIntoMmapPage;
             final long sizeOfMappedRegion = addedFileSize + offsetOfBufIntoMmapPage;
-            final long mmapBase = (Long) map0.invoke(chan, MAPMODE_RW, fileposOfMappedRegion, sizeOfMappedRegion);
+            final long mmapBase = map0(chan, fileposOfMappedRegion, sizeOfMappedRegion);
             final long bufBase = mmapBase + offsetOfBufIntoMmapPage;
             bufBases.add(bufBase);
             offsetsOfBufsFromMmmapBases.add((int) offsetOfBufIntoMmapPage);
             bufBase2BufIndex.put(bufBase, bufBases.size() - 1);
             blockCount += addedBlockCount;
-        } catch (Exception e) {
+        } catch (Throwable t) {
             throw new HotRestartException(String.format("mmap allocation failed."
                     + " addedFileSize %,d newFileSize %,d blockCount %,d blockSize %,d",
-                    addedFileSize, newFileSize, blockCount, blockSize), e);
+                    addedFileSize, newFileSize, blockCount, blockSize), t);
         }
     }
 
@@ -165,14 +197,13 @@ final class MmapSlab implements Disposable {
         }
         try {
             final FileChannel chan = raf.getChannel();
-            final Method unmap0 = chan.getClass().getDeclaredMethod("unmap0", long.class, long.class);
-            unmap0.setAccessible(true);
             long blockCount = 1L << initialBlockCountLog2;
             boolean atFirstBuffer = true;
             for (int i = 0; i < bufBases.size(); i++) {
                 final long bufBase = bufBases.get(i);
                 final int bufOffsetFromMmapBase = offsetsOfBufsFromMmmapBases.get(i);
-                unmap0.invoke(chan, bufBase - bufOffsetFromMmapBase, blockCount * blockSize + bufOffsetFromMmapBase);
+                int unused = (int) UNMAP0.invokeExact(bufBase - bufOffsetFromMmapBase,
+                        blockCount * blockSize + bufOffsetFromMmapBase);
                 if (atFirstBuffer) {
                     atFirstBuffer = false;
                 } else {
@@ -190,6 +221,8 @@ final class MmapSlab implements Disposable {
             throw new HotRestartException("Reflection error accessing unmap0", e);
         } catch (IOException e) {
             throw new HotRestartException("Failed to close RAF", e);
+        } catch (Throwable t) {
+            throw new HotRestartException("unmap0 threw exception", t);
         }
     }
 
@@ -200,6 +233,23 @@ final class MmapSlab implements Disposable {
             return (Long) granularity.get(null);
         } catch (Exception e) {
             throw new HotRestartException("Failed to retrieve mmap allocation granularity", e);
+        }
+    }
+
+    private static long map0(FileChannel chan, long fileposOfMappedRegion, long sizeOfMappedRegion) {
+        try {
+            if (MAP0_HAS_SYNC_ARG) {
+                // The file channel is mapped in "rw" mode therefore isSync argument must be false.
+                // isSync should be true for one of the ExtendedMapMode#*_SYNC map modes
+                // introduced in JDK 14 for non-volatile memory.
+                return (long) MAP0.invoke(chan,
+                        MAPMODE_RW, fileposOfMappedRegion, sizeOfMappedRegion, false);
+            } else {
+                return (long) MAP0.invoke(chan,
+                        MAPMODE_RW, fileposOfMappedRegion, sizeOfMappedRegion);
+            }
+        } catch (Throwable throwable) {
+            throw new HotRestartException("Invocation of map0 failed", throwable);
         }
     }
 }

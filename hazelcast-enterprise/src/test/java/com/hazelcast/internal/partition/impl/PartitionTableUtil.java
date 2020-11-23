@@ -1,7 +1,9 @@
 package com.hazelcast.internal.partition.impl;
 
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.internal.partition.PartitionReplica;
+import com.hazelcast.test.HazelcastTestSupport;
 
 import static com.hazelcast.test.Accessors.getNode;
 import static com.hazelcast.test.Accessors.getPartitionService;
@@ -25,5 +27,21 @@ public class PartitionTableUtil {
     private static PartitionStateManager getPartitionStateManager(HazelcastInstance instance) {
         InternalPartitionServiceImpl partitionService = (InternalPartitionServiceImpl) getPartitionService(instance);
         return partitionService.getPartitionStateManager();
+    }
+
+    public static int[] partitionVersions(HazelcastInstance instance) {
+        InternalPartitionService partitionService = getPartitionService(instance);
+        int partitionCount = partitionService.getPartitionCount();
+        int[] partitionVersions = new int[partitionCount];
+        for (int i = 0; i < partitionCount; i++) {
+            partitionVersions[i] = partitionService.getPartition(i).version();
+        }
+        return partitionVersions;
+    }
+
+    public static void assertPartitionVersionsGreaterOrEqual(int[] lowerBound, int[] actual) {
+        for (int i = 0; i < lowerBound.length; i++) {
+            HazelcastTestSupport.assertGreaterOrEquals("partition " + i + " version", actual[i], lowerBound[i]);
+        }
     }
 }

@@ -18,7 +18,7 @@ import org.junit.runner.RunWith;
 import static com.hazelcast.test.HazelcastTestSupport.smallInstanceConfig;
 import static org.junit.Assert.assertEquals;
 
-// Smoke test client compatibility when Hazelcast 3.12 is configured with multiple endpoints
+// Smoke test client compatibility when Hazelcast is configured with advanced network config
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(CompatibilityTest.class)
 public class AdvancedNetworkClientCompatibilityTest {
@@ -47,7 +47,7 @@ public class AdvancedNetworkClientCompatibilityTest {
 
     @Test
     public void testClientsCompatible_whenMultipleEndpointsConfigured() {
-        String[] clientVersions = new String[] {"3.11.2", "3.10.6", "3.9.4", "3.8.6", "3.7.8", "3.6.8"};
+        String[] clientVersions = new String[] {"4.0.3", "4.0.2", "4.0.1"};
         HazelcastInstance[] clients = new HazelcastInstance[clientVersions.length];
         for (int i = 0; i < clientVersions.length; i++) {
             clients[i] = factory.newHazelcastClient(clientVersions[i], getClientConfig());

@@ -12,6 +12,7 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.impl.HazelcastInstanceFactory;
 import com.hazelcast.internal.hotrestart.HotRestartFolderRule;
 import com.hazelcast.internal.partition.PartitionTableView;
+import com.hazelcast.internal.partition.impl.PartitionTableUtil;
 import com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.CompatibilityTest;
@@ -30,9 +31,8 @@ import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.chang
 import static com.hazelcast.test.Accessors.getPartitionService;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.CURRENT_VERSION;
 import static com.hazelcast.test.CompatibilityTestHazelcastInstanceFactory.getKnownPreviousVersionsCount;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(CompatibilityTest.class)
@@ -67,7 +67,7 @@ public class HotRestartCompatibilityTest extends HazelcastTestSupport {
 
         // initialize partition table
         warmUpPartitions(instances);
-        int initialPartitionStateVersion = getPartitionService(instances[0]).getPartitionStateVersion();
+        int[] initialPartitionVersions = PartitionTableUtil.partitionVersions(instances[0]);
 
         // shutdown cluster with previous cluster version
         instances[0].getCluster().shutdown();
@@ -83,13 +83,13 @@ public class HotRestartCompatibilityTest extends HazelcastTestSupport {
         assertClusterSizeEventually(instances.length, instances);
 
         // check partition tables
-        int partitionStateVersionNew0 = getPartitionService(instances[0]).getPartitionStateVersion();
+        int[] partitionVersionsNew0 = PartitionTableUtil.partitionVersions(instances[0]);
         for (HazelcastInstance instance : instances) {
-            int partitionStateVersionNew = getPartitionService(instance).getPartitionStateVersion();
-            assertEquals(partitionStateVersionNew0, partitionStateVersionNew);
-            assertThat(partitionStateVersionNew, greaterThanOrEqualTo(initialPartitionStateVersion));
+            int[] partitionVersionsNew = PartitionTableUtil.partitionVersions(instance);
+            assertArrayEquals(partitionVersionsNew0, partitionVersionsNew);
+            PartitionTableUtil.assertPartitionVersionsGreaterOrEqual(initialPartitionVersions, partitionVersionsNew);
         }
-        initialPartitionStateVersion = partitionStateVersionNew0;
+        initialPartitionVersions = partitionVersionsNew0;
 
         // shutdown cluster with the previous cluster version
         instances[0].getCluster().shutdown();
@@ -106,11 +106,11 @@ public class HotRestartCompatibilityTest extends HazelcastTestSupport {
         assertClusterSizeEventually(instances.length, instances);
 
         // check partition tables
-        partitionStateVersionNew0 = getPartitionService(instances[0]).getPartitionStateVersion();
+        partitionVersionsNew0 = PartitionTableUtil.partitionVersions(instances[0]);
         for (HazelcastInstance instance : instances) {
-            int partitionStateVersionNew = getPartitionService(instance).getPartitionStateVersion();
-            assertEquals(partitionStateVersionNew0, partitionStateVersionNew);
-            assertThat(partitionStateVersionNew, greaterThanOrEqualTo(initialPartitionStateVersion));
+            int[] partitionStateVersionNew = PartitionTableUtil.partitionVersions(instance);
+            assertArrayEquals(partitionVersionsNew0, partitionStateVersionNew);
+            PartitionTableUtil.assertPartitionVersionsGreaterOrEqual(initialPartitionVersions, partitionStateVersionNew);
         }
     }
 
@@ -127,7 +127,7 @@ public class HotRestartCompatibilityTest extends HazelcastTestSupport {
 
         // initialize partition table
         warmUpPartitions(instances);
-        int initialPartitionStateVersion = getPartitionService(instances[0]).getPartitionStateVersion();
+        int[] initialPartitionVersions = PartitionTableUtil.partitionVersions(instances[0]);
 
         // shutdown cluster with previous cluster version
         instances[0].getCluster().shutdown();
@@ -146,7 +146,8 @@ public class HotRestartCompatibilityTest extends HazelcastTestSupport {
         PartitionTableView partitionTableView0 = getPartitionService(instances[0]).createPartitionTableView();
         for (HazelcastInstance instance : instances) {
             PartitionTableView partitionTableView = getPartitionService(instance).createPartitionTableView();
-            assertThat(partitionTableView.version(), greaterThanOrEqualTo(initialPartitionStateVersion));
+            int[] partitionVersions = PartitionTableUtil.partitionVersions(instance);
+            PartitionTableUtil.assertPartitionVersionsGreaterOrEqual(initialPartitionVersions, partitionVersions);
             assertEquals(partitionTableView0, partitionTableView);
         }
 
@@ -231,4 +232,5 @@ public class HotRestartCompatibilityTest extends HazelcastTestSupport {
 
         return config;
     }
+
 }

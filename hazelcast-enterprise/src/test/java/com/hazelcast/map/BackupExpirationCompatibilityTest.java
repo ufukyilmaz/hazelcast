@@ -72,8 +72,6 @@ public class BackupExpirationCompatibilityTest extends HazelcastTestSupport {
             map.put(i, i);
         }
 
-        assertEquals(ENTRY_COUNT * REPLICA_COUNT, totalEntryCountOnNodes(instances));
-
         try {
             assertTrueEventually(new AssertTask() {
                 @Override

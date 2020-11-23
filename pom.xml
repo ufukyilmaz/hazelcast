@@ -674,6 +674,16 @@
             <build>
                 <plugins>
                     <plugin>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>properties</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <version>${maven.surefire.plugin.version}</version>
@@ -690,6 +700,7 @@
                                 -Dhazelcast.logging.type=log4j2
                                 -Dhazelcast.test.compatibility=true
                                 -Dlog4j.skipJansi=true
+                                -javaagent:${com.hazelcast:hazelcast-build-utils:jar}
                             </argLine>
                             <includes>
                                 <include>**/**.java</include>
@@ -769,6 +780,13 @@
             <version>${project.version}</version>
             <scope>test</scope>
             <classifier>tests</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast-build-utils</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>

@@ -17,6 +17,7 @@ import org.junit.runner.RunWith;
 
 import java.util.Iterator;
 
+import static com.hazelcast.test.HazelcastTestSupport.assertEqualsEventually;
 import static com.hazelcast.test.HazelcastTestSupport.assertEqualsStringFormat;
 import static com.hazelcast.test.HazelcastTestSupport.ignore;
 import static java.lang.String.format;
@@ -162,7 +163,6 @@ public class CompatibilityTestHazelcastInstanceFactoryTest {
     }
 
     private static void assertSafePartitionServiceState(HazelcastInstance realInstance) {
-        PartitionServiceState partitionServiceState = TestPartitionUtils.getPartitionServiceState(realInstance);
-        assertEquals(PartitionServiceState.SAFE, partitionServiceState);
+        assertEqualsEventually(() -> TestPartitionUtils.getPartitionServiceState(realInstance), PartitionServiceState.SAFE);
     }
 }

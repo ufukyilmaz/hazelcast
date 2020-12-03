@@ -421,23 +421,6 @@
 
         <profile>
             <id>test-coverage</id>
-            <properties>
-                <vmHeapSettings>-Xms1g -Xmx3g</vmHeapSettings>
-                <argLine>
-                    ${vmHeapSettings}
-                    ${extraVmArgs}
-                    ${javaModuleArgs}
-                    -Dsun.nio.ch.bugLevel
-                    -ea
-                    -Dhazelcast.hidensity.check.freememory=false
-                    -Dhazelcast.phone.home.enabled=false
-                    -Dhazelcast.logging.type=none
-                    -Dhazelcast.test.use.network=false
-                    -Dhazelcast.operation.call.timeout.millis=120000
-                    -Dhazelcast.graceful.shutdown.max.wait=240
-                    -Dlog4j.skipJansi=true
-                </argLine>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -482,6 +465,21 @@
                                         com.hazelcast.test.annotation.NightlyTest,
                                         com.hazelcast.test.annotation.CompatibilityTest
                                     </excludedGroups>
+                                    <argLine>
+                                        @{argLine}
+                                        -Xms1g -Xmx3g
+                                        ${extraVmArgs}
+                                        ${javaModuleArgs}
+                                        -Dsun.nio.ch.bugLevel
+                                        -ea
+                                        -Dhazelcast.hidensity.check.freememory=false
+                                        -Dhazelcast.phone.home.enabled=false
+                                        -Dhazelcast.logging.type=none
+                                        -Dhazelcast.test.use.network=false
+                                        -Dhazelcast.operation.call.timeout.millis=120000
+                                        -Dhazelcast.graceful.shutdown.max.wait=240
+                                        -Dlog4j.skipJansi=true
+                                    </argLine>
                                 </configuration>
                             </execution>
                         </executions>

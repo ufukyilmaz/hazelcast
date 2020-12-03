@@ -29,7 +29,7 @@ public class HDGlobalIndexImpl extends AbstractIndex {
             int partitionCount
     ) {
         // HD index does not use do any result set copying, thus we may pass NEVER here
-        super(config, ss, extractors, IndexCopyBehavior.NEVER, stats, null);
+        super(config, ss, extractors, IndexCopyBehavior.NEVER, stats);
 
         partitionTracker = new GlobalIndexPartitionTracker(partitionCount);
     }

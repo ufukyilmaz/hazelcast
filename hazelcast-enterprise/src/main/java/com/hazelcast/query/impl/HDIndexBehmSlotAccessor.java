@@ -2,11 +2,8 @@ package com.hazelcast.query.impl;
 
 import com.hazelcast.internal.elastic.map.BehmSlotAccessor;
 import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.internal.memory.MemoryBlock;
-
-import static com.hazelcast.query.impl.HDIndexBehmMemoryBlockAccessor.HD_RECORD_BIT_MASK;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 /**
  * Extends {@link BehmSlotAccessor} to support slots pointing to either the record or value.
@@ -29,8 +26,6 @@ final class HDIndexBehmSlotAccessor extends BehmSlotAccessor<MemoryBlock> {
             value = 0L;
         } else if (v instanceof NativeMemoryData) {
             value = v.address();
-        } else if (v instanceof HDRecord) {
-            value = v.address() | HD_RECORD_BIT_MASK;
         } else {
             throw new IllegalStateException("Unknown value given");
         }

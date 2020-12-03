@@ -18,7 +18,7 @@ import static com.hazelcast.internal.serialization.DataType.HEAP;
  *
  * Contract:
  * - Expects the key to be in the NativeMemoryData,
- * - Expects the value to be in either NativeMemoryData or HDRecord,
+ * - Expects the value to be in either NativeMemoryData,
  * - Returns NativeMemoryData,
  * - Never disposes any NativeMemoryData passed to it,
  * - Uses MapEntryFactory to create MapEntry instances in methods that return them.
@@ -30,10 +30,11 @@ class HDIndexNestedTreeMap<T extends QueryableEntry> {
     private final HDIndexBinaryElasticNestedTreeMap<T> recordMap;
     private final EnterpriseSerializationService ess;
 
-    HDIndexNestedTreeMap(HDExpirableIndexStore indexStore, EnterpriseSerializationService ess, MemoryAllocator malloc,
+    HDIndexNestedTreeMap(EnterpriseSerializationService ess,
+                         MemoryAllocator malloc,
                          MapEntryFactory<T> entryFactory) {
         this.ess = ess;
-        this.recordMap = new HDIndexBinaryElasticNestedTreeMap<T>(indexStore, ess, malloc,
+        this.recordMap = new HDIndexBinaryElasticNestedTreeMap<T>(ess, malloc,
                 new ComparableComparator(ess), entryFactory
         );
     }

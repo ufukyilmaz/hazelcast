@@ -6,10 +6,9 @@ import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.memory.MemoryBlockAccessor;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.map.impl.record.HDRecordAccessor;
-import com.hazelcast.internal.serialization.Data;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -23,9 +22,9 @@ import static com.hazelcast.internal.util.Preconditions.checkNotNull;
  *
  * Contract:
  * - Expects the key to be in the NativeMemoryData,
- * - Expects the value to be in either NativeMemoryData or HDRecord,
- * - Returns NativeMemoryData or HDRecord,
- * - Never disposes any NativeMemoryData/HDRecord passed to it,
+ * - Expects the value to be in the NativeMemoryData,
+ * - Returns NativeMemoryData,
+ * - Never disposes any NativeMemoryData passed to it,
  * - Uses MapEntryFactory to create MapEntry instances in methods that return them.
  *
  * @param <T> type of the QueryableEntry entry passed to the map
@@ -33,25 +32,21 @@ import static com.hazelcast.internal.util.Preconditions.checkNotNull;
 class HDIndexHashMap<T extends QueryableEntry> {
 
     private final MapEntryFactory<T> entryFactory;
-    private final HDExpirableIndexStore indexStore;
     private final EnterpriseSerializationService ess;
     private final MemoryAllocator malloc;
 
     private BinaryElasticHashMap<MemoryBlock> records;
 
-    HDIndexHashMap(HDExpirableIndexStore indexStore,
-                   EnterpriseSerializationService ess,
+    HDIndexHashMap(EnterpriseSerializationService ess,
                    MemoryAllocator malloc,
                    MapEntryFactory<T> entryFactory) {
-        this.indexStore = indexStore;
         this.ess = ess;
         this.malloc = malloc;
 
         MemoryBlockAccessor valueAccessor = new NativeMemoryDataAccessor(ess);
-        MemoryBlockAccessor recordAccessor = new HDRecordAccessor(ess);
         this.records = new BinaryElasticHashMap<>(ess,
                 new HDIndexBehmSlotAccessorFactory(),
-                new HDIndexBehmMemoryBlockAccessor(valueAccessor, recordAccessor), malloc);
+                new HDIndexBehmMemoryBlockAccessor(valueAccessor), malloc);
 
         this.entryFactory = entryFactory;
     }
@@ -61,7 +56,7 @@ class HDIndexHashMap<T extends QueryableEntry> {
      *
      * @param keyData   must be NativeMemoryData
      * @param valueData must be NativeMemoryData
-     * @return old value as NativeMemoryData/HDRecord or null
+     * @return old value as NativeMemoryData or null
      */
     public MemoryBlock put(NativeMemoryData keyData, MemoryBlock valueData) {
         checkNotNull(keyData, "record can't be null");
@@ -75,7 +70,7 @@ class HDIndexHashMap<T extends QueryableEntry> {
      * Remove operation
      *
      * @param key can be any Data implementation (on-heap or off-heap)
-     * @return old value as NativeMemoryData/HDRecord or null
+     * @return old value as NativeMemoryData or null
      */
     public MemoryBlock remove(Data key) {
         checkNotNull(key, "key can't be null");
@@ -93,15 +88,8 @@ class HDIndexHashMap<T extends QueryableEntry> {
         for (Map.Entry<Data, MemoryBlock> entry : records.entrySet()) {
             Data key = entry.getKey();
             MemoryBlock memoryBlock = entry.getValue();
-            NativeMemoryData valueData;
-            if (memoryBlock instanceof NativeMemoryData || memoryBlock == null) {
-                valueData = (NativeMemoryData) memoryBlock;
-            } else {
-                valueData = indexStore.getValueOrNullIfExpired(key, memoryBlock);
-            }
-            if (memoryBlock == null || valueData != null) {
-                result.add(entryFactory.create(entry.getKey(), valueData));
-            }
+            result.add(entryFactory.create(entry.getKey(),
+                    ((NativeMemoryData) memoryBlock)));
         }
         return result;
     }
@@ -112,9 +100,8 @@ class HDIndexHashMap<T extends QueryableEntry> {
     public void clear() {
         records.dispose();
         MemoryBlockAccessor valueAccessor = new NativeMemoryDataAccessor(ess);
-        MemoryBlockAccessor recordAccessor = new HDRecordAccessor(ess);
-        records = new BinaryElasticHashMap<MemoryBlock>(ess, new HDIndexBehmSlotAccessorFactory(),
-                new HDIndexBehmMemoryBlockAccessor(valueAccessor, recordAccessor), malloc);
+        records = new BinaryElasticHashMap<>(ess, new HDIndexBehmSlotAccessorFactory(),
+                new HDIndexBehmMemoryBlockAccessor(valueAccessor), malloc);
     }
 
     /**

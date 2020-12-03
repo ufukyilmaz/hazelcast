@@ -8,7 +8,6 @@ import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.util.collection.PartitionIdSet;
-import com.hazelcast.map.impl.StoreAdapter;
 import com.hazelcast.query.impl.getters.Extractors;
 
 import static com.hazelcast.internal.serialization.DataType.HEAP;
@@ -26,11 +25,9 @@ public class HDIndexImpl extends AbstractIndex {
             IndexConfig config,
             EnterpriseSerializationService ss,
             Extractors extractors,
-            PerIndexStats stats,
-            StoreAdapter partitionStoreAdapter
-    ) {
+            PerIndexStats stats) {
         // HD index does not use do any result set copying, thus we may pass NEVER here
-        super(config, ss, extractors, IndexCopyBehavior.NEVER, stats, partitionStoreAdapter);
+        super(config, ss, extractors, IndexCopyBehavior.NEVER, stats);
     }
 
     @Override
@@ -41,9 +38,9 @@ public class HDIndexImpl extends AbstractIndex {
 
         switch (config.getType()) {
             case SORTED:
-                return new HDOrderedIndexStore(ess, malloc, entryFactory, getPartitionStoreAdapter());
+                return new HDOrderedIndexStore(ess, malloc, entryFactory);
             case HASH:
-                return new HDUnorderedIndexStore(ess, malloc, entryFactory, getPartitionStoreAdapter());
+                return new HDUnorderedIndexStore(ess, malloc, entryFactory);
             case BITMAP:
                 throw new IllegalArgumentException("Bitmap indexes are not supported by NATIVE storage");
             default:

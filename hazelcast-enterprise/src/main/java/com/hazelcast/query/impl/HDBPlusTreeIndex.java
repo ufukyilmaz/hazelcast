@@ -18,7 +18,7 @@ import java.util.Iterator;
  * <p>
  * Contract:
  * - Expects the entry key to be in the NativeMemoryData,
- * - Expects the value to be in either NativeMemoryData or HDRecord,
+ * - Expects the value to be in the NativeMemoryData,
  * - Returns NativeMemoryData,
  * - Never disposes any NativeMemoryData passed to it,
  * - Uses entryFactory to create on-heap QueryableEntry instances in methods that return them.

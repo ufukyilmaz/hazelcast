@@ -14,6 +14,7 @@ import java.util.Set;
 
 import static com.hazelcast.query.impl.HDUnorderedIndexStore.canonicalize;
 import static com.hazelcast.query.impl.HDUnorderedIndexStore.canonicalizeScalarForStorage0;
+
 /**
  * Unordered and concurrent index store for HD memory based on B+tree.
  * <p>
@@ -25,13 +26,14 @@ import static com.hazelcast.query.impl.HDUnorderedIndexStore.canonicalizeScalarF
  * <p>
  * Contract:
  * - Whenever QueryableEntry is passed to it, expects the key to be NativeMemoryData and the value
- * to be in either NativeMemoryData or HDRecord
+ * to be in either NativeMemoryData
  * - Whenever Data is passed to it (removeInternal), expects it to be NativeMemoryData
  * - Iterator never returns any native memory - all returning objects are on-heap (QueryableEntry and its fields).
  * - The index operations are thread-safe and can be accessed from multiple threads concurrently
  */
 public class HDUnorderedConcurrentIndexStore extends HDBaseConcurrentIndexStore {
     private final EnterpriseSerializationService ess;
+
     HDUnorderedConcurrentIndexStore(IndexCopyBehavior copyBehavior,
                                     EnterpriseSerializationService ess,
                                     MemoryAllocator keyAllocator,
@@ -39,53 +41,61 @@ public class HDUnorderedConcurrentIndexStore extends HDBaseConcurrentIndexStore 
                                     MapEntryFactory<QueryableEntry> entryFactory,
                                     int nodeSize) {
         super(copyBehavior,
-            ess,
-            keyAllocator,
-            indexAllocator,
-            new HashIndexBPlusTreeKeyComparator(ess),
-            entryFactory,
-            nodeSize,
-            new HashIndexEntrySlotPayload());
+                ess,
+                keyAllocator,
+                indexAllocator,
+                new HashIndexBPlusTreeKeyComparator(ess),
+                entryFactory,
+                nodeSize,
+                new HashIndexEntrySlotPayload());
         this.ess = ess;
     }
+
     @Override
     public Set<QueryableEntry> getRecords(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive) {
         Iterator<QueryableEntry> it = getSqlRecordIterator(canonicalize(from), fromInclusive, canonicalize(to), toInclusive);
         return buildResultSet(it);
     }
+
     @Override
     public Set<QueryableEntry> getRecords(Comparison comparison, Comparable value) {
         Iterator<QueryableEntry> it = getSqlRecordIterator(comparison, canonicalize(value));
         return buildResultSet(it);
     }
+
     @Override
     public Set<QueryableEntry> getRecords(Comparable value) {
         return super.getRecords(canonicalize(value));
     }
+
     @Override
     public Comparable canonicalizeScalarForStorage(Comparable value) {
         return canonicalizeScalarForStorage0(value);
     }
+
     @Override
     public Comparable canonicalizeQueryArgumentScalar(Comparable value) {
         // Using a storage representation for arguments here to save on
         // conversions later.
         return canonicalizeScalarForStorage(value);
     }
+
     @Override
     public Iterator<QueryableEntry> getSqlRecordIterator(Comparable value) {
         return super.getSqlRecordIterator(canonicalize(value));
     }
+
     @Override
     public Iterator<QueryableEntry> getSqlRecordIterator(Comparison comparison, Comparable value) {
         return new ValueComparisonIterator(comparison, canonicalize(value));
     }
+
     @Override
     public Iterator<QueryableEntry> getSqlRecordIterator(
-        Comparable from,
-        boolean fromInclusive,
-        Comparable to,
-        boolean toInclusive
+            Comparable from,
+            boolean fromInclusive,
+            Comparable to,
+            boolean toInclusive
     ) {
         if (Comparables.compare(from, to) == 0) {
             if (!fromInclusive || !toInclusive) {
@@ -95,6 +105,7 @@ public class HDUnorderedConcurrentIndexStore extends HDBaseConcurrentIndexStore 
         }
         return new KeyRangeIterator(canonicalize(from), fromInclusive, canonicalize(to), toInclusive);
     }
+
     private class KeyRangeIterator implements Iterator<QueryableEntry> {
         private final Comparable from;
         private final Comparable to;
@@ -102,6 +113,7 @@ public class HDUnorderedConcurrentIndexStore extends HDBaseConcurrentIndexStore 
         private final int toBound;
         private final Iterator<Data> keys;
         private Iterator<QueryableEntry> currentIterator;
+
         KeyRangeIterator(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive) {
             this.from = from;
             this.to = to;
@@ -109,6 +121,7 @@ public class HDUnorderedConcurrentIndexStore extends HDBaseConcurrentIndexStore 
             toBound = toInclusive ? 0 : -1;
             keys = records.getKeys();
         }
+
         @Override
         public boolean hasNext() {
             outer:
@@ -132,6 +145,7 @@ public class HDUnorderedConcurrentIndexStore extends HDBaseConcurrentIndexStore 
                 }
             }
         }
+
         @Override
         public QueryableEntry next() {
             if (!hasNext()) {
@@ -140,16 +154,19 @@ public class HDUnorderedConcurrentIndexStore extends HDBaseConcurrentIndexStore 
             return currentIterator.next();
         }
     }
+
     private class ValueComparisonIterator implements Iterator<QueryableEntry> {
         private final Comparison comparison;
         private final Comparable value;
         private final Iterator<Data> keys;
         private Iterator<QueryableEntry> currentIterator;
+
         ValueComparisonIterator(Comparison comparison, Comparable value) {
             this.comparison = comparison;
             this.value = value;
             keys = records.getKeys();
         }
+
         @Override
         public boolean hasNext() {
             outer:
@@ -191,6 +208,7 @@ public class HDUnorderedConcurrentIndexStore extends HDBaseConcurrentIndexStore 
                 }
             }
         }
+
         @Override
         public QueryableEntry next() {
             if (!hasNext()) {

@@ -12,7 +12,6 @@ import com.hazelcast.internal.memory.MemoryBlockAccessor;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.map.impl.record.HDRecordAccessor;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 
 import java.util.ArrayDeque;
@@ -54,18 +53,15 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
             = ThreadLocal.withInitial(() -> new ArrayDeque(3));
 
     private final MemoryAllocator malloc;
-    private final HDExpirableIndexStore indexStore;
     private final MapEntryFactory<T> mapEntryFactory;
     private final EnterpriseSerializationService ess;
     private final MemoryBlockAccessor behmMemoryBlockAccessor;
     private final BinaryElasticHashMap<NativeMemoryData> records;
     private final BehmSlotAccessorFactory behmSlotAccessorFactory;
 
-    HDIndexNestedHashMap(HDExpirableIndexStore indexStore,
-                         EnterpriseSerializationService ess,
+    HDIndexNestedHashMap(EnterpriseSerializationService ess,
                          MemoryAllocator malloc,
                          MapEntryFactory<T> mapEntryFactory) {
-        this.indexStore = indexStore;
         this.records = new BinaryElasticHashMap<>(ess, new NativeBehmSlotAccessorFactory(),
                 new NativeMemoryDataAccessor(ess), malloc);
         this.ess = ess;
@@ -73,8 +69,7 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
         this.mapEntryFactory = mapEntryFactory;
         this.behmSlotAccessorFactory = new HDIndexBehmSlotAccessorFactory();
         MemoryBlockAccessor valueAccessor = new NativeMemoryDataAccessor(ess);
-        MemoryBlockAccessor recordAccessor = new HDRecordAccessor(ess);
-        this.behmMemoryBlockAccessor = new HDIndexBehmMemoryBlockAccessor(valueAccessor, recordAccessor);
+        this.behmMemoryBlockAccessor = new HDIndexBehmMemoryBlockAccessor(valueAccessor);
     }
 
     public MemoryBlock put(Comparable segment, NativeMemoryData keyData, MemoryBlock value) {
@@ -148,21 +143,12 @@ class HDIndexNestedHashMap<T extends QueryableEntry> {
         }
 
         Set<T> result = new HashSet<T>();
-        BinaryElasticHashMap<MemoryBlock> map = loadFromOffHeapHeader(ess, malloc, mapHeader.address(), behmSlotAccessorFactory,
+        BinaryElasticHashMap<MemoryBlock> map = loadFromOffHeapHeader(ess, malloc,
+                mapHeader.address(), behmSlotAccessorFactory,
                 behmMemoryBlockAccessor);
         for (Map.Entry<Data, MemoryBlock> entry : map.entrySet()) {
-            Data key = entry.getKey();
-            MemoryBlock memoryBlock = entry.getValue();
-            NativeMemoryData valueData;
-            if (memoryBlock instanceof NativeMemoryData || memoryBlock == null) {
-                valueData = (NativeMemoryData) memoryBlock;
-            } else {
-                valueData = indexStore.getValueOrNullIfExpired(key, memoryBlock);
-            }
-
-            if (memoryBlock == null || valueData != null) {
-                result.add(mapEntryFactory.create(entry.getKey(), valueData));
-            }
+            result.add(mapEntryFactory.create(entry.getKey(),
+                    ((NativeMemoryData) entry.getValue())));
         }
         return result;
     }

@@ -2,15 +2,15 @@ package com.hazelcast.query.impl;
 
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.internal.elastic.tree.MapEntryFactory;
-import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
-import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.memory.StandardMemoryManager;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.query.impl.getters.Extractors;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
@@ -41,7 +41,7 @@ public class HDIndexHashMapTest {
         this.malloc = new StandardMemoryManager(new MemorySize(200, MemoryUnit.MEGABYTES));
         this.ess = getSerializationService();
         this.factory = new CachedQueryEntryFactory(ess);
-        this.map = new HDIndexHashMap<QueryableEntry>(null, ess, malloc, factory);
+        this.map = new HDIndexHashMap<>(ess, malloc, factory);
     }
 
     private NativeMemoryConfig getMemoryConfig() {

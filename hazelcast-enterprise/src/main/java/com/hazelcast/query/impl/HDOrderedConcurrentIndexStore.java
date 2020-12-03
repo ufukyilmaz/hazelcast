@@ -13,7 +13,7 @@ import java.util.Set;
  * <p>
  * Contract:
  * - Whenever QueryableEntry is passed to it, expects the key to be NativeMemoryData and the value
- * to be in either NativeMemoryData or HDRecord
+ * to be in either NativeMemoryData
  * - Whenever Data is passed to it (removeInternal), expects it to be NativeMemoryData
  * - Iterator never returns any native memory - all returning objects are on-heap (QueryableEntry and its fields).
  * - The index operations are thread-safe and can be accessed from multiple threads concurrently

@@ -7,7 +7,6 @@ import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.map.impl.StoreAdapter;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.query.Predicate;
 
@@ -29,7 +28,7 @@ import static com.hazelcast.query.impl.AbstractIndex.NULL;
  * - There is no read & write locking since it's accessed from a single partition-thread only
  */
 @SuppressWarnings("rawtypes")
-class HDUnorderedIndexStore extends HDExpirableIndexStore {
+class HDUnorderedIndexStore extends BaseSingleValueIndexStore {
 
     private final EnterpriseSerializationService ess;
     private final HDIndexHashMap<QueryableEntry> recordsWithNullValue;
@@ -37,15 +36,14 @@ class HDUnorderedIndexStore extends HDExpirableIndexStore {
 
     HDUnorderedIndexStore(EnterpriseSerializationService ess,
                           MemoryAllocator malloc,
-                          MapEntryFactory<QueryableEntry> entryFactory,
-                          StoreAdapter partitionStoreAdapter) {
+                          MapEntryFactory<QueryableEntry> entryFactory) {
         // HD index does not use do any result set copying, thus we may pass NEVER here
-        super(IndexCopyBehavior.NEVER, partitionStoreAdapter);
+        super(IndexCopyBehavior.NEVER, false);
         assertRunningOnPartitionThread();
         this.ess = ess;
-        this.recordsWithNullValue = new HDIndexHashMap<>(this, ess, malloc, entryFactory);
+        this.recordsWithNullValue = new HDIndexHashMap<>(ess, malloc, entryFactory);
         try {
-            this.records = new HDIndexNestedHashMap<>(this, ess, malloc, entryFactory);
+            this.records = new HDIndexNestedHashMap<>(ess, malloc, entryFactory);
         } catch (NativeOutOfMemoryError e) {
             recordsWithNullValue.dispose();
             throw e;
@@ -57,9 +55,8 @@ class HDUnorderedIndexStore extends HDExpirableIndexStore {
         assertRunningOnPartitionThread();
         if (newValue == NULL) {
             NativeMemoryData key = (NativeMemoryData) entry.getKeyData();
-            MemoryBlock value = getValueToStore(entry);
-            MemoryBlock oldValue = recordsWithNullValue.put(key, value);
-            return getValueData(oldValue);
+            MemoryBlock value = (NativeMemoryData) entry.getValueData();
+            return recordsWithNullValue.put(key, value);
         } else {
             return mapAttributeToEntry(newValue, entry);
         }
@@ -136,10 +133,10 @@ class HDUnorderedIndexStore extends HDExpirableIndexStore {
 
     @Override
     public Iterator<QueryableEntry> getSqlRecordIterator(
-        Comparable from,
-        boolean fromInclusive,
-        Comparable to,
-        boolean toInclusive
+            Comparable from,
+            boolean fromInclusive,
+            Comparable to,
+            boolean toInclusive
     ) {
         throw new UnsupportedOperationException();
     }
@@ -224,14 +221,12 @@ class HDUnorderedIndexStore extends HDExpirableIndexStore {
 
     private Object mapAttributeToEntry(Comparable attribute, QueryableEntry entry) {
         NativeMemoryData key = (NativeMemoryData) entry.getKeyData();
-        MemoryBlock value = getValueToStore(entry);
-        MemoryBlock oldValue = records.put(attribute, key, value);
-        return getValueData(oldValue);
+        MemoryBlock value = ((NativeMemoryData) entry.getValueData());
+        return records.put(attribute, key, value);
     }
 
     private Object removeMappingForAttribute(Comparable attribute, Data indexKey) {
-        MemoryBlock oldValue = records.remove(attribute, (NativeMemoryData) indexKey);
-        return getValueData(oldValue);
+        return records.remove(attribute, (NativeMemoryData) indexKey);
     }
 
     private void dispose() {

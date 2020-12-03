@@ -6,10 +6,9 @@ import com.hazelcast.internal.elastic.tree.MapEntryFactory;
 import com.hazelcast.internal.elastic.tree.OffHeapComparator;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.MemoryBlock;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.map.impl.record.HDRecordAccessor;
-import com.hazelcast.internal.serialization.Data;
 
 import java.util.Map;
 import java.util.Set;
@@ -22,30 +21,17 @@ import java.util.Set;
 public final class HDIndexBinaryElasticNestedTreeMap<T extends Map.Entry>
         extends BinaryElasticNestedTreeMap<T, MemoryBlock> {
 
-    private final HDExpirableIndexStore indexStore;
-
-    public HDIndexBinaryElasticNestedTreeMap(HDExpirableIndexStore indexStore, EnterpriseSerializationService ess,
+    public HDIndexBinaryElasticNestedTreeMap(EnterpriseSerializationService ess,
                                              MemoryAllocator malloc, OffHeapComparator keyComparator,
                                              MapEntryFactory mapEntryFactory) {
         super(ess, malloc, keyComparator, mapEntryFactory, new HDIndexBehmSlotAccessorFactory(),
-                new HDIndexBehmMemoryBlockAccessor(new NativeMemoryDataAccessor(ess), new HDRecordAccessor(ess)));
-        this.indexStore = indexStore;
+                new HDIndexBehmMemoryBlockAccessor(new NativeMemoryDataAccessor(ess)));
     }
 
     @Override
     protected void addEntries(Set<T> result, Set<Map.Entry<Data, MemoryBlock>> entrySet) {
         for (Map.Entry<Data, MemoryBlock> entry : entrySet) {
-            Data key = entry.getKey();
-            MemoryBlock memoryBlock = entry.getValue();
-            NativeMemoryData valueData;
-            if (memoryBlock instanceof NativeMemoryData || memoryBlock == null) {
-                valueData = (NativeMemoryData) memoryBlock;
-            } else {
-                valueData = indexStore.getValueOrNullIfExpired(key, memoryBlock);
-            }
-            if (memoryBlock == null || valueData != null) {
-                result.add(mapEntryFactory.create(entry.getKey(), valueData));
-            }
+            result.add(mapEntryFactory.create(entry.getKey(), ((NativeMemoryData) entry.getValue())));
         }
     }
 }

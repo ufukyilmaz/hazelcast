@@ -85,6 +85,11 @@ public class HDMapExpirationIteratorTest extends HazelcastTestSupport {
             return new InternalLogger(logger);
         }
 
+        @Override
+        public void removeLogger(String name) {
+            log4j2Factory.removeLogger(name);
+        }
+
         private class InternalLogger extends AbstractLogger {
             private ILogger delegate;
 

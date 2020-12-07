@@ -3,8 +3,8 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanBatchPublisherConfig;
-import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanQueueFullBehavior;
+import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
@@ -16,7 +16,6 @@ import com.hazelcast.spi.merge.PassThroughMergePolicy;
 import com.hazelcast.test.Accessors;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.wan.WanQueueFullException;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -149,7 +148,7 @@ public class WanBatchPublisherMapQuickTest extends WanMapTestSupport {
             assertEquals(0, localWanPublisherStats.getOutboundQueueSize());
             assertEquals(0, localWanPublisherStats.getTotalPublishedEventCount());
             assertEquals(0, localWanPublisherStats.getTotalPublishLatency());
-            assertEquals(WanPublisherState.STOPPED, localWanPublisherStats.getPublisherState());
+            assertEquals(WanBatchPublisherConfig.DEFAULT_INITIAL_PUBLISHER_STATE, localWanPublisherStats.getPublisherState());
         }
     }
 

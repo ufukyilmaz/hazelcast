@@ -51,7 +51,6 @@ import com.hazelcast.wan.WanEvent;
 import com.hazelcast.wan.WanEventCounters;
 import com.hazelcast.wan.WanEventCounters.DistributedObjectWanEventCounters;
 import com.hazelcast.wan.WanPublisher;
-import com.hazelcast.wan.WanPublisherState;
 import com.hazelcast.wan.impl.AddWanConfigResult;
 import com.hazelcast.wan.impl.ConsistencyCheckResult;
 import com.hazelcast.wan.impl.DelegatingWanScheme;
@@ -359,9 +358,6 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
         // add stats from uninitialized but configured WAN replications
         final Map<String, WanReplicationConfig> wanReplicationConfigs
                 = node.getNodeEngine().getConfig().getWanReplicationConfigs();
-        final LocalWanPublisherStatsImpl stoppedPublisherStats = new LocalWanPublisherStatsImpl();
-        stoppedPublisherStats.setState(WanPublisherState.STOPPED);
-
         for (Entry<String, WanReplicationConfig> replicationEntry : wanReplicationConfigs.entrySet()) {
             String wanReplicationConfigName = replicationEntry.getKey();
             if (wanStats.containsKey(wanReplicationConfigName)) {
@@ -371,10 +367,13 @@ public class EnterpriseWanReplicationService implements WanReplicationService, F
             Map<String, LocalWanPublisherStats> publisherStats = localWanStats.getLocalWanPublisherStats();
 
             WanReplicationConfig replicationConfig = replicationEntry.getValue();
-            Stream.of(replicationConfig.getBatchPublisherConfigs(), replicationConfig.getCustomPublisherConfigs())
-                  .flatMap(Collection::stream)
-                  .map(WanReplicationServiceImpl::getWanPublisherId)
-                  .forEach(id -> publisherStats.put(id, stoppedPublisherStats));
+            for (WanBatchPublisherConfig config : replicationConfig.getBatchPublisherConfigs()) {
+                final String publisherId = WanReplicationServiceImpl.getWanPublisherId(config);
+                final LocalWanPublisherStatsImpl stats = new LocalWanPublisherStatsImpl();
+                stats.setState(config.getInitialPublisherState());
+                publisherStats.put(publisherId, stats);
+            }
+
             wanStats.put(wanReplicationConfigName, localWanStats);
         }
 

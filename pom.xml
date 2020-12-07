@@ -54,6 +54,7 @@
         <maven.spotbugs.plugin.version>3.1.12</maven.spotbugs.plugin.version>
         <maven.sonar.plugin.version>3.6.0.1398</maven.sonar.plugin.version>
         <maven.jacoco.plugin.version>0.8.4</maven.jacoco.plugin.version>
+        <maven.failsafe.plugin.version>2.22.0</maven.failsafe.plugin.version>
         <maven.enforcer.plugin.version>3.0.0-M2</maven.enforcer.plugin.version>
 
         <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
@@ -241,6 +242,35 @@
                         com.hazelcast.test.annotation.CompatibilityTest
                     </excludedGroups>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${maven.failsafe.plugin.version}</version>
+                <configuration combine.self="override">
+                    <argLine>
+                        ${vmHeapSettings}
+                        ${extraVmArgs}
+                        ${javaModuleArgs}
+                        -Dsun.nio.ch.bugLevel
+                        -ea
+                        -Dhazelcast.hidensity.check.freememory=false
+                        -Dhazelcast.phone.home.enabled=false
+                        -Dhazelcast.tomcat.shutdown_hazelcast_instance=false
+                        -Dlog4j.skipJansi=true
+                    </argLine>
+                    <useManifestOnlyJar>false</useManifestOnlyJar>
+                    <useSystemClassLoader>true</useSystemClassLoader>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
@@ -484,6 +514,7 @@
                             </execution>
                         </executions>
                     </plugin>
+
                 </plugins>
             </build>
         </profile>

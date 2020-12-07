@@ -35,9 +35,11 @@
                             <minimizeJar>false</minimizeJar>
                             <artifactSet>
                                 <includes>
-                                    <include>com.hazelcast:hazelcast-enterprise</include>
-                                    <include>com.hazelcast:hazelcast-all</include>
+                                    <include>com.hazelcast:*</include>
                                 </includes>
+                                <excludes>
+                                    <exclude>com.hazelcast:hazelcast-enterprise-all:*</exclude>
+                                </excludes>
                             </artifactSet>
                             <transformers>
                                 <transformer
@@ -173,6 +175,23 @@
                                         <exclude>META-INF/*.RSA</exclude>
                                     </excludes>
                                 </filter>
+                                <filter>
+                                    <artifact>com.hazelcast:hazelcast-enterprise</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/services/com.hazelcast.spi.discovery.DiscoveryStrategyFactory</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>com.hazelcast:hazelcast-all</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/services/com.hazelcast.PortableHook</exclude>
+                                        <exclude>META-INF/services/com.hazelcast.client.impl.ClientExtension</exclude>
+                                        <exclude>META-INF/services/com.hazelcast.instance.impl.NodeExtension</exclude>
+                                        <exclude>META-INF/services/com.hazelcast.com.fasterxml.jackson.core.JsonFactory</exclude>
+                                        <exclude>META-INF/services/com.hazelcast.spi.impl.servicemanager.ServiceDescriptorProvider</exclude>
+                                        <exclude>META-INF/services/javax.cache.spi.CachingProvider</exclude>
+                                    </excludes>
+                                </filter>
                             </filters>
                         </configuration>
                     </execution>
@@ -291,6 +310,12 @@
             <version>${project.version}</version>
             <type>jar</type>
             <scope>compile</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.hazelcast</groupId>
+                    <artifactId>hazelcast</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.hazelcast</groupId>

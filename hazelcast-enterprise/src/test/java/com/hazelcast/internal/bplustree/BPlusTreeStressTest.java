@@ -110,7 +110,8 @@ public class BPlusTreeStressTest extends BPlusTreeTestSupport {
                                 insertKey(index);
                             }
                         } else {
-                            int queryKeysCount = queryKeysCount();
+                            boolean descending = nextBoolean();
+                            int queryKeysCount = queryKeysCount(descending);
                             assertTrue("currentCount: " + queryKeysCount, queryKeysCount >= keysCount - threadsCount);
                             assertTrue("currentCount: " + queryKeysCount, queryKeysCount <= keysCount);
                         }

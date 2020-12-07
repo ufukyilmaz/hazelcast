@@ -85,7 +85,7 @@ public class BPlusTreeOOMEStressTest extends BPlusTreeTestSupport {
                                 // Remove some entries
                                 int startIndex = nextInt(50000);
                                 Iterator<Map.Entry<String, String>> it =
-                                        btree.lookup(startIndex, true, null, true);
+                                        btree.lookup(startIndex, true, null, true, false);
                                 int count = 0;
                                 while (it.hasNext() && count < keysToRemove) {
                                     Map.Entry<String, String> entry = it.next();

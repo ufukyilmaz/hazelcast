@@ -161,7 +161,7 @@ public class BPlusTreeMemoryTest extends BPlusTreeTestSupport {
         insertKeysCompact(1000);
         assertEquals(3, getNodeLevel(rootAddr));
 
-        Iterator it = btree.lookup(null, true, null, true);
+        Iterator it = btree.lookup(null, true, null, true, false);
         // Consume some elements
         for (int i = 0; i < 300; ++i) {
             assertTrue(it.hasNext());

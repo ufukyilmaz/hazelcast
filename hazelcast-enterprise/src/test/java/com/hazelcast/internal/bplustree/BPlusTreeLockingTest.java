@@ -19,6 +19,8 @@ import java.util.List;
 
 import static com.hazelcast.internal.bplustree.BPlusTreeLockingTest.LockEventType.INSTANT_WRITE_LOCK;
 import static com.hazelcast.internal.bplustree.BPlusTreeLockingTest.LockEventType.READ_LOCK;
+import static com.hazelcast.internal.bplustree.BPlusTreeLockingTest.LockEventType.INSTANT_READ_LOCK;
+import static com.hazelcast.internal.bplustree.BPlusTreeLockingTest.LockEventType.TRY_READ_LOCK;
 import static com.hazelcast.internal.bplustree.BPlusTreeLockingTest.LockEventType.RELEASE_LOCK;
 import static com.hazelcast.internal.bplustree.BPlusTreeLockingTest.LockEventType.TRY_UPGRADE_LOCK;
 import static com.hazelcast.internal.bplustree.BPlusTreeLockingTest.LockEventType.TRY_WRITE_LOCK;
@@ -93,7 +95,7 @@ public class BPlusTreeLockingTest extends BPlusTreeTestSupport {
         clearEventHistory();
 
         // Check locks on lookup
-        Iterator it = btree.lookup(null, true, null, true);
+        Iterator it = btree.lookup(null, true, null, true, false);
 
         long leftMostChild = innerNodeAccessor.getValueAddr(rootAddr, 0);
 
@@ -138,6 +140,59 @@ public class BPlusTreeLockingTest extends BPlusTreeTestSupport {
     }
 
     @Test
+    public void testLockCouplingOnDescendingIteration() {
+        assumeTrue(indexScanBatchSize == 0);
+        insertKeysCompact(9 * 9);
+
+        assertEquals(1, getNodeLevel(rootAddr));
+        clearEventHistory();
+
+        // Check locks on lookup
+        Iterator it = btree.lookup(null, true, null, true, true);
+
+        long rightMostChild = innerNodeAccessor.getValueAddr(rootAddr, 8);
+
+        List<Triple> expectedEvents = new ArrayList<>();
+        expectedEvents.add(create(READ_LOCK, rootAddr));
+        expectedEvents.add(create(READ_LOCK, rightMostChild));
+        expectedEvents.add(create(RELEASE_LOCK, rootAddr));
+        expectedEvents.add(create(RELEASE_LOCK, rightMostChild));
+
+        // Check navigation to the leaf history
+        assertEquals(expectedEvents, lockManagerCallback.eventsHistory);
+
+        // Check locks on iteration
+        List<Long> leafAddresses = getLeafAddresses(true);
+        long currentNodeAddress = leafAddresses.get(0);
+        long prevNodeAddress = 0;
+        int currentLeafIndex = 0;
+        int count = 1;
+        // consume current element, no locks are needed
+        it.next();
+
+        while (it.hasNext()) {
+            it.next();
+            expectedEvents.add(create(READ_LOCK, currentNodeAddress));
+
+            if (count % 9 == 0) {
+                prevNodeAddress = currentNodeAddress;
+                currentNodeAddress = leafAddresses.get(++currentLeafIndex);
+                expectedEvents.add(create(TRY_READ_LOCK, currentNodeAddress));
+                expectedEvents.add(create(RELEASE_LOCK, prevNodeAddress));
+            }
+
+            expectedEvents.add(create(RELEASE_LOCK, currentNodeAddress));
+            count++;
+        }
+
+        // Add to the history an attempt to get next element on already exhausted iterator
+        expectedEvents.add(create(READ_LOCK, currentNodeAddress));
+        expectedEvents.add(create(RELEASE_LOCK, currentNodeAddress));
+
+        assertEquals(expectedEvents, lockManagerCallback.eventsHistory);
+    }
+
+    @Test
     public void testLockCouplingOnIterationWithBatching() {
         assumeTrue(indexScanBatchSize > 0);
         insertKeysCompact(9 * 9);
@@ -146,7 +201,7 @@ public class BPlusTreeLockingTest extends BPlusTreeTestSupport {
         clearEventHistory();
 
         // Check locks on range scan
-        Iterator it = btree.lookup(null, true, null, true);
+        Iterator it = btree.lookup(null, true, null, true, false);
         // exhaust the iterator
         int count = 0;
         while (it.hasNext()) {
@@ -513,6 +568,8 @@ public class BPlusTreeLockingTest extends BPlusTreeTestSupport {
 
     enum LockEventType {
         READ_LOCK,
+        TRY_READ_LOCK,
+        INSTANT_READ_LOCK,
         WRITE_LOCK,
         TRY_UPGRADE_LOCK,
         TRY_WRITE_LOCK,
@@ -523,6 +580,10 @@ public class BPlusTreeLockingTest extends BPlusTreeTestSupport {
     interface LockManagerCallback {
 
         void onReadLock(long lockAddr);
+
+        void onTryReadLock(long lockAddr, boolean result);
+
+        void onInstantReadLock(long lockAddr);
 
         void onWriteLock(long lockAddr);
 
@@ -542,6 +603,18 @@ public class BPlusTreeLockingTest extends BPlusTreeTestSupport {
         @Override
         public void onReadLock(long lockAddr) {
             Triple triple = new Triple(READ_LOCK, lockAddr, true);
+            eventsHistory.add(triple);
+        }
+
+        @Override
+        public void onTryReadLock(long lockAddr, boolean result) {
+            Triple triple = new Triple(TRY_READ_LOCK, lockAddr, result);
+            eventsHistory.add(triple);
+        }
+
+        @Override
+        public void onInstantReadLock(long lockAddr) {
+            Triple triple = new Triple(INSTANT_READ_LOCK, lockAddr, true);
             eventsHistory.add(triple);
         }
 
@@ -590,6 +663,19 @@ public class BPlusTreeLockingTest extends BPlusTreeTestSupport {
         public void readLock(long lockAddr) {
             delegate.readLock(lockAddr);
             callback.onReadLock(lockAddr);
+        }
+
+        @Override
+        public boolean tryReadLock(long lockAddr) {
+            boolean result = delegate.tryReadLock(lockAddr);
+            callback.onTryReadLock(lockAddr, result);
+            return result;
+        }
+
+        @Override
+        public void instantDurationReadLock(long lockAddr) {
+            delegate.instantDurationReadLock(lockAddr);
+            callback.onInstantReadLock(lockAddr);
         }
 
         @Override
@@ -682,11 +768,17 @@ public class BPlusTreeLockingTest extends BPlusTreeTestSupport {
     }
 
     private List<Long> getLeafAddresses() {
+        return getLeafAddresses(false);
+    }
+
+    private List<Long> getLeafAddresses(boolean descending) {
         List<Long> result = new ArrayList<>();
-        long leftMostChildAddr = innerNodeAccessor.getValueAddr(rootAddr, 0);
-        assertOnLeafNodes(leftMostChildAddr, nodeAddr -> {
+        int slot = descending ? getKeysCount(rootAddr) : 0;
+        long childAddr = innerNodeAccessor.getValueAddr(rootAddr, slot);
+        assertOnLeafNodes(childAddr, descending, nodeAddr -> {
             result.add(nodeAddr);
         });
         return result;
     }
+
 }

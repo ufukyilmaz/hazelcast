@@ -116,6 +116,48 @@ public class HDLockManagerTest extends HazelcastTestSupport {
     }
 
     @Test
+    public void testTryReadLock() {
+        assertTrue(lockManager.tryReadLock(lockAddress));
+
+        assertLockState(lockAddress, 1, 0, 0);
+
+        assertTrue(lockManager.tryReadLock(lockAddress));
+
+        assertLockState(lockAddress, 2, 0, 0);
+
+        lockManager.releaseLock(lockAddress);
+        assertLockState(lockAddress, 1, 0, 0);
+
+        lockManager.releaseLock(lockAddress);
+        assertLockState(lockAddress, 0, 0, 0);
+
+        lockManager.writeLock(lockAddress);
+        assertFalse(lockManager.tryReadLock(lockAddress));
+        assertLockState(lockAddress, -1, 0, 0);
+    }
+
+    @Test
+    public void testInstantDurationReadLock() {
+        lockManager.instantDurationReadLock(lockAddress);
+        assertLockState(lockAddress, 0, 0, 0);
+
+        lockManager.writeLock(lockAddress);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        es.submit(() -> {
+            lockManager.instantDurationReadLock(lockAddress);
+            latch.countDown();
+        });
+
+        assertTrueEventually(() -> assertLockState(lockAddress, -1, 1, 0));
+
+        lockManager.releaseLock(lockAddress);
+
+        assertOpenEventually(latch);
+        assertLockState(lockAddress, 0, 0, 0);
+    }
+
+    @Test
     public void testTryWriteLock() {
         assertTrue(lockManager.tryWriteLock(lockAddress));
 

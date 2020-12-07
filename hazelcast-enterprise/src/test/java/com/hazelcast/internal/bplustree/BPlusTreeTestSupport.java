@@ -490,7 +490,11 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
     }
 
     int queryKeysCount() {
-        Iterator it = btree.lookup(null, true, null, true);
+        return queryKeysCount(false);
+    }
+
+    int queryKeysCount(boolean descending) {
+        Iterator it = btree.lookup(null, true, null, true, descending);
         int count = 0;
         while (it.hasNext()) {
             it.next();
@@ -499,9 +503,10 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
         return count;
     }
 
+
     List<QueryableEntry> queryAllKeys() {
         List<QueryableEntry> keys = new ArrayList<>(10000);
-        Iterator<QueryableEntry> it = btree.lookup(null, true, null, true);
+        Iterator<QueryableEntry> it = btree.lookup(null, true, null, true, false);
         while (it.hasNext()) {
             keys.add(it.next());
         }
@@ -530,6 +535,16 @@ public class BPlusTreeTestSupport extends HazelcastTestSupport {
         @Override
         public void readLock(long lockAddr) {
             // no-op
+        }
+
+        @Override
+        public boolean tryReadLock(long lockAddr) {
+            return true;
+        }
+
+        @Override
+        public void instantDurationReadLock(long lockAddr) {
+           // no-op
         }
 
         @Override

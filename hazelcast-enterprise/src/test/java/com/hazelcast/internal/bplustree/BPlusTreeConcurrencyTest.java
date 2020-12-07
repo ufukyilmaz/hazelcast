@@ -208,7 +208,8 @@ public class BPlusTreeConcurrencyTest extends BPlusTreeTestSupport {
                 int prevCount;
                 while (count != keysCount) {
                     prevCount = count;
-                    count = queryKeysCount();
+                    boolean descending = nextBoolean();
+                    count = queryKeysCount(descending);
                     assertTrue("PrevCount " + prevCount + " count " + count, prevCount <= count);
                 }
             } catch (Throwable t) {
@@ -259,7 +260,8 @@ public class BPlusTreeConcurrencyTest extends BPlusTreeTestSupport {
                 int prevCount;
                 while (count > 0) {
                     prevCount = count;
-                    count = queryKeysCount();
+                    boolean descending = nextBoolean();
+                    count = queryKeysCount(descending);
                     assertTrue(prevCount >= count);
                 }
             } catch (Throwable t) {
@@ -271,9 +273,6 @@ public class BPlusTreeConcurrencyTest extends BPlusTreeTestSupport {
 
         assertOpenEventually(latch);
 
-        if (exception.get() != null) {
-            exception.get().printStackTrace(System.err);
-        }
         assertNull(exception.get());
 
         assertEquals(0, queryKeysCount());
@@ -303,7 +302,7 @@ public class BPlusTreeConcurrencyTest extends BPlusTreeTestSupport {
                         }
                     } else {
                         Set<String> mapKeys = new HashSet<>();
-                        Iterator<QueryableEntry> it = btree.lookup(startIndex, true, null, true);
+                        Iterator<QueryableEntry> it = btree.lookup(startIndex, true, null, true, false);
                         int count = 0;
                         while (it.hasNext()) {
                             QueryableEntry<String, String> entry = it.next();
@@ -423,7 +422,8 @@ public class BPlusTreeConcurrencyTest extends BPlusTreeTestSupport {
         executor.submit(() -> {
             try {
                 for (int i = 0; i < 500; ++i) {
-                    int count = queryKeysCount();
+                    boolean descending = nextBoolean();
+                    int count = queryKeysCount(descending);
                     assertTrue(count <= keysCount);
                     assertTrue(count >= keysCount - portionCount);
                 }

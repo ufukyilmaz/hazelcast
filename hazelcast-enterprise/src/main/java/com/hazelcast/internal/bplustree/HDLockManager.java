@@ -123,6 +123,25 @@ public final class HDLockManager implements LockManager {
         acquireLock(lockAddr, true);
     }
 
+    private boolean tryLock(long lockAddr, boolean sharedAccess) {
+        long lockState = getLockState(lockAddr);
+        // Even if there are read/write waiters, we prioritize this request, because
+        // it is issued in very specific scenarios like empty node remove
+        // and its failure causes new top-down B+tree traversal
+        return isCompatible(lockState, sharedAccess)
+                && tryIncrementUsersCount(lockAddr, lockState, sharedAccess);
+    }
+
+    @Override
+    public boolean tryReadLock(long lockAddr) {
+        return tryLock(lockAddr, true);
+    }
+
+    @Override
+    public void instantDurationReadLock(long lockAddr) {
+        instantDurationLock(lockAddr, true);
+    }
+
     @Override
     public void writeLock(long lockAddr) {
         acquireLock(lockAddr, false);
@@ -153,34 +172,28 @@ public final class HDLockManager implements LockManager {
 
     @Override
     public boolean tryWriteLock(long lockAddr) {
-        long lockState = getLockState(lockAddr);
-        // Even if there are read/write waiters, we prioritize this request, because
-        // it is issued in very specific scenarios like empty node remove
-        // and its failure causes new top-down B+tree traversal
-        return isCompatible(lockState, false)
-                && tryIncrementUsersCount(lockAddr, lockState, false);
+        return tryLock(lockAddr, false);
     }
 
-    @Override
-    public void instantDurationWriteLock(long lockAddr) {
+    private void instantDurationLock(long lockAddr, boolean sharedAccess) {
         int stripeIndex = getStripe(lockAddr);
         ReentrantLock stripedLock = stripedLocks[stripeIndex];
         boolean interrupted = false;
 
         stripedLock.lock();
         try {
-            long lockState = incrementWaitersCount(lockAddr, false);
+            long lockState = incrementWaitersCount(lockAddr, sharedAccess);
             while (true) {
-                if (!isCompatible(lockState, false)) {
-                    Condition condition = stripedWriteConditions[stripeIndex];
-
+                if (!isCompatible(lockState, sharedAccess)) {
+                    Condition condition = sharedAccess ? stripedReadConditions[stripeIndex]
+                            : stripedWriteConditions[stripeIndex];
                     try {
                         condition.await();
                     } catch (InterruptedException e) {
                         interrupted = true;
                     }
                 } else {
-                    long newLockState = updateWaitersCount0(lockState, false, false);
+                    long newLockState = updateWaitersCount0(lockState, sharedAccess, false);
                     if (AMEM.compareAndSwapLong(lockAddr, lockState, newLockState)) {
                         /**
                          * Though, the instant duration lock doesn't increment the user's count,
@@ -198,6 +211,11 @@ public final class HDLockManager implements LockManager {
                 selfInterrupt();
             }
         }
+    }
+
+    @Override
+    public void instantDurationWriteLock(long lockAddr) {
+        instantDurationLock(lockAddr, false);
     }
 
     @SuppressWarnings("checkstyle:magicnumber")

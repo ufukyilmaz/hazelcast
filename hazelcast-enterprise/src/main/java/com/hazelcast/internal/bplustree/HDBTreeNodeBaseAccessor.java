@@ -11,6 +11,7 @@ import static com.hazelcast.internal.bplustree.CompositeKeyComparison.INDEX_KEY_
 import static com.hazelcast.internal.bplustree.CompositeKeyComparison.INDEX_KEY_GREATER;
 import static com.hazelcast.internal.bplustree.CompositeKeyComparison.INDEX_KEY_LESS;
 import static com.hazelcast.internal.bplustree.CompositeKeyComparison.KEYS_EQUAL;
+import static com.hazelcast.internal.bplustree.HDBPlusTree.MINUS_INFINITY_ENTRY_KEY;
 import static com.hazelcast.internal.bplustree.HDBPlusTree.PLUS_INFINITY_ENTRY_KEY;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
@@ -244,7 +245,7 @@ abstract class HDBTreeNodeBaseAccessor {
      * INDEX_KEY_EQUAL_ENTRY_KEY_GREATER if the left-hand index key is equal to the right-hand index key and the
      * left-hand entry key is greater than the right-hand entry-key.
      */
-    @SuppressWarnings("checkstyle:MagicNumber")
+    @SuppressWarnings({"checkstyle:MagicNumber", "checkstyle:NPathComplexity"})
     CompositeKeyComparison compareKeys0(Comparable leftIndexKey, Data leftEntryKey, long nodeAddr, int slot,
                                        boolean cmpOnlyIndexKeyPart) {
         long rightIndexKeyAddr = getIndexKeyAddr(nodeAddr, slot);
@@ -255,6 +256,11 @@ abstract class HDBTreeNodeBaseAccessor {
             if (leftEntryKey == PLUS_INFINITY_ENTRY_KEY) {
                 return INDEX_KEY_EQUAL_ENTRY_KEY_GREATER;
             }
+
+            if (leftEntryKey == MINUS_INFINITY_ENTRY_KEY) {
+                return INDEX_KEY_EQUAL_ENTRY_KEY_LESS;
+            }
+
             long rightEntryKeyAddr = getEntryKeyAddr(nodeAddr, slot);
             if (rightEntryKeyAddr == NULL_ADDRESS) {
                 return leftEntryKey == null ? KEYS_EQUAL : INDEX_KEY_EQUAL_ENTRY_KEY_GREATER;

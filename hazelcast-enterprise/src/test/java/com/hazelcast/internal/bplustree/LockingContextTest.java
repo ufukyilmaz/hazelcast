@@ -113,6 +113,16 @@ public class LockingContextTest extends BPlusTreeTestSupport {
         }
 
         @Override
+        public void onTryReadLock(long lockAddr, boolean result) {
+            // no-op
+        }
+
+        @Override
+        public void onInstantReadLock(long lockAddr) {
+            // no-op
+        }
+
+        @Override
         public void onWriteLock(long lockAddr) {
             // no-op
         }

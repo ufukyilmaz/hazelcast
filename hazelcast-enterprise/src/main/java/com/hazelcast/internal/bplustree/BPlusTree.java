@@ -51,9 +51,11 @@ public interface BPlusTree<T extends QueryableEntry> extends Disposable {
      * @param to            the end of the range
      * @param toInclusive   {@code true} if the end of the range is inclusive,
      *                      {@code false} otherwise.
+     * @param descending    {@code true} if return entries in the descending order,
+     *                      {@code false} if return entries in the ascending order.
      * @return the iterator of entries in the range
      */
-    Iterator<T> lookup(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive);
+    Iterator<T> lookup(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive, boolean descending);
 
     /**
      * Returns an iterator of all unique index keys in the B+tree.

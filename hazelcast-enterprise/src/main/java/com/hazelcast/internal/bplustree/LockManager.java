@@ -18,6 +18,29 @@ interface LockManager {
     void readLock(long lockAddr);
 
     /**
+     * Acquires the read lock only if the write lock is not held by another caller.
+     * <p>
+     * If write lock is held by another caller then this method will return immediately with the
+     * value {@code false}.
+     *
+     * @param lockAddr the address of the lock state associated with the resource to be locked
+     * @return {@code true} if the lock was free and was acquired, {@code false} otherwise.
+     */
+    boolean tryReadLock(long lockAddr);
+
+    /**
+     * Instantly acquires the read lock.
+     * <p>
+     * Acquires (and immediately releases) the read lock if the write lock is not held by another caller
+     * and returns immediately.
+     * <p>
+     * The method is useful to prevent busy waits.
+     *
+     * @param lockAddr the address of the lock state associated with the resource to be locked
+     */
+    void instantDurationReadLock(long lockAddr);
+
+    /**
      * Acquires the write lock.
      * Acquires the write lock if neither the read nor write lock are held by another caller and returns immediately.
      * <p>

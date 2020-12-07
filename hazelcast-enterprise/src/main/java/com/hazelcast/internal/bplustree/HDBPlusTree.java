@@ -22,6 +22,7 @@ import static com.hazelcast.internal.bplustree.CompositeKeyComparison.greaterOrE
 import static com.hazelcast.internal.bplustree.CompositeKeyComparison.indexKeysEqual;
 import static com.hazelcast.internal.bplustree.CompositeKeyComparison.keysEqual;
 import static com.hazelcast.internal.bplustree.CompositeKeyComparison.less;
+import static com.hazelcast.internal.bplustree.CompositeKeyComparison.lessOrEqual;
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.MAX_LEVEL;
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.MAX_NODE_SIZE;
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.MIN_NODE_SIZE;
@@ -115,8 +116,17 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
     // any other entry key.
     static final Data PLUS_INFINITY_ENTRY_KEY = new NativeMemoryData();
 
+    // The -infinity value for the entry key. This value is less than
+    // any other entry key.
+    static final Data MINUS_INFINITY_ENTRY_KEY = new NativeMemoryData();
+
     // The default maximum batch size for B+tree scan operation
     static final int DEFAULT_BPLUS_TREE_SCAN_BATCH_MAX_SIZE = 1000;
+
+    // A special value for off-heap address to indicate that an attempt to
+    // acquire a lock failedб and to avoid potential deadlock the caller has to
+    // restart the B+tree operation. The value is an invalid off-heap address.
+    private static final long RETRY_OPERATION = 0xFFFFFFFFFFFFFFFFL;
 
     // The Thread local to cache LockingContext object
     private static final ThreadLocal<LockingContext> LOCKING_CONTEXT =
@@ -802,7 +812,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
         try {
             Comparable indexKey0 = getKeyComparator().wrapIndexKey(indexKey);
             EntryIterator entryIterator = lookup0(indexKey0, null, true,
-                    indexKey0, true, false, lockingContext);
+                    indexKey0, true, false, false, lockingContext);
             return batchIterator(entryIterator, LOOKUP_INITIAL_BUFFER_SIZE);
         } catch (Throwable e) {
             releaseLocks(lockingContext);
@@ -813,14 +823,21 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
     }
 
     @Override
-    public Iterator<T> lookup(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive) {
+    public Iterator<T> lookup(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive, boolean descending) {
         LockingContext lockingContext = getLockingContext();
         try {
-            Comparable from0 = getKeyComparator().wrapIndexKey(from);
-            Comparable to0 = getKeyComparator().wrapIndexKey(to);
-            Data fromEntryKey = fromInclusive ? null : PLUS_INFINITY_ENTRY_KEY;
-            EntryIterator entryIterator = lookup0(from0, fromEntryKey, fromInclusive,
-                    to0, toInclusive, false, lockingContext);
+            EntryIterator entryIterator;
+            if (from == null) {
+                entryIterator = getEntries0(to, toInclusive, descending, lockingContext);
+            } else {
+                Comparable from0 = getKeyComparator().wrapIndexKey(from);
+                Comparable to0 = getKeyComparator().wrapIndexKey(to);
+                Data fromEntryKey = fromInclusive ? null
+                        : (descending ? MINUS_INFINITY_ENTRY_KEY : PLUS_INFINITY_ENTRY_KEY);
+                entryIterator = lookup0(from0, fromEntryKey, fromInclusive,
+                        to0, toInclusive, descending, false, lockingContext);
+            }
+
             return batchIterator(entryIterator, btreeScanBatchSize);
         } catch (Throwable e) {
             releaseLocks(lockingContext);
@@ -847,8 +864,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
     public Iterator<Data> keys() {
         LockingContext lockingContext = getLockingContext();
         try {
-            EntryIterator entryIterator = lookup0(null, null, true, null, true,
-                    false, lockingContext);
+            EntryIterator entryIterator = getEntries0(false, lockingContext);
             return new KeyIterator(entryIterator);
         } catch (Throwable e) {
             releaseLocks(lockingContext);
@@ -870,6 +886,8 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
      * @param to             the end of the range
      * @param toInclusive    {@code true} if the end of the range is inclusive,
      *                       {@code false} otherwise.
+     * @param descending     {@code true} if return entries iterator in an descending order,
+     *                       {@code false} if return entries iterator in an ascending order.
      * @param resync         {@code true} if the lookup is used to re-synchronize the existing iterator,
      *                       {@code false} otherwise.
      * @param lockingContext the locking context
@@ -877,127 +895,214 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
      */
     @SuppressWarnings({"checkstyle:NPathComplexity", "checkstyle:CyclomaticComplexity", "checkstyle:MethodLength"})
     private EntryIterator lookup0(Comparable from, Data fromEntryKey, boolean fromInclusive, Comparable to,
-                                  boolean toInclusive, boolean resync,
+                                  boolean toInclusive, boolean descending, boolean resync,
                                   LockingContext lockingContext) {
         assert fromEntryKey != null || fromInclusive;
-        long nodeAddr = rootAddr;
-        long parentAddr;
 
-        readLock(rootAddr, lockingContext);
+        restart:
+        for (; ; ) {
+            long nodeAddr = rootAddr;
+            long parentAddr;
 
-        // Go top -> down, find the leaf page containing 'from' key
-        while (isInnerNode(nodeAddr)) {
-            parentAddr = nodeAddr;
-            nodeAddr = innerNodeAccessor.getChildNode(nodeAddr, from, fromEntryKey);
-            readLock(nodeAddr, lockingContext);
-            releaseLock(parentAddr, lockingContext);
-        }
+            readLock(rootAddr, lockingContext);
 
-        EntryIterator it = new EntryIterator(to, toInclusive);
+            // Go top -> down, find the leaf page containing 'from' key
+            while (isInnerNode(nodeAddr)) {
+                parentAddr = nodeAddr;
+                nodeAddr = innerNodeAccessor.getChildNode(nodeAddr, from, fromEntryKey);
+                readLock(nodeAddr, lockingContext);
+                releaseLock(parentAddr, lockingContext);
+            }
 
-        // Skip empty nodes
-        nodeAddr = skipToNonEmptyNodeLocked(nodeAddr, lockingContext);
-        if (nodeAddr == NULL_ADDRESS) {
-            it.setNextEntryNull();
+            EntryIterator it = new EntryIterator(to, toInclusive, descending);
+
+            // Skip empty nodes
+            nodeAddr = skipToNonEmptyNodeLocked(nodeAddr, descending, lockingContext);
+            if (nodeAddr == RETRY_OPERATION) {
+                continue restart;
+            }
+            if (nodeAddr == NULL_ADDRESS) {
+                it.setNextEntryNull();
+                return it;
+            }
+
+            // Now, nodeAddr is read locked
+            int keysCount = getKeysCount(nodeAddr);
+            int lower = 0;
+            int upper = keysCount - 1;
+            int slot;
+            boolean searchKeyFound = false;
+            boolean skipCurrentSlot;
+
+            // Do binary search in the leaf node to find 'from' key
+            for (; ; ) {
+                if (upper < lower) {
+                    if (descending) {
+                        if (upper == -1) {
+                            // All keys in the node are greater than the search fromKey
+                            slot = lower;
+                            skipCurrentSlot = true;
+                        } else {
+                            slot = searchKeyFound ? lower : upper;
+                            skipCurrentSlot = !fromInclusive && searchKeyFound;
+                        }
+                    } else {
+                        if (lower == keysCount) {
+                            // All keys in the node are less than the search fromKey
+                            slot = upper;
+                            skipCurrentSlot = true;
+                        } else {
+                            slot = lower;
+                            skipCurrentSlot = !fromInclusive && searchKeyFound;
+                        }
+                    }
+
+                    break;
+                }
+                int mid = (upper + lower) / 2;
+
+                CompositeKeyComparison cmp = leafNodeAccessor.compareKeys(from, fromEntryKey, nodeAddr, mid);
+
+                if (fromEntryKey == null) {
+                    // Check that only 'from' component is found
+                    searchKeyFound = searchKeyFound || indexKeysEqual(cmp);
+                } else {
+                    searchKeyFound = keysEqual(cmp);
+                }
+
+                if (less(cmp)) {
+                    upper = mid - 1;
+                } else if (greater(cmp)) {
+                    lower = mid + 1;
+                } else {
+                    slot = mid;
+                    skipCurrentSlot = !fromInclusive;
+                    break;
+                }
+            }
+
+            assert slot < keysCount;
+            it.nextSlot = slot;
+            it.sequenceNumber = getSequenceNumber(nodeAddr);
+            it.currentNodeAddr = nodeAddr;
+
+            // Check the current slot is within the range boundaries
+            boolean nextSlotWithinRange = it.nextSlotIsWithinRange();
+
+            // Skip current slot if necessary
+            if (nextSlotWithinRange && skipCurrentSlot) {
+                // Consume current slot
+                it.next();
+                boolean lastSlot = descending ? slot == 0 : slot == keysCount - 1;
+                if (!lastSlot) {
+                    // Navigate to the next slot
+                    it.nextSlot = descending ? slot - 1 : slot + 1;
+                } else {
+                    // Next key is on the next node, skip empty ones
+                    nodeAddr = skipToNextNonEmptyNode(it.currentNodeAddr, descending, lockingContext);
+                    if (nodeAddr == RETRY_OPERATION) {
+                        continue restart;
+                    } else if (nodeAddr == NULL_ADDRESS) {
+                        // No keys in range anymore
+                        it.setNextEntryNull();
+                        return it;
+                    }
+                    it.sequenceNumber = getSequenceNumber(nodeAddr);
+                    it.currentNodeAddr = nodeAddr;
+                    it.nextSlot = descending ? getKeysCount(nodeAddr) - 1 : 0;
+                }
+                // Check the slot is still within the range boundaries
+                it.nextSlotIsWithinRange();
+            }
+
+            // Release the lock if one of the following is true:
+            // - the lookup is not part of iterator re-synchronization logic;
+            // - the iterator has no more results.
+            if (!resync || it.nextSlot == NULL_SLOT) {
+                releaseLock(nodeAddr, lockingContext);
+            }
+
             return it;
         }
-        // Now, nodeAddr is read locked
-
-        int keysCount = getKeysCount(nodeAddr);
-        int lower = 0;
-        int upper = keysCount - 1;
-        int slot;
-        boolean searchKeyFound = false;
-        boolean skipCurrentSlot;
-
-        // Do binary search in the leaf node to find 'from' key
-        for (; ; ) {
-            if (upper < lower) {
-                if (lower == keysCount) {
-                    // All keys in the node are less than the search fromKey
-                    slot = upper;
-                    skipCurrentSlot = true;
-                } else {
-                    slot = lower;
-                    skipCurrentSlot = !fromInclusive && searchKeyFound;
-                }
-
-                break;
-            }
-            int mid = (upper + lower) / 2;
-
-            CompositeKeyComparison cmp = leafNodeAccessor.compareKeys(from, fromEntryKey, nodeAddr, mid);
-
-            if (fromEntryKey == null) {
-                // Check that only 'from' component is found
-                searchKeyFound = searchKeyFound || indexKeysEqual(cmp);
-            } else {
-                searchKeyFound = keysEqual(cmp);
-            }
-
-            if (less(cmp)) {
-                upper = mid - 1;
-            } else if (greater(cmp)) {
-                lower = mid + 1;
-            } else {
-                slot = mid;
-                skipCurrentSlot = !fromInclusive;
-                break;
-            }
-        }
-
-        assert slot < keysCount;
-        it.nextSlot = slot;
-        it.sequenceNumber = getSequenceNumber(nodeAddr);
-        it.currentNodeAddr = nodeAddr;
-
-        // Check the current slot is within the range boundaries
-        boolean nextSlotWithinRange = it.nextSlotIsWithinRange();
-
-        // Skip current slot if necessary
-        if (nextSlotWithinRange && skipCurrentSlot) {
-            // Consume current slot
-            it.next();
-            boolean lastSlot = slot == keysCount - 1;
-            if (!lastSlot) {
-                // Navigate to the next slot
-                it.nextSlot = slot + 1;
-            } else {
-                // Next key is on the next node, skip empty ones
-                nodeAddr = skipToNextNonEmptyNode(it.currentNodeAddr, lockingContext);
-                if (nodeAddr == NULL_ADDRESS) {
-                    // No keys in range anymore
-                    it.setNextEntryNull();
-                    return it;
-                }
-                it.sequenceNumber = getSequenceNumber(nodeAddr);
-                it.currentNodeAddr = nodeAddr;
-                it.nextSlot = 0;
-            }
-            // Check the slot is still within the range boundaries
-            it.nextSlotIsWithinRange();
-        }
-
-        // Release the lock if one of the following is true:
-        // - the lookup is not part of iterator re-synchronization logic;
-        // - the iterator has no more results.
-        if (!resync || it.nextSlot == NULL_SLOT) {
-            releaseLock(nodeAddr, lockingContext);
-        }
-
-        return it;
     }
 
+    /**
+     * Performs a range scan in the B+tree starting from left-most or right-most entry.
+     *
+     * @param to             the end of the range
+     * @param toInclusive    {@code true} if the end of the range is inclusive,
+     *                       {@code false} otherwise.
+     * @param descending     {@code true} if return entries iterator in an descending order,
+     *                       {@code false} if return entries iterator in an ascending order.
+     * @param lockingContext the locking context
+     * @return an iterator of the range scan
+     */
+    private EntryIterator getEntries0(Comparable to, boolean toInclusive, boolean descending, LockingContext lockingContext) {
+        restart:
+        for (; ; ) {
+            long nodeAddr = rootAddr;
+            long parentAddr;
 
-    private long skipToNextNonEmptyNode(long nodeAddr, LockingContext lockingContext) {
-        long forwAddr = leafNodeAccessor.getForwNode(nodeAddr);
-        if (forwAddr == NULL_ADDRESS) {
+            readLock(rootAddr, lockingContext);
+
+            // Go top -> down, find the leaf page containing 'from' key
+            while (isInnerNode(nodeAddr)) {
+                parentAddr = nodeAddr;
+                nodeAddr = innerNodeAccessor.getValueAddr(nodeAddr, descending ? getKeysCount(nodeAddr) : 0);
+                readLock(nodeAddr, lockingContext);
+                releaseLock(parentAddr, lockingContext);
+            }
+
+            EntryIterator it = new EntryIterator(to, toInclusive, descending);
+
+            // Skip empty nodes
+            nodeAddr = skipToNonEmptyNodeLocked(nodeAddr, descending, lockingContext);
+            if (nodeAddr == RETRY_OPERATION) {
+                continue restart;
+            }
+            if (nodeAddr == NULL_ADDRESS) {
+                it.setNextEntryNull();
+                return it;
+            }
+
+            // Now, nodeAddr is read locked
+            int keysCount = getKeysCount(nodeAddr);
+
+            it.nextSlot = descending ? keysCount - 1 : 0;
+            it.sequenceNumber = getSequenceNumber(nodeAddr);
+            it.currentNodeAddr = nodeAddr;
+
+            releaseLock(nodeAddr, lockingContext);
+            it.nextSlotIsWithinRange();
+
+            return it;
+        }
+    }
+
+    private EntryIterator getEntries0(boolean descending, LockingContext lockingContext) {
+        return getEntries0(null, true, descending, lockingContext);
+    }
+
+    private long skipToNextNonEmptyNode(long nodeAddr, boolean descending, LockingContext lockingContext) {
+        long nextAddr = descending ? leafNodeAccessor.getBackNode(nodeAddr) : leafNodeAccessor.getForwNode(nodeAddr);
+        if (nextAddr == NULL_ADDRESS) {
             releaseLock(nodeAddr, lockingContext);
             return NULL_ADDRESS;
         }
-        readLock(forwAddr, lockingContext);
-        releaseLock(nodeAddr, lockingContext);
-        return skipToNonEmptyNodeLocked(forwAddr, lockingContext);
+
+        if (descending) {
+            if (!tryReadLock(nextAddr, lockingContext)) {
+                releaseLock(nodeAddr, lockingContext);
+                instantDurationReadLock(nextAddr);
+                return RETRY_OPERATION;
+            }
+            releaseLock(nodeAddr, lockingContext);
+            return skipToNonEmptyNodeLocked(nextAddr, descending, lockingContext);
+        } else {
+            readLock(nextAddr, lockingContext);
+            releaseLock(nodeAddr, lockingContext);
+            return skipToNonEmptyNodeLocked(nextAddr, descending, lockingContext);
+        }
     }
 
     /**
@@ -1006,25 +1111,43 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
      * <p>
      * The returned nodeAddr is also read locked.
      *
-     * @param nodeAddr the starting node to check emptiness
+     * @param nodeAddr   the starting node to check emptiness
+     * @param descending {@code true} if navigate backward along the leaf nodes.
      * @return next read locked non-empty node, ot NULL_ADDRESS is it doesn't exist
      */
-    private long skipToNonEmptyNodeLocked(long nodeAddr, LockingContext lockingContext) {
+    private long skipToNonEmptyNodeLocked(long nodeAddr, boolean descending, LockingContext lockingContext) {
         if (nodeAddr == NULL_ADDRESS) {
             return NULL_ADDRESS;
         }
 
         long currentNodeAddr = nodeAddr;
         while (getKeysCount(currentNodeAddr) == 0) {
-            long forwAddr = leafNodeAccessor.getForwNode(currentNodeAddr);
-            if (forwAddr == NULL_ADDRESS) {
-                releaseLock(currentNodeAddr, lockingContext);
-                return NULL_ADDRESS;
-            }
+            if (descending) {
+                long backAddr = leafNodeAccessor.getBackNode(currentNodeAddr);
+                if (backAddr == NULL_ADDRESS) {
+                    releaseLock(currentNodeAddr, lockingContext);
+                    return NULL_ADDRESS;
+                }
 
-            readLock(forwAddr, lockingContext);
-            releaseLock(currentNodeAddr, lockingContext);
-            currentNodeAddr = forwAddr;
+                if (tryReadLock(backAddr, lockingContext)) {
+                    releaseLock(currentNodeAddr, lockingContext);
+                    currentNodeAddr = backAddr;
+                } else {
+                    releaseLock(currentNodeAddr, lockingContext);
+                    instantDurationReadLock(backAddr);
+                    return RETRY_OPERATION;
+                }
+            } else {
+                long forwAddr = leafNodeAccessor.getForwNode(currentNodeAddr);
+                if (forwAddr == NULL_ADDRESS) {
+                    releaseLock(currentNodeAddr, lockingContext);
+                    return NULL_ADDRESS;
+                }
+
+                readLock(forwAddr, lockingContext);
+                releaseLock(currentNodeAddr, lockingContext);
+                currentNodeAddr = forwAddr;
+            }
         }
         return currentNodeAddr;
     }
@@ -1033,6 +1156,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
 
         final Comparable to;
         final boolean toInclusive;
+        final boolean descending;
 
         int lastSlot = NULL_SLOT;
         int nextSlot = NULL_SLOT;
@@ -1049,9 +1173,10 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
         // The last sequence number read from the current node
         long sequenceNumber;
 
-        EntryIterator(Comparable to, boolean toInclusive) {
+        EntryIterator(Comparable to, boolean toInclusive, boolean descending) {
             this.to = to;
             this.toInclusive = toInclusive;
+            this.descending = descending;
         }
 
         @Override
@@ -1097,7 +1222,8 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
          * @param entryBatch     the batch to collect entry results, {@code null} if batching is disabled
          * @param lockingContext the locking context
          */
-        @SuppressWarnings({"checkstyle:NPathComplexity", "checkstyle:CyclomaticComplexity", "checkstyle:MethodLength"})
+        @SuppressWarnings({"checkstyle:NPathComplexity", "checkstyle:CyclomaticComplexity", "checkstyle:MethodLength",
+                "checkstyle:NestedIfDepth"})
         void nextBatch0(EntryBatch entryBatch, LockingContext lockingContext) {
 
             assert nextSlot == NULL_SLOT;
@@ -1106,85 +1232,116 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
                 // The iterator has reached the end
                 return;
             }
+            restart:
             for (; ; ) {
                 readLock(currentNodeAddr, lockingContext);
 
-                if (sequenceNumber == getSequenceNumber(currentNodeAddr)) {
-                    // Node hasn't changed, no need to resync the iterator
-                    break;
-                }
-
-                /* The node has changed since the previous iteration. Find the current key again. */
-                releaseLock(currentNodeAddr, lockingContext);
-
-                Data lastEntryKeyData = lastEntry.getKeyData();
-                Comparable lastIndexKey = ess.toObject(this.lastIndexKey);
-                Comparable wrappedLastIndexKey = getKeyComparator().wrapIndexKey(lastIndexKey);
-
-                EntryIterator resyncedIt = lookup0(wrappedLastIndexKey, lastEntryKeyData, false, to, toInclusive,
-                        true, lockingContext);
-
-                if (resyncedIt.nextSlot == NULL_SLOT) {
-                    // Key has been removed and we've reached the end
-                    setNextEntryNull();
-                    return;
-                }
-                sequenceNumber = resyncedIt.sequenceNumber;
-                currentNodeAddr = resyncedIt.currentNodeAddr;
-                nextSlot = resyncedIt.nextSlot;
-                nextEntry = resyncedIt.nextEntry;
-                nextIndexKey = resyncedIt.nextIndexKey;
-                if (entryBatch == null) {
-                    // Batching is disabled, release a lock on the leaf
+                // Check whether the currentNode has changed, and if so the iterator requires a re-sync
+                if (sequenceNumber != getSequenceNumber(currentNodeAddr)) {
+                    /* The node has changed since the previous iteration. Find the current key again. */
                     releaseLock(currentNodeAddr, lockingContext);
-                    return;
-                } else {
-                    // Batching is enabled, consume the element and
-                    // proceed to fill in the batch with the next elements
-                    // Don't release a lock on the leaf.
-                    next();
-                    entryBatch.add(lastEntry);
-                    break;
-                }
-            }
 
-            boolean nextSlotWithinRange;
-            do {
-                // currentNode is read locked
-                assert lastSlot < getKeysCount(currentNodeAddr);
-                if (lastSlot == getKeysCount(currentNodeAddr) - 1) {
-                    /* Current node is exhausted. Try next node and skip it if it is empty */
-                    do {
-                        long forwAddr = leafNodeAccessor.getForwNode(currentNodeAddr);
-                        if (forwAddr == NULL_ADDRESS) {
-                            setNextEntryNull();
-                            releaseLock(currentNodeAddr, lockingContext);
-                            return;
-                        }
+                    Data lastEntryKeyData = lastEntry.getKeyData();
+                    Comparable lastIndexKey = ess.toObject(this.lastIndexKey);
+                    Comparable wrappedLastIndexKey = getKeyComparator().wrapIndexKey(lastIndexKey);
 
-                        readLock(forwAddr, lockingContext);
+                    EntryIterator resyncedIt = lookup0(wrappedLastIndexKey, lastEntryKeyData, false, to, toInclusive,
+                            descending, true, lockingContext);
+
+                    if (resyncedIt.nextSlot == NULL_SLOT) {
+                        // Key has been removed and we've reached the end
+                        setNextEntryNull();
+                        return;
+                    }
+                    sequenceNumber = resyncedIt.sequenceNumber;
+                    currentNodeAddr = resyncedIt.currentNodeAddr;
+                    nextSlot = resyncedIt.nextSlot;
+                    nextEntry = resyncedIt.nextEntry;
+                    nextIndexKey = resyncedIt.nextIndexKey;
+                    if (entryBatch == null) {
+                        // Batching is disabled, release a lock on the leaf
                         releaseLock(currentNodeAddr, lockingContext);
-                        currentNodeAddr = forwAddr;
-                        sequenceNumber = getSequenceNumber(currentNodeAddr);
-                        nextSlot = 0;
-                    } while (getKeysCount(currentNodeAddr) == 0);
-                } else {
-                    nextSlot = lastSlot + 1;
+                        return;
+                    } else {
+                        // Batching is enabled, consume the element and
+                        // proceed to fill in the batch with the next elements
+                        // Don't release a lock on the leaf.
+                        next();
+                        entryBatch.add(lastEntry);
+                    }
                 }
 
-                nextSlotWithinRange = nextSlotIsWithinRange();
-                if (entryBatch != null && nextSlotWithinRange) {
-                    // Consume next element if batching is enabled
-                    next();
-                    entryBatch.add(lastEntry);
-                }
+                boolean nextSlotWithinRange;
+                do {
+                    // currentNode is read locked
+                    assert lastSlot < getKeysCount(currentNodeAddr) && lastSlot >= 0;
+                    if (descending) {
+                        if (lastSlot == 0) {
+                            /* Current node is exhausted. Try next node and skip it if it is empty */
+                            do {
+                                long backAddr = leafNodeAccessor.getBackNode(currentNodeAddr);
+                                if (backAddr == NULL_ADDRESS) {
+                                    setNextEntryNull();
+                                    releaseLock(currentNodeAddr, lockingContext);
+                                    return;
+                                }
 
-            } while (entryBatch != null && entryBatch.hasCapacity() && nextSlotWithinRange);
+                                if (!tryReadLock(backAddr, lockingContext)) {
+                                    releaseLock(currentNodeAddr, lockingContext);
+                                    // If there is something in the batch, return it to the caller
+                                    if (entryBatch != null && entryBatch.size() > 0) {
+                                        return;
+                                    } else {
+                                        // Otherwise, restart the operation
+                                        instantDurationReadLock(backAddr);
+                                        continue restart;
+                                    }
+                                }
+                                releaseLock(currentNodeAddr, lockingContext);
+                                currentNodeAddr = backAddr;
+                                sequenceNumber = getSequenceNumber(currentNodeAddr);
+                                nextSlot = getKeysCount(currentNodeAddr) - 1;
+                            } while (getKeysCount(currentNodeAddr) == 0);
+                        } else {
+                            nextSlot = lastSlot - 1;
+                        }
+                    } else {
+                        if (lastSlot == getKeysCount(currentNodeAddr) - 1) {
+                            /* Current node is exhausted. Try next node and skip it if it is empty */
+                            do {
+                                long forwAddr = leafNodeAccessor.getForwNode(currentNodeAddr);
+                                if (forwAddr == NULL_ADDRESS) {
+                                    setNextEntryNull();
+                                    releaseLock(currentNodeAddr, lockingContext);
+                                    return;
+                                }
 
-            releaseLock(currentNodeAddr, lockingContext);
-            return;
+                                readLock(forwAddr, lockingContext);
+                                releaseLock(currentNodeAddr, lockingContext);
+                                currentNodeAddr = forwAddr;
+                                sequenceNumber = getSequenceNumber(currentNodeAddr);
+                                nextSlot = 0;
+                            } while (getKeysCount(currentNodeAddr) == 0);
+                        } else {
+                            nextSlot = lastSlot + 1;
+                        }
+                    }
+
+                    nextSlotWithinRange = nextSlotIsWithinRange();
+                    if (entryBatch != null && nextSlotWithinRange) {
+                        // Consume next element if batching is enabled
+                        next();
+                        entryBatch.add(lastEntry);
+                    }
+
+                } while (entryBatch != null && entryBatch.hasCapacity() && nextSlotWithinRange);
+
+                releaseLock(currentNodeAddr, lockingContext);
+                return;
+            }
         }
 
+        @SuppressWarnings({"checkstyle:CyclomaticComplexity", "checkstyle:BooleanExpressionComplexity"})
         boolean nextSlotIsWithinRange() {
             if (to == null) {
                 setNextEntry();
@@ -1194,7 +1351,8 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
 
             if (nextSlot != NULL_SLOT) {
                 CompositeKeyComparison cmp = leafNodeAccessor.compareKeys0(to, null, currentNodeAddr, nextSlot, true);
-                if (toInclusive && greaterOrEqual(cmp) || !toInclusive && greater(cmp)) {
+                if (descending && (toInclusive && lessOrEqual(cmp) || !toInclusive && less(cmp))
+                        || !descending && (toInclusive && greaterOrEqual(cmp) || !toInclusive && greater(cmp))) {
                     setNextEntry();
                     return true;
                 }
@@ -1298,6 +1456,10 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
 
         void clear() {
             values.clear();
+        }
+
+        int size() {
+            return values.size();
         }
     }
 
@@ -1476,6 +1638,20 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
         lockManager.readLock(lockAddr);
         lockingContext.addLock(lockAddr);
         checkIfDisposed();
+    }
+
+    private boolean tryReadLock(long nodeAddr, LockingContext lockingContext) {
+        long lockAddr = getLockStateAddr(nodeAddr);
+        if (lockManager.tryReadLock(lockAddr)) {
+            lockingContext.addLock(lockAddr);
+            return true;
+        }
+        return false;
+    }
+
+    private void instantDurationReadLock(long nodeAddr) {
+        long lockAddr = getLockStateAddr(nodeAddr);
+        lockManager.instantDurationReadLock(lockAddr);
     }
 
     private void releaseLock(long nodeAddr, LockingContext lockingContext) {

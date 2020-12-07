@@ -565,31 +565,31 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
 
         int key = nextInt(9997);
 
-        Iterator<Map.Entry> it = btree.lookup(key, true, key + 1, false);
+        Iterator<Map.Entry> it = btree.lookup(key, true, key + 1, false, false);
         assertIterator(it, 1, key);
 
-        it = btree.lookup(key, true, key, false);
+        it = btree.lookup(key, true, key, false, false);
         assertIterator(it, 0, key);
 
-        it = btree.lookup(key, true, key + 1, true);
+        it = btree.lookup(key, true, key + 1, true, false);
         assertIterator(it, 2, key);
 
-        it = btree.lookup(key, false, key + 1, false);
+        it = btree.lookup(key, false, key + 1, false, false);
         assertIterator(it, 0, key);
 
-        it = btree.lookup(-1, true, 0, false);
+        it = btree.lookup(-1, true, 0, false, false);
         assertIterator(it, 0, 0);
 
-        it = btree.lookup(-10, true, 5, false);
+        it = btree.lookup(-10, true, 5, false, false);
         assertIterator(it, 5, 0);
 
-        it = btree.lookup(key, true, key + 5, true);
+        it = btree.lookup(key, true, key + 5, true, false);
         assertIterator(it, 6, key);
 
-        it = btree.lookup(5, true, 3, true);
+        it = btree.lookup(5, true, 3, true, false);
         assertIterator(it, 0, key);
 
-        it = btree.lookup(1000, true, 2000, true);
+        it = btree.lookup(1000, true, 2000, true, false);
         assertIterator(it, 1001, 1000);
     }
 
@@ -600,13 +600,88 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
         insertKeysCompact(10);
 
         // Make sure the last result from the iterator is a last slot in the B+tree node
-        Iterator it = btree.lookup(0, true, 8, true);
+        Iterator it = btree.lookup(0, true, 8, true, false);
         while (it.hasNext()) {
             it.next();
         }
 
         // Call hasNext() on already exhausted iterator
         assertFalse(it.hasNext());
+
+        // Make sure the last result from the iterator is a first slot in the B+tree node
+        it = btree.lookup(8, true, 0, true, true);
+        while (it.hasNext()) {
+            it.next();
+        }
+
+        // Call hasNext() on already exhausted iterator
+        assertFalse(it.hasNext());
+
+        it = btree.lookup(9, false, 8, true, true);
+        assertIterator(it, 1, 8);
+
+        it = btree.lookup(9, false, 8, false, true);
+        assertIterator(it, 0, 0);
+    }
+
+    @Test
+    public void testFullScanBothDirections() {
+        assumeTrue(indexType == SORTED);
+        insertKeys(10000);
+
+        Iterator<Map.Entry> it = btree.lookup(null, true, 0, true, true);
+
+        assertIterator(it, 10000, 9999, true);
+
+        it = btree.lookup(null, true, 0, true, false);
+
+        assertIterator(it, 1, 0, false);
+
+        it = btree.lookup(null, true, 10000, false, false);
+
+        assertIterator(it, 10000, 0, false);
+    }
+
+    @Test
+    public void testDescendingRangeLookup() {
+        assumeTrue(indexType == SORTED);
+        insertKeys(10000);
+
+        int key = 9999;
+        Iterator<Map.Entry> it = btree.lookup(key, true, 0, true, true);
+        assertIterator(it, 10000, key, true);
+
+        key = 9999;
+        it = btree.lookup(key, false, 0, true, true);
+        assertIterator(it, 9999, 9998, true);
+
+        key = 9998;
+        it = btree.lookup(key, true, 0, true, true);
+        assertIterator(it, 9999, key, true);
+
+        key = 9998;
+        it = btree.lookup(key, false, 0, true, true);
+        assertIterator(it, 9998, 9997, true);
+
+        key = 9998;
+        it = btree.lookup(key, false, 0, false, true);
+        assertIterator(it, 9997, 9997, true);
+
+        key = 1;
+        it = btree.lookup(key, true, 0, true, true);
+        assertIterator(it, 2, key, true);
+
+        key = 1;
+        it = btree.lookup(key, false, 0, true, true);
+        assertIterator(it, 1, 0, true);
+
+        key = 1;
+        it = btree.lookup(key, false, 0, false, true);
+        assertIterator(it, 0, 0, true);
+
+        key = 1000;
+        it = btree.lookup(key, true, 1001, true, true);
+        assertIterator(it, 0, 0, true);
     }
 
     @Test
@@ -619,7 +694,7 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
         for (int i = 0; i < 100; ++i) {
             int from = nextInt(keysCount);
             int to = from + 1000;
-            Iterator it = btree.lookup(from, true, to, true);
+            Iterator it = btree.lookup(from, true, to, true, false);
 
             int expectedCount = Math.min(to, keysCount - 1) - from + 1;
 
@@ -672,7 +747,7 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
         insertKey(11);
         insertKey(12);
         assertEquals(102, queryKeysCount());
-        Iterator<Map.Entry> it = btree.lookup(10, false, null, true);
+        Iterator<Map.Entry> it = btree.lookup(10, false, null, true, false);
         assertTrue(it.hasNext());
         assertEquals("Name_11", it.next().getKey());
         assertTrue(it.hasNext());
@@ -688,7 +763,7 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
         insertKeysCompact(9 * 9);
 
         // Position iterator on the left-most node
-        Iterator<QueryableEntry> it = btree.lookup(2, true, null, true);
+        Iterator<QueryableEntry> it = btree.lookup(2, true, null, true, false);
         assertTrue(it.hasNext());
         QueryableEntry entry = it.next();
         assertEquals("Value_2", entry.getValue());
@@ -762,6 +837,88 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
     }
 
     @Test
+    public void testDescendingIteratorResync() {
+        assumeTrue(indexType == SORTED);
+        assumeTrue(indexScanBatchSize == 0);
+        // Fill in 9 leaf pages
+        insertKeysCompact(9 * 9);
+
+        // Position iterator on the right-most node
+        Iterator<QueryableEntry> it = btree.lookup(80, true, null, true, true);
+        assertTrue(it.hasNext());
+        QueryableEntry entry = it.next();
+        assertEquals("Value_80", entry.getValue());
+
+
+        long rightChildAddr = innerNodeAccessor.getValueAddr(rootAddr, 8);
+        long rightChildSeqNum = getSequenceNumber(rightChildAddr);
+
+        // Remove a few keys ahead
+        assertNotNull(btree.remove(79, nativeData("Name_79")));
+        assertEquals(++rightChildSeqNum, getSequenceNumber(rightChildAddr));
+        assertNotNull(btree.remove(78, nativeData("Name_78")));
+        assertEquals(++rightChildSeqNum, getSequenceNumber(rightChildAddr));
+
+        assertEquals(7, getKeysCount(rightChildAddr));
+        // Iterate through the rest of the keys on the node
+        for (int i = 77; i > 71; --i) {
+            // Try the next element in iterator
+            assertTrue(it.hasNext());
+            assertEquals("Value_" + i, it.next().getValue());
+        }
+
+        long nextChildAddr = innerNodeAccessor.getValueAddr(rootAddr, 7);
+
+        allocatorCallback.clear();
+        // Remove the next node ahead
+        for (int i = 71; i > 62; --i) {
+            assertNotNull(btree.remove(i, nativeData("Name_" + i)));
+        }
+        assertEquals(nextChildAddr, maFreeAddr.get());
+
+        // Iterator skips over the removed node
+        assertTrue(it.hasNext());
+        assertEquals("Value_" + 62, it.next().getValue());
+
+        allocatorCallback.clear();
+        nextChildAddr = innerNodeAccessor.getValueAddr(rootAddr, 6);
+        // Remove the node iterator is currently on
+        for (int i = 62; i > 53; --i) {
+            assertNotNull(btree.remove(i, nativeData("Name_" + i)));
+        }
+        assertEquals(nextChildAddr, maFreeAddr.get());
+
+        nextChildAddr = innerNodeAccessor.getValueAddr(rootAddr, 5);
+        // Iterator skips over the removed node
+        assertTrue(it.hasNext());
+        assertEquals("Value_" + 53, it.next().getValue());
+
+        // Iterate to the end of the node
+        for (int i = 52; i > 44; --i) {
+            assertTrue(it.hasNext());
+            assertEquals("Value_" + i, it.next().getValue());
+        }
+
+        // Insert new key into the node, causing its split and moving
+        // already seen keys ahead
+        allocatorCallback.clear();
+        insertKey(49, 0);
+        assertTrue(maAllocateAddr.hasUpdates());
+
+        // iterator skips over moved ahead keys
+        assertTrue(it.hasNext());
+        assertEquals("Value_" + 44, it.next().getValue());
+
+        // Remove everything ahead of the iterator
+        for (int i = 43; i >= 0; --i) {
+            assertNotNull(btree.remove(i, nativeData("Name_" + i)));
+        }
+
+        // Iterator has reached the end
+        assertFalse(it.hasNext());
+    }
+
+    @Test
     public void testIteratorResyncWithBatching() {
         assumeTrue(indexType == SORTED);
         assumeTrue(indexScanBatchSize > 0);
@@ -769,7 +926,7 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
         insertKeysCompact(7);
 
         // Position iterator on the left-most node
-        Iterator<QueryableEntry> it = btree.lookup(2, true, null, true);
+        Iterator<QueryableEntry> it = btree.lookup(2, true, null, true, false);
         assertTrue(it.hasNext());
         QueryableEntry entry = it.next();
         assertEquals("Value_2", entry.getValue());
@@ -875,14 +1032,20 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
     }
 
     private void assertIterator(Iterator<Map.Entry> it, int expectedCount, int startingEntryIndex) {
+        assertIterator(it, expectedCount, startingEntryIndex, false);
+    }
+
+    private void assertIterator(Iterator<Map.Entry> it, int expectedCount, int startingEntryIndex,
+                                boolean descending) {
         int count = 0;
         int key = startingEntryIndex;
         while (it.hasNext()) {
-            assertEquals("Name_" + (key++), it.next().getKey());
+            assertEquals("Name_" + (descending ? key-- : key++), it.next().getKey());
             ++count;
         }
         assertEquals(expectedCount, count);
     }
+
 
     private void assertIteratorCount(int expected, Comparable indexKey) {
         Iterator<Map.Entry> it = btree.lookup(indexKey);
@@ -900,7 +1063,7 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
     }
 
     private void assertFromKeyIteratorCount(int expected, Comparable fromKey) {
-        Iterator<Map.Entry> it = btree.lookup(fromKey, true, null, true);
+        Iterator<Map.Entry> it = btree.lookup(fromKey, true, null, true, false);
         int count = 0;
         while (it.hasNext()) {
             Map.Entry entry = it.next();
@@ -915,7 +1078,7 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
 
     // for unit testing only
     Iterator<Map.Entry> allKeys() {
-        return btree.lookup(null, true, null, true);
+        return btree.lookup(null, true, null, true, false);
     }
 
     private void assertLeafSlotValues(long leafAddr, int expectedMinKey, int expectedMaxKey) {

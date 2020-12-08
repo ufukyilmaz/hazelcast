@@ -93,6 +93,7 @@ public class EncryptionManager {
                 } catch (Throwable e) {
                     throw new HotRestartException("Unable to generate encryption key", e);
                 }
+                logger.fine("New key will be stored.");
                 writeKeyFile(storeKey);
                 logger.info("Written key file: " + getKeyFile());
             }
@@ -128,6 +129,7 @@ public class EncryptionManager {
             closeResource(in);
         }
         if (reencrypt) {
+            logger.fine("Master key rotation is detected during EncryptionManager initialization.");
             writeKeyFile(key);
             logger.info("Re-encrypted key file: " + keyFile);
         }
@@ -153,6 +155,9 @@ public class EncryptionManager {
     @SuppressFBWarnings(value = "OS_OPEN_STREAM",
             justification = "The DataOutputStream not closed intentionally (so that the wrapped stream does not get closed)")
     private void writeKeyFile(byte[] data) {
+        if (logger.isFineEnabled()) {
+            logger.fine("Initiated writing the key file. Data bytes sum: " + sum(data));
+        }
         // synchronize with potential concurrent backup
         synchronized (this) {
             File tmp = new File(homeDir, KEY_FILE_NAME + ".tmp");
@@ -179,6 +184,20 @@ public class EncryptionManager {
             File keyFile = getKeyFile();
             IOUtil.rename(tmp, keyFile);
         }
+        logger.fine("Writing the key file finished.");
+    }
+
+    /**
+     * Simple sum of bytes.
+     * @param data
+     * @return the sum
+     */
+    private static int sum(byte[] data) {
+        int i = 0;
+        for (byte b : data) {
+            i += b;
+        }
+        return i;
     }
 
     /**
@@ -199,6 +218,7 @@ public class EncryptionManager {
     // may be called concurrently
     public void rotateMasterKey(byte[] key) {
         if (isEncryptionEnabled()) {
+            logger.fine("Master key is being rotated.");
             masterKey = Arrays.copyOf(key, key.length);
             writeKeyFile(storeKey);
             logger.info("Re-encrypted key file: " + getKeyFile());

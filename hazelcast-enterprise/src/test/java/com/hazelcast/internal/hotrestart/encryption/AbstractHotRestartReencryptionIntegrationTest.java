@@ -132,7 +132,7 @@ public abstract class AbstractHotRestartReencryptionIntegrationTest extends HotR
     protected abstract SecureStoreConfig getSecureStoreConfig();
 
     private Config makeConfig() {
-        Config config = new Config().setLicenseKey(SampleLicense.UNLIMITED_LICENSE);
+        Config config = smallInstanceConfig().setLicenseKey(SampleLicense.UNLIMITED_LICENSE);
         config.getHotRestartPersistenceConfig().setEnabled(true).setBaseDir(baseDir);
         return withBasicEncryptionAtRestConfig(config, getSecureStoreConfig());
     }

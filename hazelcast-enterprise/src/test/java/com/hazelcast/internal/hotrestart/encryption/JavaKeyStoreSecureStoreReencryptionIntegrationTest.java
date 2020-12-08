@@ -3,10 +3,12 @@ package com.hazelcast.internal.hotrestart.encryption;
 import com.hazelcast.config.JavaKeyStoreSecureStoreConfig;
 import com.hazelcast.config.SecureStoreConfig;
 import com.hazelcast.spi.impl.securestore.impl.TestJavaKeyStoreSecureStoreUtils;
+import com.hazelcast.test.ChangeLoggingRule;
 import com.hazelcast.test.HazelcastParallelParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
@@ -27,6 +29,9 @@ public class JavaKeyStoreSecureStoreReencryptionIntegrationTest extends Abstract
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
+
+    @ClassRule
+    public static ChangeLoggingRule changeLoggingRule = new ChangeLoggingRule("log4j2-debug-hotrestart.xml");
 
     private JavaKeyStoreSecureStoreConfig keyStoreConfig;
 

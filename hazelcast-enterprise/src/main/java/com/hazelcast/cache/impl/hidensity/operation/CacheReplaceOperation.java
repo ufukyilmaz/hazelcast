@@ -40,9 +40,9 @@ public class CacheReplaceOperation
     protected void runInternal() {
         HiDensityCacheRecordStore hdCache = (HiDensityCacheRecordStore) this.recordStore;
         if (currentValue == null) {
-            response = hdCache.replace(key, value, getCallerUuid(), completionId);
+            response = hdCache.replace(key, value, expiryPolicy, getCallerUuid(), completionId);
         } else {
-            response = hdCache.replace(key, currentValue, value, getCallerUuid(), completionId);
+            response = hdCache.replace(key, currentValue, value, expiryPolicy, getCallerUuid(), completionId);
         }
     }
 

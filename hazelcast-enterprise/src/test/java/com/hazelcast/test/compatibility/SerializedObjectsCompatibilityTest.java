@@ -22,6 +22,7 @@ import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.compatibility.SerializedObjectsAccessor.SerializedObject;
 import com.hazelcast.version.Version;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -55,6 +56,7 @@ import static org.junit.Assume.assumeTrue;
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
+@Ignore
 public class SerializedObjectsCompatibilityTest extends HazelcastTestSupport {
 
     private static final String CLASSPATH_RESOURCE_PATTERN = "com/hazelcast/test/compatibility/serialized-objects-%s";

@@ -211,25 +211,25 @@ public abstract class AbstractHDCacheOperationTest {
     }
 
     /**
-     * Verifies the {@link RecordStore} mock after a call of {@link HDPutAllOperation#run()} or
-     * {@link HDPutAllBackupOperation#run()}.
+     * Verifies the {@link RecordStore} mock after a call of {@link CachePutAllOperation#run()} or
+     * {@link CachePutAllBackupOperation#run()}.
      *
      * @param isBackupDone {@code true} if backup operation has been called, {@code false} otherwise
      */
     void verifyRecordStoreAfterRun(OperationType operationType, boolean isBackupDone) {
         boolean verifyBackups = syncBackupCount > 0 && isBackupDone;
-        verify(recordStore, atLeastOnce()).getConfig();
 
         switch (operationType) {
             case PUT_ALL:
                 // RecordStore.put() is called again for each entry which threw a NativeOOME
                 verify(recordStore, times(ENTRY_COUNT + numberOfNativeOOME)).put(any(Data.class), any(Data.class),
                         any(ExpiryPolicy.class), any(UUID.class), anyInt());
+                verify(recordStore, atLeastOnce()).getConfig();
                 if (verifyBackups) {
                     verify(recordStore, times(ENTRY_COUNT)).putBackup(nullable(Data.class), nullable(Data.class),
                             anyLong(), any(ExpiryPolicy.class));
                 }
-                    break;
+                break;
             case PUT:
                 // RecordStore.getAndPut() is called again for each entry which threw a NativeOOME
                 verify(recordStore, times(ENTRY_COUNT + numberOfNativeOOME)).getAndPut(any(Data.class), any(Data.class),

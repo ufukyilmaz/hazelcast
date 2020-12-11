@@ -11,7 +11,6 @@ import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.servicemanager.impl.ServiceManagerImpl;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -41,7 +40,6 @@ import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class})
-@Ignore
 public class PermissionMappingTest extends HazelcastTestSupport {
 
     // Insecurely accessed services
@@ -62,11 +60,11 @@ public class PermissionMappingTest extends HazelcastTestSupport {
     static {
         UNIVERSAL_METHOD_SKIP_LIST.addAll(
                 asList("toString", "getName", "getServiceName", "getService", "getPartitionId", "invalidate",
-                        "getOperationService", "getPartitionKey", "getNodeEngine"));
+                        "getOperationService", "getPartitionKey", "getNodeEngine", "getDestroyContextForTenant"));
     }
 
     // Common methods that don't require security
-    private static final Set<Class> INHERITED_METHOD_SKIP_LIST = new HashSet<Class>();
+    private static final Set<Class> INHERITED_METHOD_SKIP_LIST = new HashSet<>();
 
     static {
         INHERITED_METHOD_SKIP_LIST.add(Object.class);

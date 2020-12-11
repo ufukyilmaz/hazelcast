@@ -2,12 +2,11 @@ package com.hazelcast.cache.impl.hidensity.operation;
 
 import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -22,7 +21,6 @@ import static org.mockito.Mockito.mock;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
-@Ignore
 public class CachePutOperationTest extends AbstractHDCacheOperationTest {
 
     private static final String CACHE_NAME = "CachePutOperationTest";

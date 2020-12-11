@@ -31,7 +31,6 @@ import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -80,7 +79,6 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-@Ignore
 public class CacheTest extends AbstractCacheTest {
 
     private HazelcastInstance instance;
@@ -173,6 +171,16 @@ public class CacheTest extends AbstractCacheTest {
 
         assertEquals("value3", cache.getAndReplace("key1", "value4"));
         assertEquals("value4", cache.get("key1"));
+    }
+
+    @Test
+    public void testReplaceWithExpiryPolicy() {
+        ICache<String, String> cache = createCache();
+
+        cache.put("key1", "value-old");
+        cache.replace("key1", "value-new", new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 100)));
+        sleepAtLeastSeconds(1);
+        assertFalse(cache.containsKey("key1"));
     }
 
     @Test

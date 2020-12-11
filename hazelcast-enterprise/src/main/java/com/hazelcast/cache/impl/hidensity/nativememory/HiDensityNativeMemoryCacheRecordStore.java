@@ -826,7 +826,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     public boolean replace(Data key, Object value, UUID caller, int completionId) {
-        return replace(key, value, defaultExpiryPolicy, caller, completionId);
+        return replace(key, value, defaultExpiryPolicy.get(), caller, completionId);
     }
 
     @Override

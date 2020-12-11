@@ -803,7 +803,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     public boolean putIfAbsent(Data key, Object value, UUID caller, int completionId) {
-        return putIfAbsent(key, value, defaultExpiryPolicy, caller, completionId);
+        return putIfAbsent(key, value, defaultExpiryPolicy.get(), caller, completionId);
     }
 
     @SuppressWarnings("checkstyle:parameternumber")
@@ -831,7 +831,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     public boolean replace(Data key, Object oldValue, Object newValue, UUID caller, int completionId) {
-        return replace(key, oldValue, newValue, defaultExpiryPolicy, caller, completionId);
+        return replace(key, oldValue, newValue, defaultExpiryPolicy.get(), caller, completionId);
     }
 
     @Override

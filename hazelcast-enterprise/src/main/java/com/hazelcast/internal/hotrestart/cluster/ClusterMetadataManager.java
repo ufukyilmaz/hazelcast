@@ -11,7 +11,6 @@ import com.hazelcast.core.MemberLeftException;
 import com.hazelcast.hotrestart.HotRestartException;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.cluster.ClusterService;
-import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.internal.hotrestart.ForceStartException;
 import com.hazelcast.internal.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus;
@@ -877,25 +876,13 @@ public class ClusterMetadataManager {
     private PartitionTableView restorePartitionTable() throws IOException {
         int partitionCount = node.getProperties().getInteger(ClusterProperty.PARTITION_COUNT);
         PartitionTableView table;
-        boolean newFormat = node.getClusterService().getClusterVersion().isGreaterOrEqual(Versions.V4_1);
-        if (newFormat) {
-            PartitionTableReader partitionTableReader = new PartitionTableReader(homeDir, partitionCount);
-            partitionTableReader.read();
-            table = partitionTableReader.getPartitionTable();
-        } else {
-            //RU_COMPAT_4_0
-            LegacyPartitionTableReader partitionTableReader = new LegacyPartitionTableReader(homeDir, partitionCount);
-            partitionTableReader.read();
-            table = partitionTableReader.getPartitionTable();
-        }
+        PartitionTableReader partitionTableReader = new PartitionTableReader(homeDir, partitionCount);
+        partitionTableReader.read();
+        table = partitionTableReader.getPartitionTable();
 
         partitionTableRef.set(table);
         if (logger.isFineEnabled()) {
-            if (newFormat) {
-                logger.fine("Restored partition table with stamp: " + table.stamp());
-            } else {
-                logger.fine("Restored partition table version: " + table.version());
-            }
+            logger.fine("Restored partition table with stamp: " + table.stamp());
         }
         return table;
     }
@@ -1006,16 +993,9 @@ public class ClusterMetadataManager {
             }
         }
 
-        if (node.getClusterService().getClusterVersion().isGreaterOrEqual(Versions.V4_1)) {
-            PartitionTableView newTable = new PartitionTableView(newPartitions);
-            partitionTableRef.set(newTable);
-            logger.fine("Partition table repair has been completed. New partition table stamp: " + newTable.stamp());
-        }  else {
-            //RU_COMPAT_4_0
-            int version = table.version() + globalVersionInc;
-            partitionTableRef.set(new PartitionTableView(newPartitions, version));
-            logger.fine("Partition table repair has been completed. New partition table version: " + version);
-        }
+        PartitionTableView newTable = new PartitionTableView(newPartitions);
+        partitionTableRef.set(newTable);
+        logger.fine("Partition table repair has been completed. New partition table stamp: " + newTable.stamp());
     }
 
     /**
@@ -1313,21 +1293,11 @@ public class ClusterMetadataManager {
         boolean failed = false;
         Set<UUID> excludedMemberUuids = Collections.emptySet();
 
-        if (node.getClusterService().getClusterVersion().isGreaterOrEqual(Versions.V4_1)) {
-            Map<UUID, PartitionTableView> partitionTables = collectLoadSucceededMemberPartitionTables();
-            if (partitionTables.isEmpty()) {
-                failed = true;
-            } else {
-                excludedMemberUuids = collectExcludedMemberUuids(partitionTables);
-            }
+        Map<UUID, PartitionTableView> partitionTables = collectLoadSucceededMemberPartitionTables();
+        if (partitionTables.isEmpty()) {
+            failed = true;
         } else {
-            Map<Integer, List<UUID>> memberUuidsByPartitionTableVersion
-                    = collectLoadSucceededMemberUuidsByPartitionTableVersion();
-            if (memberUuidsByPartitionTableVersion.isEmpty()) {
-                failed = true;
-            } else {
-                excludedMemberUuids = collectExcludedMemberUuidsLegacy(memberUuidsByPartitionTableVersion);
-            }
+            excludedMemberUuids = collectExcludedMemberUuids(partitionTables);
         }
 
         if (failed) {
@@ -1418,66 +1388,6 @@ public class ClusterMetadataManager {
                 .mapToLong(IPartition::version).sum();
     }
 
-    //RU_COMPAT_4_0
-    @Deprecated
-    private Map<Integer, List<UUID>> collectLoadSucceededMemberUuidsByPartitionTableVersion() {
-        Map<Integer, List<UUID>> membersUuidsByPartitionTableVersion = new HashMap<>();
-        final Map<UUID, Address> expectedMembers = expectedMembersRef.get();
-        for (MemberImpl member : restoredMembersRef.get()) {
-            if (!expectedMembers.containsKey(member.getUuid())) {
-                continue;
-            }
-            MemberClusterStartInfo memberClusterStartInfo = memberClusterStartInfos.get(member.getUuid());
-            if (memberClusterStartInfo == null || memberClusterStartInfo.getDataLoadStatus() != LOAD_SUCCESSFUL) {
-                continue;
-            }
-            int partitionTableVersion = memberClusterStartInfo.getPartitionTable().version();
-            List<UUID> members =
-                    membersUuidsByPartitionTableVersion.computeIfAbsent(partitionTableVersion, k -> new ArrayList<>());
-
-            members.add(member.getUuid());
-        }
-        if (logger.isFineEnabled()) {
-            logger.fine("Partition table version -> member UUIDs: " + membersUuidsByPartitionTableVersion);
-        }
-        return membersUuidsByPartitionTableVersion;
-    }
-
-    //RU_COMPAT_4_0
-    @Deprecated
-    private Set<UUID> collectExcludedMemberUuidsLegacy(Map<Integer, List<UUID>> membersByPartitionTableVersion) {
-        int selectedPartitionTableVersion = -1;
-        List<UUID> selectedMembers = Collections.emptyList();
-        for (Map.Entry<Integer, List<UUID>> e : membersByPartitionTableVersion.entrySet()) {
-            int partitionTableVersion = e.getKey();
-            List<UUID> members = e.getValue();
-            if (clusterDataRecoveryPolicy == PARTIAL_RECOVERY_MOST_RECENT) {
-                if (partitionTableVersion > selectedPartitionTableVersion) {
-                    selectedPartitionTableVersion = partitionTableVersion;
-                    selectedMembers = members;
-                }
-            } else if (clusterDataRecoveryPolicy == PARTIAL_RECOVERY_MOST_COMPLETE) {
-                if (members.size() > selectedMembers.size()
-                        || (members.size() == selectedMembers.size() && partitionTableVersion > selectedPartitionTableVersion)) {
-                    selectedPartitionTableVersion = partitionTableVersion;
-                    selectedMembers = members;
-                }
-            }
-            logger.fine("Candidate members " + selectedMembers
-                    + " with partition table version: " + selectedPartitionTableVersion);
-        }
-
-        logger.info("Picking members " + selectedMembers + " with partition table version: " + selectedPartitionTableVersion);
-
-        Set<UUID> excludedMemberUuids = new HashSet<>();
-        for (Member member : restoredMembersRef.get()) {
-            if (!selectedMembers.contains(member.getUuid())) {
-                excludedMemberUuids.add(member.getUuid());
-            }
-        }
-        return excludedMemberUuids;
-    }
-
     ClusterState getCurrentClusterState() {
         hotRestartStatusLock.lock();
         try {
@@ -1503,32 +1413,17 @@ public class ClusterMetadataManager {
     private void persistPartitions() {
         InternalPartitionService partitionService = node.getPartitionService();
         PartitionTableView partitionTable = partitionService.createPartitionTableView();
-        if (node.getClusterService().getClusterVersion().isGreaterOrEqual(Versions.V4_1)) {
-            if (sumVersions(partitionTable) == 0) {
-                if (logger.isFinestEnabled()) {
-                    logger.finest("Won't persist partition table, not initialized yet.");
-                }
-                return;
-            }
-
+        if (sumVersions(partitionTable) == 0) {
             if (logger.isFinestEnabled()) {
-                logger.finest("Will persist partition table with stamp: " + partitionTable.stamp());
+                logger.finest("Won't persist partition table, not initialized yet.");
             }
-            metadataWriterLoop.writePartitionTable(partitionTable);
-        } else {
-            //RU_COMPAT_4_0
-            if (partitionTable.version() == 0) {
-                if (logger.isFinestEnabled()) {
-                    logger.finest("Won't persist partition table, not initialized yet.");
-                }
-                return;
-            }
-
-            if (logger.isFinestEnabled()) {
-                logger.finest("Will persist partition table version: " + partitionTable.version());
-            }
-            metadataWriterLoop.writePartitionTableLegacy(partitionTable);
+            return;
         }
+
+        if (logger.isFinestEnabled()) {
+            logger.finest("Will persist partition table with stamp: " + partitionTable.stamp());
+        }
+        metadataWriterLoop.writePartitionTable(partitionTable);
     }
 
     private void broadcast(Operation operation) {

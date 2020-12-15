@@ -1,6 +1,5 @@
 package com.hazelcast.internal.hotrestart.cluster;
 
-import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.internal.serialization.SerializableByConvention;
 import com.hazelcast.nio.ObjectDataInput;
@@ -60,21 +59,13 @@ public class MemberClusterStartInfo implements DataSerializable, Versioned {
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
-        if (out.getVersion().isGreaterOrEqual(Versions.V4_1)) {
-            PartitionTableWriter.writePartitionTable(out, partitionTable);
-        } else {
-            LegacyPartitionTableWriter.writePartitionTable(out, partitionTable);
-        }
+        PartitionTableWriter.writePartitionTable(out, partitionTable);
         out.writeUTF(dataLoadStatus.name());
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
-        if (in.getVersion().isGreaterOrEqual(Versions.V4_1)) {
-            partitionTable = PartitionTableReader.readPartitionTable(in);
-        } else {
-            partitionTable = LegacyPartitionTableReader.readPartitionTable(in);
-        }
+        partitionTable = PartitionTableReader.readPartitionTable(in);
         dataLoadStatus = DataLoadStatus.valueOf(in.readUTF());
     }
 }

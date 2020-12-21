@@ -2,8 +2,7 @@ package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.cache.impl.wan.WanCacheEntryView;
 import com.hazelcast.sql.impl.calcite.validate.types.HazelcastIntegerType;
-import com.hazelcast.sql.impl.calcite.validate.types.HazelcastObjectType;
-import com.hazelcast.sql.impl.calcite.validate.types.HazelcastTemporalType;
+import com.hazelcast.sql.impl.calcite.validate.types.HazelcastType;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
@@ -39,8 +38,7 @@ public class EnterpriseDataSerializableConventionsTest extends DataSerializableC
         Set<Class> classes = super.getWhitelistedClasses();
         classes.add(WanCacheEntryView.class);
         classes.add(HazelcastIntegerType.class);
-        classes.add(HazelcastObjectType.class);
-        classes.add(HazelcastTemporalType.class);
+        classes.add(HazelcastType.class);
         return classes;
     }
 }

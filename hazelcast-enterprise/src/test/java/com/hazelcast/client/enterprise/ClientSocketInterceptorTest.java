@@ -10,6 +10,7 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -67,6 +68,7 @@ public class ClientSocketInterceptorTest {
     }
 
 
+    @Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/3911")
     @Test(timeout = 120000)
     public void testFailingSocketInterceptor() {
         Config config = new Config();

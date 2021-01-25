@@ -559,6 +559,28 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
     }
 
     @Test
+    public void testSimpleRangeLookup() {
+        assumeTrue(indexType == SORTED);
+        insertKey(2);
+
+        Iterator<Map.Entry> it = btree.lookup(2, true, null, false, true);
+        assertIterator(it, 1, 2);
+
+        it = btree.lookup(3, true, null, false, true);
+        assertIterator(it, 1, 2);
+
+        it = btree.lookup(3, false, null, false, true);
+        assertIterator(it, 1, 2);
+
+        insertKey(2, 3);
+        it = btree.lookup(2, true, null, false, true);
+        assertIteratorCount(2, it);
+
+        it = btree.lookup(2, false, null, false, true);
+        assertIteratorCount(0, it);
+    }
+
+    @Test
     public void testRangeLookup() {
         assumeTrue(indexType == SORTED);
         insertKeys(10000);
@@ -1046,7 +1068,6 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
         assertEquals(expectedCount, count);
     }
 
-
     private void assertIteratorCount(int expected, Comparable indexKey) {
         Iterator<Map.Entry> it = btree.lookup(indexKey);
         int count = 0;
@@ -1056,6 +1077,16 @@ public class BPlusTreeTest extends BPlusTreeTestSupport {
             String value = "Value_" + count;
             assertEquals(mapKey, entry.getKey());
             assertEquals(value, entry.getValue());
+            count++;
+        }
+
+        assertEquals(expected, count);
+    }
+
+    private void assertIteratorCount(int expected, Iterator<Map.Entry> it) {
+        int count = 0;
+        while (it.hasNext()) {
+            Map.Entry entry = it.next();
             count++;
         }
 

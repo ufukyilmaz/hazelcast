@@ -53,13 +53,14 @@ public class HDUnorderedConcurrentIndexStore extends HDBaseConcurrentIndexStore 
 
     @Override
     public Set<QueryableEntry> getRecords(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive) {
-        Iterator<QueryableEntry> it = getSqlRecordIterator(canonicalize(from), fromInclusive, canonicalize(to), toInclusive);
+        Iterator<QueryableEntry> it = getSqlRecordIterator(canonicalize(from), fromInclusive,
+            canonicalize(to), toInclusive, false);
         return buildResultSet(it);
     }
 
     @Override
     public Set<QueryableEntry> getRecords(Comparison comparison, Comparable value) {
-        Iterator<QueryableEntry> it = getSqlRecordIterator(comparison, canonicalize(value));
+        Iterator<QueryableEntry> it = getSqlRecordIterator(comparison, canonicalize(value), false);
         return buildResultSet(it);
     }
 
@@ -86,16 +87,17 @@ public class HDUnorderedConcurrentIndexStore extends HDBaseConcurrentIndexStore 
     }
 
     @Override
-    public Iterator<QueryableEntry> getSqlRecordIterator(Comparison comparison, Comparable value) {
+    public Iterator<QueryableEntry> getSqlRecordIterator(Comparison comparison, Comparable value, boolean descending) {
         return new ValueComparisonIterator(comparison, canonicalize(value));
     }
 
     @Override
     public Iterator<QueryableEntry> getSqlRecordIterator(
-            Comparable from,
-            boolean fromInclusive,
-            Comparable to,
-            boolean toInclusive
+        Comparable from,
+        boolean fromInclusive,
+        Comparable to,
+        boolean toInclusive,
+        boolean descending
     ) {
         if (Comparables.compare(from, to) == 0) {
             if (!fromInclusive || !toInclusive) {
@@ -193,6 +195,7 @@ public class HDUnorderedConcurrentIndexStore extends HDBaseConcurrentIndexStore 
                                 throw new IllegalStateException("Unrecognized comparison: " + comparison);
                         }
                         if (valid) {
+                            // Unordered index doesn't support sorting
                             currentIterator = getSqlRecordIterator(indexedValue);
                             continue outer;
                         }

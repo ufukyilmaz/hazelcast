@@ -19,8 +19,6 @@ import java.util.NoSuchElementException;
 
 import static com.hazelcast.internal.bplustree.CompositeKeyComparison.greater;
 import static com.hazelcast.internal.bplustree.CompositeKeyComparison.greaterOrEqual;
-import static com.hazelcast.internal.bplustree.CompositeKeyComparison.indexKeysEqual;
-import static com.hazelcast.internal.bplustree.CompositeKeyComparison.keysEqual;
 import static com.hazelcast.internal.bplustree.CompositeKeyComparison.less;
 import static com.hazelcast.internal.bplustree.CompositeKeyComparison.lessOrEqual;
 import static com.hazelcast.internal.bplustree.HDBTreeNodeBaseAccessor.MAX_LEVEL;
@@ -811,8 +809,10 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
         LockingContext lockingContext = getLockingContext();
         try {
             Comparable indexKey0 = getKeyComparator().wrapIndexKey(indexKey);
-            EntryIterator entryIterator = lookup0(indexKey0, null, true,
-                    indexKey0, true, false, false, lockingContext);
+            Data fromEntryKey = MINUS_INFINITY_ENTRY_KEY;
+
+            EntryIterator entryIterator = lookup0(indexKey0, fromEntryKey, true,
+                indexKey0, true, false, false, lockingContext);
             return batchIterator(entryIterator, LOOKUP_INITIAL_BUFFER_SIZE);
         } catch (Throwable e) {
             releaseLocks(lockingContext);
@@ -832,10 +832,14 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
             } else {
                 Comparable from0 = getKeyComparator().wrapIndexKey(from);
                 Comparable to0 = getKeyComparator().wrapIndexKey(to);
-                Data fromEntryKey = fromInclusive ? null
-                        : (descending ? MINUS_INFINITY_ENTRY_KEY : PLUS_INFINITY_ENTRY_KEY);
+                Data fromEntryKey;
+                if (descending) {
+                    fromEntryKey = fromInclusive ? PLUS_INFINITY_ENTRY_KEY : MINUS_INFINITY_ENTRY_KEY;
+                } else {
+                    fromEntryKey = fromInclusive ? MINUS_INFINITY_ENTRY_KEY : PLUS_INFINITY_ENTRY_KEY;
+                }
                 entryIterator = lookup0(from0, fromEntryKey, fromInclusive,
-                        to0, toInclusive, descending, false, lockingContext);
+                    to0, toInclusive, descending, false, lockingContext);
             }
 
             return batchIterator(entryIterator, btreeScanBatchSize);
@@ -931,8 +935,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
             int lower = 0;
             int upper = keysCount - 1;
             int slot;
-            boolean searchKeyFound = false;
-            boolean skipCurrentSlot;
+            boolean skipCurrentSlot = false;
 
             // Do binary search in the leaf node to find 'from' key
             for (; ; ) {
@@ -943,8 +946,7 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
                             slot = lower;
                             skipCurrentSlot = true;
                         } else {
-                            slot = searchKeyFound ? lower : upper;
-                            skipCurrentSlot = !fromInclusive && searchKeyFound;
+                            slot = upper;
                         }
                     } else {
                         if (lower == keysCount) {
@@ -953,7 +955,6 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
                             skipCurrentSlot = true;
                         } else {
                             slot = lower;
-                            skipCurrentSlot = !fromInclusive && searchKeyFound;
                         }
                     }
 
@@ -962,13 +963,6 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
                 int mid = (upper + lower) / 2;
 
                 CompositeKeyComparison cmp = leafNodeAccessor.compareKeys(from, fromEntryKey, nodeAddr, mid);
-
-                if (fromEntryKey == null) {
-                    // Check that only 'from' component is found
-                    searchKeyFound = searchKeyFound || indexKeysEqual(cmp);
-                } else {
-                    searchKeyFound = keysEqual(cmp);
-                }
 
                 if (less(cmp)) {
                     upper = mid - 1;

@@ -51,6 +51,7 @@ public class ClientSSLSocketTest extends ClientTestSupport {
         factory.terminateAll();
     }
 
+    @Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/3911")
     @Test(timeout = 60000, expected = IllegalStateException.class)
     public void testClientThrowsExceptionIfNodesAreUsingSSLButClientIsNot() throws Exception {
         Config serverConfig = smallInstanceConfig();

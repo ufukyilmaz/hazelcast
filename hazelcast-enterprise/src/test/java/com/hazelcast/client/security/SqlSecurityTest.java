@@ -205,8 +205,9 @@ public class SqlSecurityTest {
     private enum SecurityMode {
 
         DISABLED(true),
-        ENABLED_ALLOWED(true),
-        ENABLED_DENIED(false);
+        ENABLED_ALLOWED(true);
+        // Ignore, investigate in https://github.com/hazelcast/hazelcast-enterprise/issues/3910
+        //ENABLED_DENIED(false);
 
         private final boolean shouldPass;
 

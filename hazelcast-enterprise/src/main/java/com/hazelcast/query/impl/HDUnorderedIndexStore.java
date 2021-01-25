@@ -117,7 +117,7 @@ class HDUnorderedIndexStore extends BaseSingleValueIndexStore {
     }
 
     @Override
-    public Iterator<QueryableEntry> getSqlRecordIterator() {
+    public Iterator<QueryableEntry> getSqlRecordIterator(boolean descending) {
         throw new UnsupportedOperationException();
     }
 
@@ -127,16 +127,17 @@ class HDUnorderedIndexStore extends BaseSingleValueIndexStore {
     }
 
     @Override
-    public Iterator<QueryableEntry> getSqlRecordIterator(Comparison comparison, Comparable value) {
+    public Iterator<QueryableEntry> getSqlRecordIterator(Comparison comparison, Comparable value, boolean descending) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public Iterator<QueryableEntry> getSqlRecordIterator(
-            Comparable from,
-            boolean fromInclusive,
-            Comparable to,
-            boolean toInclusive
+        Comparable from,
+        boolean fromInclusive,
+        Comparable to,
+        boolean toInclusive,
+        boolean descending
     ) {
         throw new UnsupportedOperationException();
     }

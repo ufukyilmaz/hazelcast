@@ -45,7 +45,6 @@ com.hazelcast.cp.internal.operation.DefaultRaftReplicateOp,518821,351,519172,351
 com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEventPublishOperation,523410,155,523565,155,523720,155,523875,155,524030,155
 com.hazelcast.internal.partition.PartitionLostEventImpl,524185,56,524241,56,524297,56,524353,56,524409,56
 com.hazelcast.cache.impl.journal.CacheEventJournalReadResultSetImpl,524465,83931,608396,84318,692714,81609,774323,85092,859415,85092
-com.hazelcast.sql.impl.operation.QueryExecuteOperation,944507,469
 com.hazelcast.map.impl.operation.AddInterceptorOperation,947771,264,948035,338,948373,338,948711,338,949049,344
 com.hazelcast.aggregation.impl.CanonicalizingHashSet,952228,21,952249,21
 com.hazelcast.cache.impl.operation.CacheGetOperation,952270,158,952428,158,952586,158,952744,158,952902,158

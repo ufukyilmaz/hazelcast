@@ -117,7 +117,7 @@ abstract class HDBaseConcurrentIndexStore extends BaseSingleValueIndexStore {
 
     @Override
     public Set<QueryableEntry> getRecords(Comparison comparison, Comparable value) {
-        return buildResultSet(getRecords0(comparison, value));
+        return buildResultSet(getRecords0(comparison, value, false));
     }
 
     private Object mapAttributeToEntry(Comparable attribute, QueryableEntry entry) {
@@ -143,7 +143,7 @@ abstract class HDBaseConcurrentIndexStore extends BaseSingleValueIndexStore {
 
     private Set<QueryableEntry> doGetRecords(Comparable value) {
         if (value == NULL) {
-            return buildResultSet(recordsWithNullValue.getKeysInRange(null, true, null, true));
+            return buildResultSet(recordsWithNullValue.getKeysInRange(null, true, null, true, false));
         } else {
             return buildResultSet(records.lookup(value));
         }
@@ -162,52 +162,54 @@ abstract class HDBaseConcurrentIndexStore extends BaseSingleValueIndexStore {
     }
 
     @Override
-    public Iterator<QueryableEntry> getSqlRecordIterator() {
-        return getRecords0(null, true, null, true);
+    public Iterator<QueryableEntry> getSqlRecordIterator(boolean descending) {
+        return getRecords0(null, true, null, true, descending);
     }
 
     @Override
     public Iterator<QueryableEntry> getSqlRecordIterator(Comparable value) {
         if (value == NULL) {
-            return recordsWithNullValue.getKeysInRange(null, true, null, true);
+            return recordsWithNullValue.getKeysInRange(null, true, null, true, false);
         } else {
+            // For one value lookup ordering direction is ignored
             return records.lookup(value);
         }
     }
 
     @Override
-    public Iterator<QueryableEntry> getSqlRecordIterator(Comparison comparison, Comparable value) {
-        return getRecords0(comparison, value);
+    public Iterator<QueryableEntry> getSqlRecordIterator(Comparison comparison, Comparable value, boolean descending) {
+        return getRecords0(comparison, value, descending);
     }
 
     @Override
     public Iterator<QueryableEntry> getSqlRecordIterator(Comparable from, boolean fromInclusive,
-                                                         Comparable to, boolean toInclusive) {
-        return getRecords0(from, fromInclusive, to, toInclusive);
+                                                         Comparable to, boolean toInclusive, boolean descending) {
+        return getRecords0(from, fromInclusive, to, toInclusive, descending);
     }
 
-    Iterator<QueryableEntry> getRecords0(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive) {
+    Iterator<QueryableEntry> getRecords0(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive,
+                                         boolean descending) {
         if (from == null && to == null) {
             // For full scan include NULL values
-            return new FullScanIterator();
+            return new FullScanIterator(descending);
         }
-        return records.getKeysInRange(from, fromInclusive, to, toInclusive);
+        return records.getKeysInRange(from, fromInclusive, to, toInclusive, descending);
     }
 
-    private Iterator<QueryableEntry> getRecords0(Comparison comparison, Comparable value) {
+    private Iterator<QueryableEntry> getRecords0(Comparison comparison, Comparable value, boolean descending) {
         Iterator<QueryableEntry> result;
         switch (comparison) {
             case LESS:
-                result = records.getKeysInRange(null, true, value, false);
+                result = records.getKeysInRange(null, true, value, false, descending);
                 break;
             case LESS_OR_EQUAL:
-                result = records.getKeysInRange(null, true, value, true);
+                result = records.getKeysInRange(null, true, value, true, descending);
                 break;
             case GREATER:
-                result = records.getKeysInRange(value, false, null, true);
+                result = records.getKeysInRange(value, false, null, true, descending);
                 break;
             case GREATER_OR_EQUAL:
-                result = records.getKeysInRange(value, true, null, true);
+                result = records.getKeysInRange(value, true, null, true, descending);
                 break;
             default:
                 throw new IllegalArgumentException("Unrecognized comparison: " + comparison);
@@ -222,23 +224,44 @@ abstract class HDBaseConcurrentIndexStore extends BaseSingleValueIndexStore {
     class FullScanIterator implements Iterator<QueryableEntry> {
 
         private Iterator<QueryableEntry> iterator;
-        private final Iterator<QueryableEntry> nullValueIterator;
+        private Iterator<QueryableEntry> nullValueIterator;
         private Iterator<QueryableEntry> nonNullValueIterator;
+        private final boolean descending;
 
-        FullScanIterator() {
-            this.nullValueIterator = recordsWithNullValue.getKeysInRange(null, true, null, true);
-            this.iterator = nullValueIterator;
+        FullScanIterator(boolean descending) {
+            if (descending) {
+                this.nonNullValueIterator = records.getKeysInRange(null, true,
+                    null, true, descending);
+                this.iterator = nonNullValueIterator;
+            } else {
+                this.nullValueIterator = recordsWithNullValue.getKeysInRange(null, true,
+                    null, true, descending);
+                this.iterator = nullValueIterator;
+            }
+            this.descending = descending;
         }
 
         @Override
         public boolean hasNext() {
             if (!iterator.hasNext()) {
-                if (nonNullValueIterator == null) {
-                    nonNullValueIterator = records.getKeysInRange(null, true, null, true);
-                    iterator = nonNullValueIterator;
-                    return iterator.hasNext();
+                if (descending) {
+                    if (nullValueIterator == null) {
+                        nullValueIterator = recordsWithNullValue.getKeysInRange(null, true,
+                            null, true, descending);
+                        iterator = nullValueIterator;
+                        return iterator.hasNext();
+                    } else {
+                        return false;
+                    }
                 } else {
-                    return false;
+                    if (nonNullValueIterator == null) {
+                        nonNullValueIterator = records.getKeysInRange(null, true
+                            , null, true, descending);
+                        iterator = nonNullValueIterator;
+                        return iterator.hasNext();
+                    } else {
+                        return false;
+                    }
                 }
             }
             return true;

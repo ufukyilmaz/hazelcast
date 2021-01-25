@@ -46,8 +46,22 @@ public final class HDBPlusTreeIndex<T extends QueryableEntry> {
         return recordMap.remove(attribute, key);
     }
 
-    public Iterator<QueryableEntry> getKeysInRange(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive) {
-        return recordMap.lookup(from, fromInclusive, to, toInclusive, false);
+    public Iterator<QueryableEntry> getKeysInRange(Comparable from, boolean fromInclusive,
+                                                   Comparable to, boolean toInclusive,
+                                                   boolean descending) {
+        Comparable from0 = from;
+        boolean fromInclusive0 = fromInclusive;
+        Comparable to0 = to;
+        boolean toInclusive0 = toInclusive;
+
+        if (descending) {
+            // Flip the boundaries
+            from0 = to;
+            fromInclusive0 = toInclusive;
+            to0 = from;
+            toInclusive0 = fromInclusive;
+        }
+        return recordMap.lookup(from0, fromInclusive0, to0, toInclusive0, descending);
     }
 
     public Iterator<QueryableEntry> lookup(Comparable value) {

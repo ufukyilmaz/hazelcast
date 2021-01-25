@@ -39,7 +39,7 @@ public class HDOrderedConcurrentIndexStore extends HDBaseConcurrentIndexStore {
 
     @Override
     public Set<QueryableEntry> getRecords(Comparable from, boolean fromInclusive, Comparable to, boolean toInclusive) {
-        return buildResultSet(getRecords0(from, fromInclusive, to, toInclusive));
+        return buildResultSet(getRecords0(from, fromInclusive, to, toInclusive, false));
     }
 
     @Override

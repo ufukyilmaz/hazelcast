@@ -74,6 +74,7 @@
         <findbugs.annotations.version>3.0.0</findbugs.annotations.version>
         <jsr107.api.version>1.1.1</jsr107.api.version>
         <reflections.version>0.9.10</reflections.version>
+        <felix.utils.version>1.11.6</felix.utils.version>
     </properties>
 
     <licenses>
@@ -560,6 +561,7 @@
                                     </includes>
                                     <excludes>
                                         <exclude>**/jsr/**.java</exclude>
+                                        <exclude>**/**IT.java</exclude>
                                     </excludes>
                                     <groups>
                                         com.hazelcast.test.annotation.QuickTest AND
@@ -603,6 +605,7 @@
                                     </includes>
                                     <excludes>
                                         <exclude>**/jsr/**.java</exclude>
+                                        <exclude>**/**IT.java</exclude>
                                     </excludes>
                                     <groups>
                                         com.hazelcast.test.annotation.QuickTest,
@@ -737,6 +740,7 @@
                             </includes>
                             <excludes>
                                 <exclude>**/jsr/**.java</exclude>
+                                <exclude>**/**IT.java</exclude>
                             </excludes>
                             <groups>
                                 com.hazelcast.test.annotation.CompatibilityTest

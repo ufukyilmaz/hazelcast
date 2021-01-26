@@ -5,7 +5,7 @@ import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.EnterprisePhoneHome;
 import com.hazelcast.internal.util.MD5Util;
-import com.hazelcast.internal.util.PhoneHome;
+import com.hazelcast.internal.util.phonehome.PhoneHome;
 import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -51,7 +51,7 @@ public class EnterprisePhoneHomeTest extends HazelcastTestSupport {
     }
 
     private static void checkPhoneHomeParameters(PhoneHome phoneHome, Node node) {
-        Map<String, String> parameters = phoneHome.phoneHome(node, true);
+        Map<String, String> parameters = phoneHome.phoneHome(true);
         assertEquals(parameters.get("e"), "true");
         assertEquals(parameters.get("oem"), "false");
         assertEquals(parameters.get("l"), MD5Util.toMD5String(node.config.getLicenseKey()));

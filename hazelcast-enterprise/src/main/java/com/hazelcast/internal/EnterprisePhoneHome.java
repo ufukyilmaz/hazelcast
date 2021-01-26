@@ -4,11 +4,11 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
-import com.hazelcast.license.domain.License;
-import com.hazelcast.logging.ILogger;
-import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.internal.util.MD5Util;
-import com.hazelcast.internal.util.PhoneHome;
+import com.hazelcast.internal.util.phonehome.PhoneHome;
+import com.hazelcast.internal.util.phonehome.PhoneHomeParameterCreator;
+import com.hazelcast.license.domain.License;
+import com.hazelcast.memory.MemoryUnit;
 
 import static com.hazelcast.cluster.memberselector.MemberSelectors.DATA_MEMBER_SELECTOR;
 
@@ -17,17 +17,14 @@ import static com.hazelcast.cluster.memberselector.MemberSelectors.DATA_MEMBER_S
  */
 public class EnterprisePhoneHome extends PhoneHome {
 
-    private final ILogger logger;
-
     public EnterprisePhoneHome(Node hazelcastNode) {
         super(hazelcastNode);
-        logger = hazelcastNode.getLogger(EnterprisePhoneHome.class);
     }
 
     @Override
-    public PhoneHomeParameterCreator createParameters(Node hazelcastNode) {
+    public PhoneHomeParameterCreator createParameters() {
         //creates OS parameters first
-        PhoneHomeParameterCreator parameters = super.createParameters(hazelcastNode);
+        PhoneHomeParameterCreator parameters = super.createParameters();
 
         // calculate native memory usage from native memory config
         ClusterServiceImpl clusterService = hazelcastNode.getClusterService();

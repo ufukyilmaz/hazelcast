@@ -6,7 +6,7 @@ import com.hazelcast.instance.impl.EnterpriseNodeExtension;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.EnterprisePhoneHome;
 import com.hazelcast.internal.util.LicenseExpirationReminderTask;
-import com.hazelcast.internal.util.PhoneHome;
+import com.hazelcast.internal.util.phonehome.PhoneHome;
 import com.hazelcast.license.domain.Feature;
 import com.hazelcast.license.domain.License;
 import com.hazelcast.license.nlc.BuiltInLicenseProviderFactory;
@@ -132,7 +132,7 @@ public class NLCModeLicenseTest extends HazelcastTestSupport {
         Node node = getNode(hz);
         PhoneHome phoneHome = new EnterprisePhoneHome(node);
 
-        Map<String, String> parameters = phoneHome.phoneHome(node, true);
+        Map<String, String> parameters = phoneHome.phoneHome(true);
         assertEquals(parameters.get("e"), "true");
         assertEquals(parameters.get("oem"), "true");
         assertEquals(parameters.get("l"), "");
@@ -166,7 +166,7 @@ public class NLCModeLicenseTest extends HazelcastTestSupport {
     }
 
     private List<Feature> createAllV5FeaturesEnabledList() {
-        List<Feature> allFeaturesEnableList = new ArrayList<Feature>();
+        List<Feature> allFeaturesEnableList = new ArrayList<>();
         allFeaturesEnableList.add(Feature.MAN_CENTER);
         allFeaturesEnableList.add(Feature.CLUSTERED_JMX);
         allFeaturesEnableList.add(Feature.CLUSTERED_REST);

@@ -10,7 +10,6 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -67,8 +66,6 @@ public class ClientSocketInterceptorTest {
         assertTrue(message, value <= end);
     }
 
-
-    @Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/3911")
     @Test(timeout = 120000)
     public void testFailingSocketInterceptor() {
         Config config = new Config();
@@ -81,6 +78,7 @@ public class ClientSocketInterceptorTest {
         assertClusterSize(2, h1, h2);
 
         ClientConfig clientConfig = new ClientConfig();
+        clientConfig.getConnectionStrategyConfig().getConnectionRetryConfig().setClusterConnectTimeoutMillis(0);
         MySocketInterceptor myClientSocketInterceptor = new MySocketInterceptor(false);
         clientConfig.getNetworkConfig()
             .setSocketInterceptorConfig(new SocketInterceptorConfig().setEnabled(true)

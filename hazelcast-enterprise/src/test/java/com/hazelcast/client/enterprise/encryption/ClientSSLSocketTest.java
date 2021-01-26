@@ -14,7 +14,6 @@ import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.nio.ssl.OpenSSLEngineFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -51,7 +50,6 @@ public class ClientSSLSocketTest extends ClientTestSupport {
         factory.terminateAll();
     }
 
-    @Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/3911")
     @Test(timeout = 60000, expected = IllegalStateException.class)
     public void testClientThrowsExceptionIfNodesAreUsingSSLButClientIsNot() throws Exception {
         Config serverConfig = smallInstanceConfig();
@@ -62,6 +60,7 @@ public class ClientSSLSocketTest extends ClientTestSupport {
         factory.newHazelcastInstance(serverConfig);
 
         ClientConfig clientConfig = new ClientConfig();
+        clientConfig.getConnectionStrategyConfig().getConnectionRetryConfig().setClusterConnectTimeoutMillis(0);
         factory.newHazelcastClient(clientConfig);
     }
 
@@ -178,8 +177,7 @@ public class ClientSSLSocketTest extends ClientTestSupport {
         clientSslProps.remove(JAVAX_NET_SSL_KEY_STORE);
         clientSslProps.remove(JAVAX_NET_SSL_KEY_STORE_PASSWORD);
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getNetworkConfig().setConnectionTimeout(15000).setRedoOperation(true)
-                .setSSLConfig(getSslConfig(clientSslProps));
+        clientConfig.getConnectionStrategyConfig().getConnectionRetryConfig().setClusterConnectTimeoutMillis(0);
 
         factory.newHazelcastClient(clientConfig);
     }
@@ -198,8 +196,7 @@ public class ClientSSLSocketTest extends ClientTestSupport {
         Properties clientSslProps = createSslProperties();
         clientSslProps.setProperty(JAVAX_NET_SSL_KEY_STORE, getOrCreateTempFile(wrongKeyStore));
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getNetworkConfig().setConnectionTimeout(15000).setRedoOperation(true)
-                .setSSLConfig(getSslConfig(clientSslProps));
+        clientConfig.getConnectionStrategyConfig().getConnectionRetryConfig().setClusterConnectTimeoutMillis(0);
 
         factory.newHazelcastClient(clientConfig);
     }
@@ -282,7 +279,6 @@ public class ClientSSLSocketTest extends ClientTestSupport {
         assertEquals(2, map.get(1));
     }
 
-    @Ignore("See https://github.com/hazelcast/hazelcast-enterprise/issues/2736")
     @Test
     public void testMalformedKeystore_onClient() throws Exception {
         SSLConfig sslConfig = getSslConfig().setProperty(JAVAX_NET_SSL_MUTUAL_AUTHENTICATION, "OPTIONAL");

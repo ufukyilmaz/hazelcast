@@ -26,7 +26,12 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import java.math.BigDecimal;
 import java.nio.ByteOrder;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
 
 import static com.hazelcast.internal.serialization.impl.portable.PortableTest.createNamedPortableClassDefinition;
 import static org.junit.Assert.assertEquals;
@@ -76,14 +81,20 @@ public class EnterprisePortableTest {
 
         InnerPortable inner = new InnerPortable(new byte[]{0, 1, 2}, new char[]{'c', 'h', 'a', 'r'},
                 new short[]{3, 4, 5}, new int[]{9, 8, 7, 6}, new long[]{0, 1, 5, 7, 9, 11},
-                new float[]{0.6543f, -3.56f, 45.67f}, new double[]{456.456, 789.789, 321.321}, nn);
+                new float[]{0.6543f, -3.56f, 45.67f}, new double[]{456.456, 789.789, 321.321}, nn,
+                new BigDecimal[]{new BigDecimal("12345")},
+                new LocalTime[]{LocalTime.now(), LocalTime.now()},
+                new LocalDate[]{LocalDate.now(), LocalDate.now()},
+                new LocalDateTime[]{LocalDateTime.now()},
+                new OffsetDateTime[]{OffsetDateTime.now(), OffsetDateTime.now()});
 
         data = serializationService.toData(inner);
         assertEquals(inner, serializationService.toObject(data));
         assertEquals(inner, serializationService2.toObject(data));
 
         MainPortable main = new MainPortable((byte) 113, true, 'x', (short) -500, 56789, -50992225L, 900.5678f,
-                -897543.3678909d, "this is main portable object created for testing!", inner);
+                -897543.3678909d, "this is main portable object created for testing!", inner,
+                new BigDecimal("12312313"), LocalTime.now(), LocalDate.now(), LocalDateTime.now(), OffsetDateTime.now());
 
         data = serializationService.toData(main);
         assertEquals(main, serializationService.toObject(data));
@@ -221,8 +232,16 @@ public class EnterprisePortableTest {
 
         assertRepeatedSerialisationGivesSameByteArrays(ss, new NamedPortable("issue-1096", 1096));
 
-        assertRepeatedSerialisationGivesSameByteArrays(ss, new InnerPortable(new byte[3], new char[5], new short[2],
-                new int[10], new long[7], new float[9], new double[1], new NamedPortable[]{new NamedPortable("issue-1096", 1096)}));
+        InnerPortable inner = new InnerPortable(new byte[]{0, 1, 2}, new char[]{'c', 'h', 'a', 'r'},
+                new short[]{3, 4, 5}, new int[]{9, 8, 7, 6}, new long[]{0, 1, 5, 7, 9, 11},
+                new float[]{0.6543f, -3.56f, 45.67f}, new double[]{456.456, 789.789, 321.321},
+                new NamedPortable[]{new NamedPortable("issue-1096", 1096)},
+                new BigDecimal[]{new BigDecimal("12345")},
+                new LocalTime[]{LocalTime.now(), LocalTime.now()},
+                new LocalDate[]{LocalDate.now(), LocalDate.now()},
+                new LocalDateTime[]{LocalDateTime.now()},
+                new OffsetDateTime[]{OffsetDateTime.now(), OffsetDateTime.now()});
+        assertRepeatedSerialisationGivesSameByteArrays(ss, inner);
 
         assertRepeatedSerialisationGivesSameByteArrays(ss,
                 new RawDataPortable(1096L, "issue-1096".toCharArray(), new NamedPortable("issue-1096", 1096), 1096,

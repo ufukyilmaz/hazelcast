@@ -23,7 +23,7 @@ public class SecuredClientEndpointTest extends AbstractSecuredAllEndpointsTest {
 
     @Test
     public void testClientEndpointWithClientCertificate() {
-        ClientConfig clientConfig = createClientConfig(clientTruststore, CLIENT_PASSWORD);
+        ClientConfig clientConfig = createClientConfig(clientTruststore, CLIENT_PASSWORD, -1);
         HazelcastInstance client = null;
         try {
             client = HazelcastClient.newHazelcastClient(clientConfig);
@@ -56,7 +56,7 @@ public class SecuredClientEndpointTest extends AbstractSecuredAllEndpointsTest {
     }
 
     private void testClientEndpointWithIncorrectCertificate(File truststore, String password) {
-        ClientConfig clientConfig = createClientConfig(truststore, password);
+        ClientConfig clientConfig = createClientConfig(truststore, password, 0);
         HazelcastInstance client = null;
         try {
             client = HazelcastClient.newHazelcastClient(clientConfig);
@@ -70,12 +70,15 @@ public class SecuredClientEndpointTest extends AbstractSecuredAllEndpointsTest {
         }
     }
 
-    private ClientConfig createClientConfig(File truststore, String password) {
+    private ClientConfig createClientConfig(File truststore, String password, long clusterConnectTimeout) {
         SSLConfig sslConfig = new SSLConfig().setEnabled(true);
         sslConfig
                 .setProperty("trustStore", truststore.getAbsolutePath())
                 .setProperty("trustStorePassword", password);
         ClientConfig config = new ClientConfig();
+        config.getConnectionStrategyConfig()
+                .getConnectionRetryConfig()
+                .setClusterConnectTimeoutMillis(clusterConnectTimeout);
         ClientNetworkConfig networkConfig = config.getNetworkConfig();
         List<String> addresses = new ArrayList<String>();
         addresses.add("127.0.0.1:" + CLIENT_PORT);

@@ -194,7 +194,9 @@ public class ClientAuthenticationTest {
                 .setSSLConfig(new SSLConfig()
                         .setEnabled(true)
                         .setProperties(clientProps));
-        clientConfig.getConnectionStrategyConfig().getConnectionRetryConfig().setMaxBackoffMillis(2000);
+        clientConfig.getConnectionStrategyConfig()
+                .getConnectionRetryConfig()
+                .setClusterConnectTimeoutMillis(0);
         if (openSsl) {
             clientNetworkConfig.getSSLConfig().setFactoryImplementation(new OpenSSLEngineFactory());
         }

@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.login.LoginException;
 
+import com.hazelcast.client.config.ClientConfig;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -75,15 +76,17 @@ public class ClientAuthnSplitBrainTest {
         HazelcastInstance hz1 = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
 
+        ClientConfig clientConfig = new ClientConfig();
+        clientConfig.getConnectionStrategyConfig()
+                .getConnectionRetryConfig()
+                .setClusterConnectTimeoutMillis(0);
+
         Thread[] threads = new Thread[50];
         for (int i = 0; i < threads.length; i++) {
-            threads[i] = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        factory.newHazelcastClient(null).getMap("production").size();
-                    } catch (Exception e) {
-                    }
+            threads[i] = new Thread(() -> {
+                try {
+                    factory.newHazelcastClient(clientConfig).getMap("production").size();
+                } catch (Exception ignored) {
                 }
             });
             threads[i].start();
@@ -95,6 +98,20 @@ public class ClientAuthnSplitBrainTest {
         HazelcastInstance hz3 = factory.newHazelcastInstance(config);
         HazelcastTestSupport.assertClusterSize(3, hz1, hz2, hz3);
         assertTrue(getClusterService(hz1).getMemberListVersion() <= 3);
+
+        // Terminate members. Clients won't be killed
+        // because they shouldn't be created yet. (Due to
+        // not being able to connect a cluster)
+        factory.terminateAll();
+
+        for (Thread t : threads) {
+            // Make sure to cleanup client threads
+            // that are trying to connect to a cluster.
+            // Once the members are terminated, clients
+            // will stop trying since the cluster connect
+            // timeout is equal to 0.
+            t.join();
+        }
     }
 
     public static class TestLoginModule extends ClusterLoginModule {

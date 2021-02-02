@@ -2,12 +2,13 @@ package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.internal.nio.Bits;
 import com.hazelcast.internal.nio.BufferObjectDataOutput;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.util.collection.ArrayUtils;
-import com.hazelcast.internal.serialization.Data;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import javax.annotation.Nullable;
 import java.nio.ByteOrder;
 
 import static com.hazelcast.internal.nio.Bits.CHAR_SIZE_IN_BYTES;
@@ -25,7 +26,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * <p>
  * If {@linkplain #position()} is greater than {@linkplain #capacity()},
  * it means buffer capacity is exceeded.
- *
+ * <p>
  * FixedBufferObjectDataOutput can be used as a pre-allocated in-memory BufferObjectDataOutput
  * for the hot path serializations. If serialized form of the object exceeds the capacity
  * then a fallback serialization method can be invoked.
@@ -273,6 +274,11 @@ public class FixedBufferObjectDataOutput extends VersionedObjectDataOutput imple
 
     @Override
     public void writeUTF(final String str) {
+        writeString(str);
+    }
+
+    @Override
+    public void writeString(@Nullable String str) {
         if (str == null) {
             writeInt(NULL_ARRAY_LENGTH);
             return;
@@ -371,11 +377,16 @@ public class FixedBufferObjectDataOutput extends VersionedObjectDataOutput imple
 
     @Override
     public void writeUTFArray(String[] strings) {
+        writeStringArray(strings);
+    }
+
+    @Override
+    public void writeStringArray(@Nullable String[] strings) {
         int len = strings != null ? strings.length : NULL_ARRAY_LENGTH;
         writeInt(len);
         if (len > 0) {
             for (String s : strings) {
-                writeUTF(s);
+                writeString(s);
             }
         }
     }

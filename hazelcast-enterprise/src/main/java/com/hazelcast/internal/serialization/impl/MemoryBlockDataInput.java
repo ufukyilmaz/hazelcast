@@ -6,6 +6,7 @@ import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 
+import javax.annotation.Nullable;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -449,6 +450,11 @@ final class MemoryBlockDataInput extends VersionedObjectDataInput implements Ent
 
     @Override
     public String[] readUTFArray() throws IOException {
+       return readStringArray();
+    }
+
+    @Override
+    public String[] readStringArray() throws IOException {
         int len = readInt();
         if (len == NULL_ARRAY_LENGTH) {
             return null;
@@ -556,6 +562,12 @@ final class MemoryBlockDataInput extends VersionedObjectDataInput implements Ent
      */
     @Override
     public String readUTF() throws IOException {
+       return readString();
+    }
+
+    @Nullable
+    @Override
+    public String readString() throws IOException {
         int numberOfBytes = readInt();
         if (numberOfBytes == NULL_ARRAY_LENGTH) {
             return null;

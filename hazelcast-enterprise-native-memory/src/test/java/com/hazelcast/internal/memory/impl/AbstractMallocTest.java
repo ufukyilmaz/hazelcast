@@ -29,7 +29,9 @@ abstract class AbstractMallocTest {
     public void test_cannotAllocateMemoryDueToOOME() {
         LibMalloc malloc = getLibMalloc();
 
-        long address = malloc.malloc(Long.MAX_VALUE);
+        // Note : JDK 15 introduces a changes in Unsafe.allocateMemory method,
+        // which doesn't allow to allocate more than Long.MAX_VALUE - 7 bytes.
+        long address = malloc.malloc(Long.MAX_VALUE - 0xF);
         assertEquals(LibMalloc.NULL_ADDRESS, address);
     }
 
@@ -37,10 +39,12 @@ abstract class AbstractMallocTest {
     public void test_cannotReallocateMemoryDueToOOME() {
         LibMalloc malloc = getLibMalloc();
 
+        // Note : JDK 15 introduces a changes in Unsafe.allocateMemory method,
+        // which doesn't allow to allocate more than Long.MAX_VALUE - 7 bytes.
         long address = malloc.malloc(8);
         assertNotEquals(LibMalloc.NULL_ADDRESS, address);
 
-        address = malloc.realloc(address, Long.MAX_VALUE);
+        address = malloc.realloc(address, Long.MAX_VALUE - 0xF);
         assertEquals(LibMalloc.NULL_ADDRESS, address);
     }
 

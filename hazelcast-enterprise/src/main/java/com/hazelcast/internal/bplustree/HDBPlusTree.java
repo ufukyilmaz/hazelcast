@@ -1066,8 +1066,8 @@ public final class HDBPlusTree<T extends QueryableEntry> implements BPlusTree<T>
             it.sequenceNumber = getSequenceNumber(nodeAddr);
             it.currentNodeAddr = nodeAddr;
 
-            releaseLock(nodeAddr, lockingContext);
             it.nextSlotIsWithinRange();
+            releaseLock(nodeAddr, lockingContext);
 
             return it;
         }

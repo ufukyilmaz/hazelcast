@@ -71,19 +71,21 @@ public class MerkleTreeGetEntriesOperation extends MapOperation implements Reado
         InternalSerializationService serializationService =
                 (InternalSerializationService) getNodeEngine().getSerializationService();
         recordStore.iterator()
-                   .forEachRemaining(entry -> {
-                       Data keyData = entry.getKey();
-                       int keyHash = keyData.hashCode();
-                       int currentKeyNodeOrder = getLeafOrderForHash(keyHash, levelOfRequestedNodes);
-                       Builder<WanMapEntryView<Object, Object>> entriesBuilder = entryBuilders.get(currentKeyNodeOrder);
-                       if (entriesBuilder != null) {
-                           Record record = entry.getValue();
-                           entriesBuilder.add(createWanEntryView(
-                                   serializationService.toData(keyData, DataType.HEAP),
-                                   serializationService.toData(record.getValue(), DataType.HEAP),
-                                   record, serializationService));
-                       }
-                   });
+                .forEachRemaining(entry -> {
+                    Data keyData = entry.getKey();
+                    int keyHash = keyData.hashCode();
+                    int currentKeyNodeOrder = getLeafOrderForHash(keyHash, levelOfRequestedNodes);
+                    Builder<WanMapEntryView<Object, Object>> entriesBuilder = entryBuilders.get(currentKeyNodeOrder);
+                    if (entriesBuilder != null) {
+                        Record record = entry.getValue();
+                        entriesBuilder.add(createWanEntryView(
+                                serializationService.toData(keyData, DataType.HEAP),
+                                serializationService.toData(record.getValue(), DataType.HEAP),
+                                record,
+                                recordStore.getExpirySystem().getExpiredMetadata(keyData),
+                                serializationService));
+                    }
+                });
 
 
         result = new ArrayList<>(merkleTreeOrderValuePairs.length / 2);

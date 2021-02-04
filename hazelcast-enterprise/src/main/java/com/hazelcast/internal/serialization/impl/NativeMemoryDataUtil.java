@@ -57,7 +57,7 @@ public final class NativeMemoryDataUtil {
         return Math.max(readTotalSize(address) - HeapData.HEAP_DATA_OVERHEAD, 0);
     }
 
-    static int readTotalSize(long address) {
+    public static int readTotalSize(long address) {
         if (address == 0L) {
             return 0;
         }

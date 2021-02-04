@@ -9,7 +9,7 @@ import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseSerialParametersRunnerFactory;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.memory.MemoryStats;
 import com.hazelcast.internal.nio.Bits;
@@ -19,6 +19,7 @@ import com.hazelcast.internal.util.collection.Int2ObjectHashMap;
 import com.hazelcast.internal.util.collection.IntHashSet;
 import com.hazelcast.map.impl.operation.MergeOperation;
 import com.hazelcast.map.impl.record.Record;
+import com.hazelcast.map.impl.recordstore.expiry.ExpiryMetadata;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.impl.NodeEngineImpl;
@@ -30,15 +31,17 @@ import com.hazelcast.spi.merge.SplitBrainMergeTypes;
 import com.hazelcast.spi.properties.ClusterProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
+import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.test.annotation.SlowTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.mockito.Mockito;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -56,6 +59,7 @@ import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 import static com.hazelcast.spi.impl.merge.MergingValueFactory.createMergingEntry;
 import static com.hazelcast.test.Accessors.getNode;
 import static com.hazelcast.test.Accessors.getSerializationService;
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 
@@ -63,17 +67,26 @@ import static org.junit.Assert.assertEquals;
  * This test is an adapted version of {@link
  * com.hazelcast.cache.CacheNativeMemoryLeakStressTest}.
  */
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(SlowTest.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseSerialParametersRunnerFactory.class)
+@Category({QuickTest.class, ParallelJVMTest.class})
 public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
+
+    @Parameterized.Parameters(name = "statsEnabled:{0}")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{{true}, {false}});
+    }
+
+    @Parameterized.Parameter
+    public boolean statsEnabled;
 
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(60);
     private static final MemoryAllocatorType ALLOCATOR_TYPE = MemoryAllocatorType.STANDARD;
     private static final MemorySize MEMORY_SIZE = new MemorySize(128, MemoryUnit.MEGABYTES);
     private static final int[] OP_SET = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
-    private static final int KEY_RANGE = 10000000;
+    private static final int KEY_RANGE = 10_000_000;
     private static final int PARTITION_COUNT = 271;
-    private static final int REPS = 1000;
+    private static final int REPS = 1_000;
     private static final String MAP_NAME = randomMapName("HD");
 
     @BeforeClass
@@ -90,13 +103,13 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
     @Category(QuickTest.class)
     public void test_shutdown() {
         final Config config = createConfig();
-        config.getNativeMemoryConfig().setAllocatorType(MemoryAllocatorType.POOLED);
+        config.getNativeMemoryConfig().setAllocatorType(MemoryAllocatorType.STANDARD);
 
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
         HazelcastInstance hz = factory.newHazelcastInstance(config);
 
         final IMap<Object, Object> map = hz.getMap(MAP_NAME);
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 1_000; i++) {
             map.put(i, i);
         }
 
@@ -156,7 +169,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         MapConfig mapConfig = new MapConfig(MAP_NAME)
                 .setBackupCount(1)
                 .setInMemoryFormat(InMemoryFormat.NATIVE)
-                .setStatisticsEnabled(true)
+                .setStatisticsEnabled(statsEnabled)
                 .setCacheDeserializedValues(CacheDeserializedValues.ALWAYS)
                 .setMapStoreConfig(mapStoreConfig);
 
@@ -378,7 +391,8 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         Data keyData = serializationService.toData(key);
         Data valueData = serializationService.toData(mergedValue);
         SplitBrainMergeTypes.MapMergeTypes mergingEntry
-                = createMergingEntry(serializationService, keyData, valueData, Mockito.mock(Record.class));
+                = createMergingEntry(serializationService, keyData, valueData,
+                Mockito.mock(Record.class), ExpiryMetadata.NULL);
         Operation mergeOperation = new MergeOperation(mapName, singletonList(mergingEntry),
                 new PassThroughMergePolicy<>(), false);
         int partitionId = nodeEngine.getPartitionService().getPartitionId(key);

@@ -566,6 +566,25 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         return NULL_ADDRESS;
     }
 
+    public long getNativeValueAddress(Data key) {
+        ensureMemory();
+
+        final int mask = allocatedSlotCount - 1;
+        int slot = rehash(key, perturbation) & mask;
+        final int wrappedAround = slot;
+        while (accessor.isAssigned(slot)) {
+            long slotKey = accessor.getKey(slot);
+            if (NativeMemoryDataUtil.equals(slotKey, key)) {
+                return accessor.getValue(slot);
+            }
+            slot = (slot + 1) & mask;
+            if (slot == wrappedAround) {
+                break;
+            }
+        }
+        return NULL_ADDRESS;
+    }
+
     private void ensureMemory() {
         if (accessor == null) {
             throw new IllegalStateException("Map is already destroyed!");
@@ -780,7 +799,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         }
     }
 
-    private abstract class SlotIter<E> implements SlottableIterator<E> {
+    public abstract class SlotIter<E> implements SlottableIterator<E> {
         int nextSlot = -1;
         int currentSlot = -1;
         private NativeMemoryData keyHolder;
@@ -835,7 +854,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             removeInternal(true);
         }
 
-        protected void removeInternal(boolean disposeKey) {
+        public void removeInternal(boolean disposeKey) {
             ensureMemory();
             if (currentSlot < 0) {
                 throw new NoSuchElementException();
@@ -932,6 +951,10 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
         KeyIter(int startSlot) {
             super(startSlot, true);
+        }
+
+        KeyIter(int startSlot, boolean failFast) {
+            super(startSlot, failFast);
         }
 
         @Override
@@ -1229,7 +1252,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         @Override
         public V setValue(V value) {
             V current = getValue();
-            accessor.setValue(slot, (MemoryBlock) value);
+            accessor.setValue(slot, value);
             return current;
         }
     }
@@ -1246,6 +1269,20 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             while (iter.hasNext()) {
                 iter.nextSlot();
                 iter.remove();
+            }
+            assignedSlotCount = 0;
+            accessor.clear();
+        }
+    }
+
+    public void clearWithoutKeyDisposal() {
+        ensureMemory();
+        modCount++;
+        if (accessor != null) {
+            KeyIter iter = new KeyIter();
+            while (iter.hasNext()) {
+                iter.nextSlot();
+                iter.removeInternal(false);
             }
             assignedSlotCount = 0;
             accessor.clear();

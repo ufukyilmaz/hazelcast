@@ -1,17 +1,17 @@
 package com.hazelcast.internal.serialization.impl;
 
-import com.hazelcast.partition.PartitioningStrategy;
-import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.internal.serialization.impl.bufferpool.BufferPool;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.nio.EnterpriseBufferObjectDataOutput;
-import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.internal.serialization.Data;
-import com.hazelcast.nio.serialization.DataSerializable;
-import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
+import com.hazelcast.internal.serialization.impl.bufferpool.BufferPool;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.serialization.DataSerializable;
+import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.HazelcastSerializationException;
+import com.hazelcast.partition.PartitioningStrategy;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -74,7 +74,8 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
         return toDataInternal(obj, type, strategy, getCurrentMemoryAllocator());
     }
 
-    private <B extends Data> B toDataInternal(Object obj, DataType type, PartitioningStrategy strategy, MemoryAllocator malloc) {
+    private <B extends Data> B toDataInternal(Object obj, DataType type,
+                                              PartitioningStrategy strategy, MemoryAllocator malloc) {
         if (obj == null) {
             return null;
         }
@@ -85,12 +86,15 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
             return super.toData(obj, strategy);
         }
         if (type == DataType.NATIVE) {
-            return toNativeDataInternal(obj, strategy, malloc);
+            return toNativeDataInternal(obj, true, strategy, malloc);
         }
         throw new IllegalArgumentException("Unknown data type: " + type);
     }
 
-    private <B extends Data> B toNativeDataInternal(Object obj, PartitioningStrategy strategy, MemoryAllocator malloc) {
+    private <B extends Data> B toNativeDataInternal(Object obj,
+                                                    boolean writeHash,
+                                                    PartitioningStrategy strategy,
+                                                    MemoryAllocator malloc) {
         if (obj == null) {
             return null;
         }
@@ -104,8 +108,10 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
         try {
             SerializerAdapter serializer = serializerFor(obj);
 
-            int partitionHash = calculatePartitionHash(obj, strategy);
-            out.writeInt(partitionHash, ByteOrder.BIG_ENDIAN);
+            if (writeHash) {
+                int partitionHash = calculatePartitionHash(obj, strategy);
+                out.writeInt(partitionHash, ByteOrder.BIG_ENDIAN);
+            }
 
             out.writeInt(serializer.getTypeId(), ByteOrder.BIG_ENDIAN);
             serializer.write(out, obj);

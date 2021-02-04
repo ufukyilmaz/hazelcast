@@ -3,6 +3,7 @@ package com.hazelcast.map.impl.eviction;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.partition.IPartitionService;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.ForcedEvictable;
@@ -10,7 +11,7 @@ import com.hazelcast.map.impl.recordstore.HDStorageSCHM;
 import com.hazelcast.map.impl.recordstore.HotRestartHDStorageImpl;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.map.impl.recordstore.Storage;
-import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.map.impl.recordstore.expiry.ExpiryReason;
 import com.hazelcast.spi.eviction.EvictionPolicyComparator;
 
 import java.util.Iterator;
@@ -59,6 +60,7 @@ public class HDEvictorImpl extends EvictorImpl {
         if (recordStore.size() == 0) {
             return;
         }
+        long now = getNow();
         boolean backup = isBackup(recordStore);
 
         int removeThisNumOfEntries = (int) Math.max(recordStore.size() * percentage,
@@ -66,13 +68,13 @@ public class HDEvictorImpl extends EvictorImpl {
         int maxRemovePerPass = Math.min(removeThisNumOfEntries, MAX_PER_PASS_REMOVAL_COUNT);
         Data[] keysToRemove = new Data[maxRemovePerPass];
         do {
-            evictRecordStore(recordStore, maxRemovePerPass, backup, keysToRemove);
+            evictRecordStore(recordStore, maxRemovePerPass, keysToRemove, now, backup);
             removeThisNumOfEntries -= maxRemovePerPass;
         } while (recordStore.size() > 0 && removeThisNumOfEntries > 0);
     }
 
     private void evictRecordStore(RecordStore recordStore, int maxRemovePerPass,
-                                  boolean backup, Data[] keysToRemove) {
+                                  Data[] keysToRemove, long now, boolean backup) {
         int index = -1;
         Iterator<Map.Entry<Data, Record>> recordIterator = getEntryIterator(recordStore, maxRemovePerPass);
         while (recordIterator.hasNext()) {
@@ -81,7 +83,8 @@ public class HDEvictorImpl extends EvictorImpl {
 
             if (!recordStore.isLocked(key)) {
                 if (!backup) {
-                    recordStore.doPostEvictionOperations(key, entry.getValue());
+                    ExpiryReason expiryReason = recordStore.hasExpired(key, now, false);
+                    recordStore.doPostEvictionOperations(key, entry.getValue().getValue(), expiryReason);
                 }
                 keysToRemove[++index] = key;
             }
@@ -102,7 +105,8 @@ public class HDEvictorImpl extends EvictorImpl {
         storageInfo.increaseForceEvictedEntryCount(removedKeyCount);
     }
 
-    private Iterator<Map.Entry<Data, Record>> getEntryIterator(RecordStore recordStore, int maxRemovePerPass) {
+    private Iterator<Map.Entry<Data, Record>> getEntryIterator(RecordStore recordStore,
+                                                               int maxRemovePerPass) {
         Storage storage = recordStore.getStorage();
         return maxRemovePerPass == recordStore.size()
                 ? storage.mutationTolerantIterator()

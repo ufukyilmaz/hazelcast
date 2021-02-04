@@ -18,15 +18,18 @@ import com.hazelcast.map.impl.wan.WanEnterpriseMapRemoveEvent;
 import com.hazelcast.map.impl.wan.WanMapEntryView;
 import com.hazelcast.map.wan.MapWanEventFilter;
 import com.hazelcast.spi.impl.NodeEngine;
+import com.hazelcast.spi.impl.eventservice.EventRegistration;
 import com.hazelcast.spi.merge.SplitBrainMergePolicy;
 
 import javax.annotation.Nonnull;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.enterprise.wan.WanFilterEventType.LOADED;
 import static com.hazelcast.enterprise.wan.WanFilterEventType.UPDATED;
+import static com.hazelcast.internal.util.CollectionUtil.isEmpty;
 
 /**
  * Enterprise version of {@link MapEventPublisher} helper functionality.
@@ -46,6 +49,10 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
     public void publishEvent(Address caller, String mapName, EntryEventType eventType,
                              Data dataKey, Object oldValue,
                              Object value, Object mergingValue) {
+        Collection<EventRegistration> registrations = getRegistrations(mapName);
+        if (isEmpty(registrations)) {
+            return;
+        }
 
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         InMemoryFormat inMemoryFormat = mapContainer.getMapConfig().getInMemoryFormat();

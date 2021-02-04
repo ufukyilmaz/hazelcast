@@ -280,7 +280,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
                 if (mapContainer instanceof EnterpriseMapContainer) {
                     context.collect(descriptor.copy()
                                     .withDiscriminator(MAP_DISCRIMINATOR_NAME, mapContainer.name),
-                            ((EnterpriseMapContainer) mapContainer).getHdStorageInfo());
+                            ((EnterpriseMapContainer) mapContainer).getHDStorageInfo());
                 }
             }
         }

@@ -7,10 +7,12 @@ import com.hazelcast.internal.hotrestart.RamStoreHelper;
 import com.hazelcast.internal.hotrestart.RecordDataSink;
 import com.hazelcast.internal.hotrestart.impl.KeyOnHeap;
 import com.hazelcast.internal.hotrestart.impl.SetOfKeyHandle;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.util.Clock;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.internal.serialization.Data;
+
+import static com.hazelcast.map.impl.record.Record.UNSET;
 
 /**
  * On heap map's RamStore implementation. A map is on heap if it's
@@ -58,7 +60,7 @@ public class OnHeapMapRamStoreImpl implements RamStore {
         Data key = new HeapData(((KeyOnHeap) kh).bytes());
         Record record = storage.get(key);
         if (record == null) {
-            record = recordStore.createRecord(key, value, -1, -1, Clock.currentTimeMillis());
+            record = recordStore.createRecord(value, UNSET, UNSET, Clock.currentTimeMillis());
             storage.putTransient(key, record);
         } else {
             storage.updateTransient(key, record, value);

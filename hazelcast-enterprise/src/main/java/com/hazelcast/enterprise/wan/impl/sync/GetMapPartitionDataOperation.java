@@ -6,6 +6,7 @@ import com.hazelcast.internal.util.SetUtil;
 import com.hazelcast.map.impl.EntryViews;
 import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.record.Record;
+import com.hazelcast.map.impl.recordstore.expiry.ExpiryMetadata;
 import com.hazelcast.map.impl.wan.WanMapEntryView;
 import com.hazelcast.spi.impl.operationservice.ReadonlyOperation;
 
@@ -29,14 +30,17 @@ public class GetMapPartitionDataOperation extends MapOperation implements Readon
     protected void runInternal() {
         recordSet = SetUtil.createHashSet(recordStore.size());
         recordStore.forEach((dataKey, record)
-                -> recordSet.add(createWanEntryView(dataKey, record)), getReplicaIndex() != 0);
+                -> recordSet.add(createWanEntryView(dataKey, record,
+                recordStore.getExpirySystem().getExpiredMetadata(dataKey))), getReplicaIndex() != 0);
     }
 
-    private WanMapEntryView<Object, Object> createWanEntryView(Data dataKey, Record<Object> record) {
+    private WanMapEntryView<Object, Object> createWanEntryView(Data dataKey,
+                                                               Record<Object> record, ExpiryMetadata expiryMetadata) {
         return EntryViews.createWanEntryView(
                 mapServiceContext.toData(dataKey),
                 mapServiceContext.toData(record.getValue()),
                 record,
+                expiryMetadata,
                 getNodeEngine().getSerializationService());
     }
 

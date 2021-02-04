@@ -13,6 +13,8 @@ import com.hazelcast.map.impl.iterator.MapEntriesWithCursor;
 import com.hazelcast.map.impl.iterator.MapKeysWithCursor;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.Record;
+import com.hazelcast.map.impl.recordstore.expiry.ExpiryMetadata;
+import com.hazelcast.map.impl.recordstore.expiry.ExpirySystem;
 import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 
 import java.util.AbstractMap.SimpleEntry;
@@ -38,18 +40,22 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
      */
     public static final float DEFAULT_LOAD_FACTOR = 0.6f;
 
+    private final ExpirySystem expirySystem;
     private final SerializationService serializationService;
 
-    public HDStorageSCHM(HiDensityRecordProcessor<HDRecord> recordProcessor, SerializationService serializationService) {
+    public HDStorageSCHM(HiDensityRecordProcessor<HDRecord> recordProcessor,
+                         ExpirySystem expirySystem,
+                         SerializationService serializationService) {
         super(DEFAULT_CAPACITY, DEFAULT_LOAD_FACTOR, recordProcessor);
 
+        this.expirySystem = expirySystem;
         this.serializationService = serializationService;
     }
 
     @Override
     @SuppressWarnings("unchecked")
     protected <E extends SamplingEntry> E createSamplingEntry(int slot) {
-        return (E) new LazyEvictableEntryView(slot, serializationService);
+        return (E) new LazyEvictableEntryView(slot, serializationService, expirySystem);
     }
 
     /**
@@ -184,22 +190,26 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
         private V value;
         private HDRecord record;
         private Data dataKey;
+        private ExpiryMetadata expiredMetadata;
 
         private SerializationService serializationService;
 
-        public LazyEvictableEntryView(int slot, SerializationService serializationService) {
+        public LazyEvictableEntryView(int slot, SerializationService serializationService,
+                                      ExpirySystem expirySystem) {
             super(slot);
             this.dataKey = super.getEntryKey();
             this.record = super.getEntryValue();
             this.serializationService = serializationService;
+            this.expiredMetadata = expirySystem.getExpiredMetadata(dataKey);
         }
 
         LazyEvictableEntryView(int slot, SerializationService serializationService,
-                               Data dataKey, HDRecord record) {
+                               Data dataKey, HDRecord record, ExpiryMetadata expiryMetadata) {
             super(slot);
             this.dataKey = dataKey;
             this.record = record;
             this.serializationService = serializationService;
+            this.expiredMetadata = expiryMetadata;
         }
 
         public Data getDataKey() {
@@ -254,7 +264,7 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
         public long getExpirationTime() {
             ensureCallingFromPartitionOperationThread();
 
-            return record.getExpirationTime();
+            return expiredMetadata.getExpirationTime();
         }
 
         @Override
@@ -296,14 +306,14 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
         public long getTtl() {
             ensureCallingFromPartitionOperationThread();
 
-            return record.getTtl();
+            return expiredMetadata.getTtl();
         }
 
         @Override
         public long getMaxIdle() {
             ensureCallingFromPartitionOperationThread();
 
-            return record.getMaxIdle();
+            return expiredMetadata.getMaxIdle();
         }
 
         @Override

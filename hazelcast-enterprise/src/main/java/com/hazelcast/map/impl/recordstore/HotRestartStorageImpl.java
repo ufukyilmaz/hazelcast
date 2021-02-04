@@ -6,6 +6,7 @@ import com.hazelcast.internal.hotrestart.HotRestartKey;
 import com.hazelcast.internal.hotrestart.HotRestartStore;
 import com.hazelcast.internal.hotrestart.impl.KeyOnHeap;
 import com.hazelcast.internal.iteration.IterationPointer;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.EntryCostEstimator;
@@ -13,7 +14,7 @@ import com.hazelcast.map.impl.iterator.MapEntriesWithCursor;
 import com.hazelcast.map.impl.iterator.MapKeysWithCursor;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordFactory;
-import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.map.impl.recordstore.expiry.ExpirySystem;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -30,15 +31,20 @@ public class HotRestartStorageImpl<R extends Record>
     protected final EnterpriseMapServiceContext mapServiceContext;
     protected final HotRestartStore hotRestartStore;
     protected final Storage<Data, R> storage;
+    protected final ExpirySystem expirySystem;
     protected final boolean fsync;
     protected final long prefix;
 
-    HotRestartStorageImpl(EnterpriseMapServiceContext mapServiceContext, RecordFactory<R> recordFactory,
-                          InMemoryFormat inMemoryFormat, boolean fsync, long prefix, int partitionId) {
+    HotRestartStorageImpl(EnterpriseMapServiceContext mapServiceContext,
+                          RecordFactory<R> recordFactory,
+                          InMemoryFormat inMemoryFormat, boolean statsEnabled,
+                          ExpirySystem expirySystem,
+                          boolean fsync, long prefix, int partitionId) {
         this.mapServiceContext = mapServiceContext;
+        this.expirySystem = expirySystem;
         this.fsync = fsync;
         this.hotRestartStore = getHotRestartStore(partitionId);
-        this.storage = createStorage(recordFactory, inMemoryFormat);
+        this.storage = createStorage(recordFactory, inMemoryFormat, statsEnabled);
         this.prefix = prefix;
     }
 
@@ -46,9 +52,9 @@ public class HotRestartStorageImpl<R extends Record>
         return mapServiceContext.getOnHeapHotRestartStoreForPartition(partitionId);
     }
 
-    public Storage createStorage(RecordFactory recordFactory, InMemoryFormat inMemoryFormat) {
+    public Storage createStorage(RecordFactory recordFactory, InMemoryFormat inMemoryFormat, boolean statsEnabled) {
         SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
-        return new StorageImpl<R>(inMemoryFormat, serializationService);
+        return new StorageImpl<R>(inMemoryFormat, expirySystem, serializationService);
     }
 
     @Override

@@ -35,6 +35,10 @@ public final class HDTestSupport {
         return getHDConfig(new Config(), POOLED);
     }
 
+    public static Config getHDIndexConfig(Config config) {
+        return getHDConfig(config, POOLED);
+    }
+
     public static Config getHDConfig(String persistentMemoryDirectory) {
         Config config = new Config();
         MemorySize memorySize = getNativeMemorySize(config);

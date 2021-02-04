@@ -1,5 +1,6 @@
 package com.hazelcast.map.impl.record;
 
+import com.hazelcast.config.CacheDeserializedValues;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.serialization.DataType;
@@ -18,17 +19,18 @@ import org.junit.runner.RunWith;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.internal.util.QuickMath.modPowerOfTwo;
+import static com.hazelcast.map.impl.record.HDRecordFactoryTest.newMapContainer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class HDRecordAccessorTest {
+public class HDMapRecordAccessorTest {
 
     private PoolingMemoryManager memoryManager;
     private EnterpriseSerializationService serializationService;
-    private HDRecordAccessor accessor;
+    private HDMapRecordAccessor accessor;
 
     @Before
     public void setup() {
@@ -36,7 +38,9 @@ public class HDRecordAccessorTest {
         memoryManager = new PoolingMemoryManager(memorySize);
         memoryManager.registerThread(Thread.currentThread());
         serializationService = new EnterpriseSerializationServiceBuilder().setMemoryManager(memoryManager).build();
-        accessor = new HDRecordAccessor(serializationService);
+
+        accessor = new HDMapRecordAccessor(serializationService,
+                newMapContainer(true, CacheDeserializedValues.ALWAYS));
     }
 
     @After
@@ -46,7 +50,7 @@ public class HDRecordAccessorTest {
 
     @Test
     public void test_createRecord() {
-        assertTrue(accessor.createRecord() instanceof HDRecord);
+        assertTrue(accessor.createRecord() instanceof HDRecordWithStats);
     }
 
     @Test
@@ -67,11 +71,11 @@ public class HDRecordAccessorTest {
 
     @Test
     public void test_isEqual_equals_when_values_are_same() {
-        long recordAddress1 = memoryManager.allocate(HDRecord.SIZE);
-        long recordAddress2 = memoryManager.allocate(HDRecord.SIZE);
+        long recordAddress1 = memoryManager.allocate(HDRecordWithStats.SIZE);
+        long recordAddress2 = memoryManager.allocate(HDRecordWithStats.SIZE);
 
-        HDRecord record1 = (HDRecord) accessor.newRecord().reset(recordAddress1);
-        HDRecord record2 = (HDRecord) accessor.newRecord().reset(recordAddress2);
+        HDRecordWithStats record1 = (HDRecordWithStats) accessor.newRecord().reset(recordAddress1);
+        HDRecordWithStats record2 = (HDRecordWithStats) accessor.newRecord().reset(recordAddress2);
 
         NativeMemoryData value1 = serializationService.toData(1, DataType.NATIVE);
         NativeMemoryData value2 = serializationService.toData(1, DataType.NATIVE);
@@ -84,11 +88,11 @@ public class HDRecordAccessorTest {
 
     @Test
     public void test_isEqual_notEquals_when_values_are_different() {
-        long recordAddress1 = memoryManager.allocate(HDRecord.SIZE);
-        long recordAddress2 = memoryManager.allocate(HDRecord.SIZE);
+        long recordAddress1 = memoryManager.allocate(HDRecordWithStats.SIZE);
+        long recordAddress2 = memoryManager.allocate(HDRecordWithStats.SIZE);
 
-        HDRecord record1 = (HDRecord) accessor.newRecord().reset(recordAddress1);
-        HDRecord record2 = (HDRecord) accessor.newRecord().reset(recordAddress2);
+        HDRecordWithStats record1 = (HDRecordWithStats) accessor.newRecord().reset(recordAddress1);
+        HDRecordWithStats record2 = (HDRecordWithStats) accessor.newRecord().reset(recordAddress2);
 
         NativeMemoryData value1 = serializationService.toData(1, DataType.NATIVE);
         NativeMemoryData value2 = serializationService.toData(2, DataType.NATIVE);
@@ -101,44 +105,35 @@ public class HDRecordAccessorTest {
 
     @Test
     public void test_aligned_field_access() {
-        long address = memoryManager.allocate(HDRecord.SIZE);
-        HDRecord record = (HDRecord) accessor.newRecord().reset(address);
+        long address = memoryManager.allocate(HDRecordWithStats.SIZE);
+        HDRecordWithStats record = (HDRecordWithStats) accessor.newRecord().reset(address);
 
         NativeMemoryData value = serializationService.toData(1, DataType.NATIVE);
         record.setValue(value);
 
-        assertAligned(address, HDRecord.VALUE_OFFSET, 8);
-        AMEM.getLong(address + HDRecord.VALUE_OFFSET);
+        assertAligned(address, HDRecordWithStats.VALUE_OFFSET, 8);
+        AMEM.getLong(address + HDRecordWithStats.VALUE_OFFSET);
 
-        assertAligned(address, HDRecord.VERSION_OFFSET, 8);
-        AMEM.getLong(address + HDRecord.VERSION_OFFSET);
+        assertAligned(address, HDRecordWithStats.VERSION_OFFSET, 8);
+        AMEM.getLong(address + HDRecordWithStats.VERSION_OFFSET);
 
-        assertAligned(address, HDRecord.CREATION_TIME_OFFSET, 4);
-        AMEM.getInt(address + HDRecord.CREATION_TIME_OFFSET);
+        assertAligned(address, HDRecordWithStats.CREATION_TIME_OFFSET, 4);
+        AMEM.getInt(address + HDRecordWithStats.CREATION_TIME_OFFSET);
 
-        assertAligned(address, HDRecord.TTL_OFFSET, 4);
-        AMEM.getInt(address + HDRecord.TTL_OFFSET);
+        assertAligned(address, HDRecordWithStats.LAST_ACCESS_TIME_OFFSET, 4);
+        AMEM.getInt(address + HDRecordWithStats.LAST_ACCESS_TIME_OFFSET);
 
-        assertAligned(address, HDRecord.MAX_IDLE_OFFSET, 4);
-        AMEM.getInt(address + HDRecord.MAX_IDLE_OFFSET);
+        assertAligned(address, HDRecordWithStats.LAST_UPDATE_TIME_OFFSET, 4);
+        AMEM.getInt(address + HDRecordWithStats.LAST_UPDATE_TIME_OFFSET);
 
-        assertAligned(address, HDRecord.LAST_ACCESS_TIME_OFFSET, 4);
-        AMEM.getInt(address + HDRecord.LAST_ACCESS_TIME_OFFSET);
+        assertAligned(address, HDRecordWithStats.HITS_OFFSET, 4);
+        AMEM.getInt(address + HDRecordWithStats.HITS_OFFSET);
 
-        assertAligned(address, HDRecord.LAST_UPDATE_TIME_OFFSET, 4);
-        AMEM.getInt(address + HDRecord.LAST_UPDATE_TIME_OFFSET);
+        assertAligned(address, HDRecordWithStats.LAST_STORED_TIME_OFFSET, 4);
+        AMEM.getInt(address + HDRecordWithStats.LAST_STORED_TIME_OFFSET);
 
-        assertAligned(address, HDRecord.HITS_OFFSET, 4);
-        AMEM.getInt(address + HDRecord.HITS_OFFSET);
-
-        assertAligned(address, HDRecord.LAST_STORED_TIME_OFFSET, 4);
-        AMEM.getInt(address + HDRecord.LAST_STORED_TIME_OFFSET);
-
-        assertAligned(address, HDRecord.EXPIRATION_TIME_OFFSET, 4);
-        AMEM.getInt(address + HDRecord.EXPIRATION_TIME_OFFSET);
-
-        assertAligned(address, HDRecord.SEQUENCE_OFFSET, 4);
-        AMEM.getInt(address + HDRecord.SEQUENCE_OFFSET);
+        assertAligned(address, HDRecordWithStats.SEQUENCE_OFFSET, 4);
+        AMEM.getInt(address + HDRecordWithStats.SEQUENCE_OFFSET);
     }
 
     private static void assertAligned(long address, int offset, int mod) {

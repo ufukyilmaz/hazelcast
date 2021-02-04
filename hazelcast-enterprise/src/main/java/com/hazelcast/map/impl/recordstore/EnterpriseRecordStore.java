@@ -6,55 +6,50 @@ import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hotrestart.RamStore;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.util.Clock;
 import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.EnterprisePartitionContainer;
-import com.hazelcast.map.impl.JsonMetadataInitializer;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapKeyLoader;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordFactory;
+import com.hazelcast.map.impl.recordstore.expiry.ExpirySystem;
+import com.hazelcast.map.impl.recordstore.expiry.HDExpirySystem;
 import com.hazelcast.map.impl.wan.MerkleTreeUpdaterMutationObserver;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.PartitionSpecificRunnable;
 import com.hazelcast.spi.impl.operationservice.OperationService;
 import com.hazelcast.wan.impl.merkletree.MerkleTree;
 
+import javax.annotation.Nonnull;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.map.impl.record.Record.UNSET;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Enterprise specific extensions for {@link DefaultRecordStore}.
  */
 public class EnterpriseRecordStore extends DefaultRecordStore {
-
-    /**
-     * @see EnterpriseRecordStore#markRecordStoreExpirable(long, long)
-     */
-    // public for testing purposes
-    public static final long HD_RECORD_MAX_TTL_MILLIS = SECONDS.toMillis(Integer.MAX_VALUE);
-
     private final long prefix;
+    private final boolean statsEnabled;
     private final HotRestartConfig hotRestartConfig;
     private final HazelcastMemoryManager memoryManager;
 
     private RamStore ramStore;
-    private MetadataStore metadataStore = new MetadataStore();
 
     public EnterpriseRecordStore(MapContainer mapContainer, int partitionId, MapKeyLoader keyLoader, ILogger logger,
                                  HotRestartConfig hotRestartConfig, long prefix) {
         super(mapContainer, partitionId, keyLoader, logger);
         this.prefix = prefix;
+        this.statsEnabled = mapContainer.getMapConfig().isStatisticsEnabled();
         this.hotRestartConfig = hotRestartConfig;
         HazelcastMemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
         if (memoryManager instanceof PoolingMemoryManager) {
@@ -85,43 +80,20 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
         if (merkleTree != null) {
             mutationObserver.add(new MerkleTreeUpdaterMutationObserver<>(merkleTree, serializationService));
         }
-
     }
 
+    @Nonnull
     @Override
-    protected void addJsonMetadataMutationObserver() {
+    protected ExpirySystem createExpirySystem(MapContainer mapContainer) {
         if (inMemoryFormat == NATIVE) {
-            mutationObserver.add(new HDJsonMetadataMutationObserver(serializationService,
-                    JsonMetadataInitializer.INSTANCE, this));
+            return new HDExpirySystem(this, mapContainer, mapServiceContext);
         } else {
-            super.addJsonMetadataMutationObserver();
+            return super.createExpirySystem(mapContainer);
         }
     }
 
     public RamStore getRamStore() {
         return ramStore;
-    }
-
-    /**
-     * The reason of overriding this method is an optimization which
-     * we did to fit a {@link HDRecord} size in a 64 bit HD block.
-     * One of the changes for this was converting a long ttl to an int
-     * ttl. As a result of that change, an infinite ttl is represented
-     * with an {@link EnterpriseRecordStore#HD_RECORD_MAX_TTL_MILLIS}
-     * instead of Long.MAX_VALUE.
-     * <p>
-     * When marking a record-store as expirable we should also take care of
-     * this new case and should not mark a record-store as expirable if a ttl
-     * was set to {@link EnterpriseRecordStore#HD_RECORD_MAX_TTL_MILLIS}.
-     *
-     * @param ttl ttl in milliseconds.
-     */
-    @Override
-    protected boolean isTtlDefined(long ttl) {
-        if (NATIVE == inMemoryFormat) {
-            return ttl > 0L && ttl < HD_RECORD_MAX_TTL_MILLIS;
-        }
-        return super.isTtlDefined(ttl);
     }
 
     @Override
@@ -137,32 +109,34 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
 
             if (hotRestartConfig.isEnabled()) {
                 return new HotRestartHDStorageImpl(mapServiceContext, recordFactory,
-                        inMemoryFormat, hotRestartConfig.isFsync(), prefix, partitionId);
+                        inMemoryFormat, statsEnabled, getExpirySystem(),
+                        hotRestartConfig.isFsync(), prefix, partitionId);
             }
 
             HiDensityRecordProcessor<HDRecord> recordProcessor = ((HDRecordFactory) recordFactory).getRecordProcessor();
-            return new HDStorageImpl(recordProcessor, serializationService);
+            return new HDStorageImpl(recordProcessor, statsEnabled, getExpirySystem(), serializationService);
         }
 
         if (hotRestartConfig.isEnabled()) {
-            return new HotRestartStorageImpl(mapServiceContext, recordFactory, memoryFormat,
+            return new HotRestartStorageImpl(mapServiceContext, recordFactory,
+                    memoryFormat, statsEnabled, getExpirySystem(),
                     hotRestartConfig.isFsync(), prefix, partitionId);
         }
         return super.createStorage(recordFactory, memoryFormat);
     }
 
-    public HDRecord createRecord(Data keyData, Object value, long sequence) {
-        return (HDRecord) createRecordInternal(keyData, value, UNSET, UNSET,
+    public HDRecord createRecord(Object value, long sequence) {
+        return (HDRecord) createRecordInternal(value, UNSET, UNSET,
                 Clock.currentTimeMillis(), sequence);
     }
 
     @Override
-    public Record createRecord(Data key, Object value, long ttlMillis, long maxIdleMillis, long now) {
-        return createRecordInternal(key, value, ttlMillis, maxIdleMillis, now, incrementSequence());
+    public Record createRecord(Object value, long ttlMillis, long maxIdleMillis, long now) {
+        return createRecordInternal(value, ttlMillis, maxIdleMillis, now, incrementSequence());
     }
 
-    private Record createRecordInternal(Data key, Object value, long ttlMillis, long maxIdleMillis, long now, long sequence) {
-        Record record = super.createRecord(key, value, ttlMillis, maxIdleMillis, now);
+    private Record createRecordInternal(Object value, long ttlMillis, long maxIdleMillis, long now, long sequence) {
+        Record record = super.createRecord(value, ttlMillis, maxIdleMillis, now);
         if (NATIVE == inMemoryFormat) {
             record.setSequence(sequence);
         }

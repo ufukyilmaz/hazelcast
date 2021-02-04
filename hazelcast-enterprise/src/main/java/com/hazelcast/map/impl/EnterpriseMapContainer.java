@@ -2,11 +2,9 @@ package com.hazelcast.map.impl;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MerkleTreeConfig;
-import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
-import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.partition.IPartitionService;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.SerializationService;
@@ -15,8 +13,8 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.eviction.Evictor;
 import com.hazelcast.map.impl.eviction.HDEvictionChecker;
 import com.hazelcast.map.impl.eviction.HDEvictorImpl;
+import com.hazelcast.map.impl.record.HDMapRecordAccessor;
 import com.hazelcast.map.impl.record.HDRecord;
-import com.hazelcast.map.impl.record.HDRecordAccessor;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.RecordFactory;
 import com.hazelcast.spi.eviction.EvictionPolicyComparator;
@@ -59,7 +57,7 @@ public class EnterpriseMapContainer extends MapContainer {
     @Override
     ConstructorFunction<Void, RecordFactory> createRecordFactoryConstructor(final SerializationService serializationService) {
         if (NATIVE == mapConfig.getInMemoryFormat()) {
-            return anyArg -> new HDRecordFactory(createHiDensityRecordProcessor());
+            return anyArg -> new HDRecordFactory(createHiDensityRecordProcessor(), this);
         } else {
             return super.createRecordFactoryConstructor(serializationService);
         }
@@ -76,16 +74,14 @@ public class EnterpriseMapContainer extends MapContainer {
 
     private HiDensityRecordProcessor<HDRecord> createHiDensityRecordProcessor() {
         NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
-        EnterpriseSerializationService serializationService
+        EnterpriseSerializationService ss
                 = (EnterpriseSerializationService) nodeEngine.getSerializationService();
-        HiDensityRecordAccessor<HDRecord> recordAccessor
-                = new HDRecordAccessor(serializationService);
-        HazelcastMemoryManager memoryManager = serializationService.getMemoryManager();
-        return new DefaultHiDensityRecordProcessor<>(serializationService, recordAccessor,
-                memoryManager, hdStorageInfo);
+
+        return new DefaultHiDensityRecordProcessor<>(ss, new HDMapRecordAccessor(ss, this),
+                ss.getMemoryManager(), hdStorageInfo);
     }
 
-    public HiDensityStorageInfo getHdStorageInfo() {
+    public HiDensityStorageInfo getHDStorageInfo() {
         return hdStorageInfo;
     }
 

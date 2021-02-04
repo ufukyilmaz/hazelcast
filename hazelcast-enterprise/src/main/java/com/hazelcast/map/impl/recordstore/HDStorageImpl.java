@@ -7,6 +7,7 @@ import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
 import com.hazelcast.internal.iteration.IterationPointer;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.MemoryBlock;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.HeapData;
@@ -18,18 +19,20 @@ import com.hazelcast.map.impl.iterator.MapEntriesWithCursor;
 import com.hazelcast.map.impl.iterator.MapKeysWithCursor;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.map.impl.recordstore.expiry.ExpirySystem;
 
 import java.util.Iterator;
 import java.util.Map;
 
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.map.impl.OwnedEntryCostEstimatorFactory.ZERO_SIZE_ESTIMATOR;
 
 /**
  * Hi-Density backed {@code Storage} implementation for {@link IMap}.
  * This implementation can be used under multi-thread access.
  */
 public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<Data, HDRecord> {
+
     private final HDStorageSCHM map;
     private final HiDensityStorageInfo storageInfo;
     private final HiDensityRecordProcessor recordProcessor;
@@ -37,11 +40,15 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<D
 
     private volatile int entryCount;
 
-    public HDStorageImpl(HiDensityRecordProcessor<HDRecord> recordProcessor, SerializationService serializationService) {
+    public HDStorageImpl(HiDensityRecordProcessor<HDRecord> recordProcessor,
+                         boolean statsEnabled,
+                         ExpirySystem expirySystem,
+                         SerializationService serializationService) {
         this.recordProcessor = recordProcessor;
         this.storageInfo = ((DefaultHiDensityRecordProcessor) recordProcessor).getStorageInfo();
-        this.entryCostEstimator = new NativeMapEntryCostEstimator(recordProcessor);
-        this.map = new HDStorageSCHM(recordProcessor, serializationService);
+        this.entryCostEstimator = statsEnabled
+                ? new NativeMapEntryCostEstimator(recordProcessor) : ZERO_SIZE_ESTIMATOR;
+        this.map = new HDStorageSCHM(recordProcessor, expirySystem, serializationService);
     }
 
     public HiDensityRecordProcessor getRecordProcessor() {
@@ -109,14 +116,15 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<D
         NativeMemoryData oldValue;
         NativeMemoryData newNativeValue = null;
         boolean disposeNewValue = true;
-        long oldCostEstimate = 0L;
+        long oldCostEstimate;
 
         try {
             oldValue = (NativeMemoryData) record.getValue();
             oldCostEstimate = entryCostEstimator.calculateValueCost(record);
             newNativeValue = (NativeMemoryData) toNative(newValue);
 
-            if (oldValue != null && newNativeValue != null && oldValue.address() == newNativeValue.address()) {
+            if (oldValue != null && newNativeValue != null
+                    && oldValue.address() == newNativeValue.address()) {
                 disposeNewValue = false;
                 return;
             }
@@ -269,5 +277,4 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<D
     public long getNativeKeyAddress(Data key) {
         return map.getNativeKeyAddress(key);
     }
-
 }

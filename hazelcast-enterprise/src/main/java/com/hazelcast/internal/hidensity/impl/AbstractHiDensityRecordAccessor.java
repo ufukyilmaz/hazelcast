@@ -130,5 +130,4 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
         }
         return size;
     }
-
 }

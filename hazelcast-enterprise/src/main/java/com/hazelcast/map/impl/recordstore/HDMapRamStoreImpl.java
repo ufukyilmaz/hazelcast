@@ -9,12 +9,12 @@ import com.hazelcast.internal.hotrestart.RecordDataSink;
 import com.hazelcast.internal.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.internal.hotrestart.impl.SimpleHandleOffHeap;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.util.Clock;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.internal.serialization.Data;
 
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
@@ -91,7 +91,7 @@ public class HDMapRamStoreImpl implements RamStore {
         NativeMemoryData keyData = storage.toNative(new HeapData(keyBytes));
         long sequenceId = recordStore.incrementSequence();
         SimpleHandleOffHeap handleOffHeap = new SimpleHandleOffHeap(keyData.address(), sequenceId);
-        Record record = recordStore.createRecord(keyData, null, Clock.currentTimeMillis());
+        Record record = recordStore.createRecord(null, Clock.currentTimeMillis());
         record.setSequence(handleOffHeap.sequenceId());
         storage.putTransient(keyData, (HDRecord) record);
         return handleOffHeap;

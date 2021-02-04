@@ -21,7 +21,7 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HDRecordTest extends HazelcastTestSupport {
 
-    private HDRecord record;
+    private HDRecordWithStats record;
     private PoolingMemoryManager memoryManager;
 
     @Before
@@ -30,13 +30,13 @@ public class HDRecordTest extends HazelcastTestSupport {
         memoryManager = new PoolingMemoryManager(memorySize);
         memoryManager.registerThread(Thread.currentThread());
 
-        record = new HDRecord();
-        record.reset(memoryManager.allocate(HDRecord.SIZE));
+        record = new HDRecordWithStats();
+        record.reset(memoryManager.allocate(HDRecordWithStats.SIZE));
     }
 
     @After
     public void tearDown() {
-        memoryManager.free(record.address(), HDRecord.SIZE);
+        memoryManager.free(record.address(), HDRecordWithStats.SIZE);
         memoryManager.dispose();
     }
 
@@ -58,9 +58,6 @@ public class HDRecordTest extends HazelcastTestSupport {
         record.setLastAccessTime(lastAccessTime);
         record.setLastStoredTime(lastStoredTime);
         record.setHits(hits);
-        record.setExpirationTime(expirationTime);
-        record.setTtl(ttl);
-        record.setMaxIdle(maxIdle);
         // Setting sequence (last field on the allocated chunk) can cause a segfault, if the HDRecord.SIZE (used during alloc)
         // is not enough to fit all data.
         record.setSequence(1);
@@ -70,20 +67,6 @@ public class HDRecordTest extends HazelcastTestSupport {
         assertEquals(lastAccessTime, record.getLastAccessTime());
         assertEquals(lastStoredTime, record.getLastStoredTime());
         assertEquals(hits, record.getHits());
-        assertEquals(expirationTime, record.getExpirationTime());
-        assertEquals(ttl, record.getTtl());
-        assertEquals(maxIdle, record.getMaxIdle());
-    }
-
-    @Test
-    public void testTTL_MaxIdle_ExpirationTime_limits() {
-        record.setExpirationTime(Long.MAX_VALUE);
-        record.setTtl(Long.MAX_VALUE);
-        record.setMaxIdle(Long.MAX_VALUE);
-
-        assertEquals(Long.MAX_VALUE, record.getMaxIdle());
-        assertEquals(Long.MAX_VALUE, record.getTtl());
-        assertEquals(Long.MAX_VALUE, record.getExpirationTime());
     }
 
     @Test
@@ -92,10 +75,8 @@ public class HDRecordTest extends HazelcastTestSupport {
         long creationTime = baseTime - randomLong();
         long expirationTime = baseTime + randomLong();
         record.setCreationTime(creationTime);
-        record.setExpirationTime(expirationTime);
 
         assertEquals(zeroOutMs(creationTime), record.getCreationTime());
-        assertEquals(zeroOutMs(expirationTime), record.getExpirationTime());
     }
 
     private long randomLong() {

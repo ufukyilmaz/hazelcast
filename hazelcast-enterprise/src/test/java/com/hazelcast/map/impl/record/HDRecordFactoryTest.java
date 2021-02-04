@@ -1,20 +1,31 @@
 package com.hazelcast.map.impl.record;
 
 import com.hazelcast.config.CacheDeserializedValues;
+import com.hazelcast.config.EvictionConfig;
+import com.hazelcast.config.EvictionPolicy;
+import com.hazelcast.config.HotRestartConfig;
+import com.hazelcast.config.MapConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.internal.cluster.ClusterService;
+import com.hazelcast.internal.cluster.Versions;
 import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.map.impl.EnterpriseMapContainer;
+import com.hazelcast.map.impl.MapContainer;
+import com.hazelcast.map.impl.MapServiceContext;
+import com.hazelcast.map.impl.eviction.Evictor;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -26,6 +37,8 @@ import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
@@ -42,14 +55,41 @@ public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
 
     @Override
     void newRecordFactory(boolean isStatisticsEnabled, CacheDeserializedValues cacheDeserializedValues) {
-        factory = new HDRecordFactory(createHiDensityRecordProcessor());
+        MapContainer mapContainer = newMapContainer(isStatisticsEnabled, cacheDeserializedValues);
+        factory = new HDRecordFactory(createHiDensityRecordProcessor(mapContainer), mapContainer);
+    }
+
+    static MapContainer newMapContainer(boolean isStatisticsEnabled,
+                                                CacheDeserializedValues cacheDeserializedValues) {
+        NodeEngine nodeEngine = mock(NodeEngine.class);
+        ClusterService clusterService = mock(ClusterService.class);
+        MapServiceContext mapServiceContext = mock(MapServiceContext.class);
+
+        when(mapServiceContext.getNodeEngine()).thenReturn(nodeEngine);
+        when(nodeEngine.getClusterService()).thenReturn(clusterService);
+        when(clusterService.getClusterVersion()).thenReturn(Versions.CURRENT_CLUSTER_VERSION);
+
+        MapContainer mapContainer = mock(MapContainer.class);
+        MapConfig mapConfig = mock(MapConfig.class);
+        when(mapConfig.getCacheDeserializedValues()).thenReturn(cacheDeserializedValues);
+        when(mapConfig.isStatisticsEnabled()).thenReturn(isStatisticsEnabled);
+        EvictionConfig evictionConfig = new EvictionConfig();
+        evictionConfig.setEvictionPolicy(EvictionPolicy.NONE);
+        when(mapConfig.getEvictionConfig()).thenReturn(evictionConfig);
+        HotRestartConfig hotRestartConfig = new HotRestartConfig().setEnabled(false);
+        when(mapConfig.getHotRestartConfig()).thenReturn(hotRestartConfig);
+        when(mapContainer.getMapConfig()).thenReturn(mapConfig);
+        when(mapContainer.getEvictor()).thenReturn(Evictor.NULL_EVICTOR);
+        when(mapContainer.getMapServiceContext()).thenReturn(mapServiceContext);
+        return mapContainer;
     }
 
     @Test
     public void testGetRecordProcessor() {
-        HiDensityRecordProcessor<HDRecord> recordProcessor = createHiDensityRecordProcessor();
+        HiDensityRecordProcessor<HDRecord> recordProcessor = createHiDensityRecordProcessor(
+                newMapContainer(true, CacheDeserializedValues.ALWAYS));
 
-        assertEquals(recordProcessor, new HDRecordFactory(recordProcessor).getRecordProcessor());
+        assertEquals(recordProcessor, new HDRecordFactory(recordProcessor, mock(EnterpriseMapContainer.class)).getRecordProcessor());
     }
 
     @Test
@@ -71,22 +111,22 @@ public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
 
     @Override
     Class<?> getRecordClass() {
-        return HDRecord.class;
+        return HDSimpleRecordWithVersion.class;
     }
 
     @Override
     Class<?> getRecordWithStatsClass() {
-        return HDRecord.class;
+        return HDRecordWithStats.class;
     }
 
     @Override
     Class<?> getCachedRecordClass() {
-        return HDRecord.class;
+        return HDSimpleRecordWithVersion.class;
     }
 
     @Override
     Class<?> getCachedRecordWithStatsClass() {
-        return HDRecord.class;
+        return HDRecordWithStats.class;
     }
 
     @Override
@@ -104,9 +144,9 @@ public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
         return factory.newRecord(value);
     }
 
-    private HiDensityRecordProcessor<HDRecord> createHiDensityRecordProcessor() {
+    private HiDensityRecordProcessor<HDRecord> createHiDensityRecordProcessor(MapContainer mapContainer) {
         EnterpriseSerializationService ess = (EnterpriseSerializationService) serializationService;
-        HiDensityRecordAccessor<HDRecord> recordAccessor = new HDRecordAccessor(ess);
+        HiDensityRecordAccessor<HDRecord> recordAccessor = new HDMapRecordAccessor(ess, mapContainer);
         HazelcastMemoryManager memoryManager = ess.getMemoryManager();
         HiDensityStorageInfo storageInfo = new HiDensityStorageInfo("myStorage");
         return new DefaultHiDensityRecordProcessor<>(ess, recordAccessor, memoryManager, storageInfo);

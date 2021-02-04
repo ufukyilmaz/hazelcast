@@ -67,7 +67,7 @@ public class HDMapOperationForcedEvictionTest extends HazelcastTestSupport {
     private static HiDensityStorageInfo getHiDensityStorageInfoOfMap(String mapName, HazelcastInstance node) {
         MapService mapService = getNodeEngineImpl(node).getService(MapService.SERVICE_NAME);
         MapContainer mapContainer = mapService.getMapServiceContext().getMapContainer(mapName);
-        return ((EnterpriseMapContainer) mapContainer).getHdStorageInfo();
+        return ((EnterpriseMapContainer) mapContainer).getHDStorageInfo();
     }
 
     /**

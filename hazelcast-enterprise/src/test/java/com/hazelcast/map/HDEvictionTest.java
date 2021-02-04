@@ -59,14 +59,16 @@ import static org.junit.Assume.assumeTrue;
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HDEvictionTest extends EvictionTest {
 
-    @Parameterized.Parameter
+    @Parameterized.Parameter(value = 1)
     public String globalIndex;
 
-    @Parameterized.Parameters(name = "globalIndex:{0}")
+    @Parameterized.Parameters(name = "statisticsEnabled:{0},globalIndex:{1}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {"true"},
-                {"false"},
+                {true, "true"},
+                {true, "false"},
+                {false, "true"},
+                {false, "false"},
         });
     }
 
@@ -77,14 +79,14 @@ public class HDEvictionTest extends EvictionTest {
 
     @Override
     protected Config getConfig() {
-        Config config = getHDIndexConfig();
+        Config config = getHDIndexConfig(super.getConfig());
         config.setProperty(GLOBAL_HD_INDEX_ENABLED.getName(), globalIndex);
         return config;
     }
 
     @Override
     protected MapConfig newMapConfig(String mapName) {
-        return super.newMapConfig(mapName)
+        return super.newMapConfig(mapName).setStatisticsEnabled(statisticsEnabled)
                 .setInMemoryFormat(InMemoryFormat.NATIVE);
     }
 
@@ -163,7 +165,7 @@ public class HDEvictionTest extends EvictionTest {
         int perIterationIncrement = 2048;
 
         HiDensityStorageInfo hdStorageInfo = ((EnterpriseMapContainer) ((MapService)
-                ((MapProxyImpl) map).getService()).getMapServiceContext().getMapContainer(mapName)).getHdStorageInfo();
+                ((MapProxyImpl) map).getService()).getMapServiceContext().getMapContainer(mapName)).getHDStorageInfo();
         for (int i = 0; i < 100; i++) {
             int payloadSizeBytes = i * perIterationIncrement;
             long start = hdStorageInfo.getUsedMemory();
@@ -219,10 +221,35 @@ public class HDEvictionTest extends EvictionTest {
         testEviction_withIndexes(false);
     }
 
+    @Test
+    public void name() {
+        assumeTrue(globalIndex.equals("false"));
+        String mapName = randomMapName();
+
+        Config config = getConfig();
+        config.getMetricsConfig().setEnabled(false);
+        config.setProperty(GLOBAL_HD_INDEX_ENABLED.getName(), "false");
+        config.setProperty(PROP_TASK_PERIOD_SECONDS, Integer.toString(MAX_VALUE));
+
+        MapConfig mapConfig = config.getMapConfig(mapName);
+        mapConfig.addIndexConfig(new IndexConfig().addAttribute("age").setType(IndexType.HASH));
+
+        HazelcastInstance node = createHazelcastInstance(config);
+        IMap<Integer, Person> map = node.getMap(mapName);
+
+        map.put(5, new Person(10), 2L, SECONDS, 5L, SECONDS);
+
+        sleepAtLeastSeconds(10);
+
+        Collection<Person> valuesAge10 = map.values(Predicates.equal("age", 10));
+        assertTrue(valuesAge10.isEmpty());
+    }
+
     private void testEviction_withIndexes(boolean ordered) {
         String mapName = randomMapName();
 
         Config config = getConfig();
+        config.getMetricsConfig().setEnabled(false);
         config.setProperty(PROP_TASK_PERIOD_SECONDS, Integer.toString(MAX_VALUE));
 
         MapConfig mapConfig = config.getMapConfig(mapName);
@@ -254,6 +281,8 @@ public class HDEvictionTest extends EvictionTest {
         map.replace(6, new Person(2));
         assertEquals(1, map.values(Predicates.equal("age", 2)).size());
 
+        sleepAtLeastSeconds(10);
+
         assertTrueEventually(() -> {
             Collection<Person> valuesAge50 = map.values(Predicates.equal("age", 50));
             assertTrue(valuesAge50.isEmpty());
@@ -262,8 +291,8 @@ public class HDEvictionTest extends EvictionTest {
             assertTrue(valuesAge10.isEmpty());
 
             Collection<Person> valuesOlder15 = map.values(Predicates.greaterThan("age", 15));
-            assertEquals(1, valuesOlder15.size());
-        });
+            assertEquals(map.size() + " mmm", 1, valuesOlder15.size());
+        }, 20);
         assertFalse(map.containsKey(1));
         assertFalse(map.containsKey(2));
         assertTrue(map.containsKey(3));

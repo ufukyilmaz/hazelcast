@@ -5,6 +5,7 @@ import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hotrestart.HotRestartKey;
 import com.hazelcast.internal.hotrestart.HotRestartStore;
 import com.hazelcast.internal.hotrestart.impl.KeyOffHeap;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
@@ -12,7 +13,7 @@ import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordFactory;
-import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.map.impl.recordstore.expiry.ExpirySystem;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -26,9 +27,13 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord>
 
     private final Object mutex = new Object();
 
-    public HotRestartHDStorageImpl(EnterpriseMapServiceContext mapServiceContext, RecordFactory recordFactory,
-                                   InMemoryFormat inMemoryFormat, boolean fsync, long prefix, int partitionId) {
-        super(mapServiceContext, recordFactory, inMemoryFormat, fsync, prefix, partitionId);
+    public HotRestartHDStorageImpl(EnterpriseMapServiceContext mapServiceContext,
+                                   RecordFactory recordFactory,
+                                   InMemoryFormat inMemoryFormat,
+                                   boolean statsEnabled,
+                                   ExpirySystem expirySystem,
+                                   boolean fsync, long prefix, int partitionId) {
+        super(mapServiceContext, recordFactory, inMemoryFormat, statsEnabled, expirySystem, fsync, prefix, partitionId);
     }
 
     @Override
@@ -37,10 +42,10 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord>
     }
 
     @Override
-    public Storage createStorage(RecordFactory recordFactory, InMemoryFormat inMemoryFormat) {
+    public Storage createStorage(RecordFactory recordFactory, InMemoryFormat inMemoryFormat, boolean statsEnabled) {
         SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
         HiDensityRecordProcessor<HDRecord> recordProcessor = ((HDRecordFactory) recordFactory).getRecordProcessor();
-        return new HDStorageImpl(recordProcessor, serializationService);
+        return new HDStorageImpl(recordProcessor, statsEnabled, expirySystem, serializationService);
     }
 
     @Override

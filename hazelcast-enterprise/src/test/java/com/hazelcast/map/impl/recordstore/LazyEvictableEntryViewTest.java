@@ -2,11 +2,13 @@ package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.instance.impl.NodeExtension;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.map.impl.record.HDRecord;
-import com.hazelcast.internal.serialization.Data;
+import com.hazelcast.map.impl.record.HDRecordWithStats;
+import com.hazelcast.map.impl.recordstore.expiry.ExpiryMetadata;
 import com.hazelcast.spi.impl.operationexecutor.OperationRunner;
 import com.hazelcast.spi.impl.operationexecutor.impl.OperationQueue;
 import com.hazelcast.spi.impl.operationexecutor.impl.OperationQueueImpl;
@@ -38,7 +40,7 @@ public class LazyEvictableEntryViewTest extends HazelcastTestSupport {
     private OperationQueue queue = new OperationQueueImpl();
     private PartitionOperationThread thread = getPartitionOperationThread(queue);
 
-    private HDRecord record;
+    private HDRecordWithStats record;
 
     private HDStorageSCHM.LazyEvictableEntryView entryView;
     private HDStorageSCHM.LazyEvictableEntryView entryViewSameAttributes;
@@ -51,8 +53,8 @@ public class LazyEvictableEntryViewTest extends HazelcastTestSupport {
     @Before
     public void setUp() {
         Data key = mock(Data.class);
-        HDRecord value = mock(HDRecord.class);
-        HDRecord otherValue = mock(HDRecord.class);
+        HDRecord value = mock(HDRecordWithStats.class);
+        HDRecord otherValue = mock(HDRecordWithStats.class);
 
         Data dataKey = mock(Data.class);
         Data dataValue = mock(Data.class);
@@ -60,34 +62,28 @@ public class LazyEvictableEntryViewTest extends HazelcastTestSupport {
 
         record = getHDRecord(dataValue);
 
-        HDRecord recordOtherValue = getHDRecord(otherDataValue);
+        HDRecordWithStats recordOtherValue = getHDRecord(otherDataValue);
 
-        HDRecord recordOtherVersion = getHDRecord(dataValue);
-        when(recordOtherVersion.getVersion()).thenReturn(23L);
+        HDRecordWithStats recordOtherVersion = getHDRecord(dataValue);
+        when(recordOtherVersion.getVersion()).thenReturn(23);
 
-        HDRecord recordOtherCost = getHDRecord(dataValue);
+        HDRecordWithStats recordOtherCost = getHDRecord(dataValue);
         when(recordOtherCost.getCost()).thenReturn(42L);
 
-        HDRecord recordOtherCreationTime = getHDRecord(dataValue);
+        HDRecordWithStats recordOtherCreationTime = getHDRecord(dataValue);
         when(recordOtherCreationTime.getCreationTime()).thenReturn(119592381L);
 
-        HDRecord recordOtherExpirationTime = getHDRecord(dataValue);
-        when(recordOtherExpirationTime.getExpirationTime()).thenReturn(1251241512L);
-
-        HDRecord recordOtherHits = getHDRecord(dataValue);
+        HDRecordWithStats recordOtherHits = getHDRecord(dataValue);
         when(recordOtherHits.getHits()).thenReturn(2342);
 
-        HDRecord recordOtherLastAccessTime = getHDRecord(dataValue);
+        HDRecordWithStats recordOtherLastAccessTime = getHDRecord(dataValue);
         when(recordOtherLastAccessTime.getLastAccessTime()).thenReturn(32424515466L);
 
-        HDRecord recordOtherLastStoreTime = getHDRecord(dataValue);
+        HDRecordWithStats recordOtherLastStoreTime = getHDRecord(dataValue);
         when(recordOtherLastStoreTime.getLastStoredTime()).thenReturn(62424515466L);
 
-        HDRecord recordOtherLastUpdateTime = getHDRecord(dataValue);
+        HDRecordWithStats recordOtherLastUpdateTime = getHDRecord(dataValue);
         when(recordOtherLastUpdateTime.getLastUpdateTime()).thenReturn(92424515466L);
-
-        HDRecord recordOtherTtl = getHDRecord(dataValue);
-        when(recordOtherTtl.getTtl()).thenReturn(4223L);
 
         SerializationService serializationService = mock(SerializationService.class);
         when(serializationService.toObject(eq(dataKey))).thenReturn(key);
@@ -96,15 +92,15 @@ public class LazyEvictableEntryViewTest extends HazelcastTestSupport {
 
         HDStorageSCHM hdStorageSCHM = mock(HDStorageSCHM.class);
 
-        entryView = hdStorageSCHM.new LazyEvictableEntryView(0, serializationService, dataKey, record);
-        entryViewSameAttributes = hdStorageSCHM.new LazyEvictableEntryView(0, serializationService, dataKey, record);
+        entryView = hdStorageSCHM.new LazyEvictableEntryView(0, serializationService, dataKey, record, ExpiryMetadata.NULL);
+        entryViewSameAttributes = hdStorageSCHM.new LazyEvictableEntryView(0, serializationService, dataKey, record, ExpiryMetadata.NULL);
 
-        entryViewOtherRecordValue = hdStorageSCHM.new LazyEvictableEntryView(0, serializationService, dataKey, recordOtherValue);
+        entryViewOtherRecordValue = hdStorageSCHM.new LazyEvictableEntryView(0, serializationService, dataKey, recordOtherValue, ExpiryMetadata.NULL);
         entryViewOtherRecordCreationTime = hdStorageSCHM.new LazyEvictableEntryView(0, serializationService,
-                dataKey, recordOtherCreationTime);
-        entryViewOtherRecordHits = hdStorageSCHM.new LazyEvictableEntryView(0, serializationService, dataKey, recordOtherHits);
+                dataKey, recordOtherCreationTime, ExpiryMetadata.NULL);
+        entryViewOtherRecordHits = hdStorageSCHM.new LazyEvictableEntryView(0, serializationService, dataKey, recordOtherHits, ExpiryMetadata.NULL);
         entryViewOtherRecordLastAccessTime = hdStorageSCHM.new LazyEvictableEntryView(0, serializationService,
-                dataKey, recordOtherLastAccessTime);
+                dataKey, recordOtherLastAccessTime, ExpiryMetadata.NULL);
 
         thread.start();
     }
@@ -185,8 +181,8 @@ public class LazyEvictableEntryViewTest extends HazelcastTestSupport {
         return new PartitionOperationThread("POThread", 0, queue, LOGGER, nodeExtension, operationRunners, getClass().getClassLoader());
     }
 
-    private static HDRecord getHDRecord(Data dataValue) {
-        HDRecord hdRecord = mock(HDRecord.class);
+    private static HDRecordWithStats getHDRecord(Data dataValue) {
+        HDRecordWithStats hdRecord = mock(HDRecordWithStats.class);
         when(hdRecord.getValue()).thenReturn(dataValue);
         return hdRecord;
     }

@@ -44,7 +44,7 @@ public class MemberLogoutTest extends HazelcastTestSupport {
         HazelcastInstance hz = factory.newHazelcastInstance(config);
         assertFalse(VerifyLogoutModule.logoutCalled);
         hz.shutdown();
-        assertTrue(VerifyLogoutModule.logoutCalled);
+        assertTrueEventually(() -> assertTrue(VerifyLogoutModule.logoutCalled));
     }
 
     @Test

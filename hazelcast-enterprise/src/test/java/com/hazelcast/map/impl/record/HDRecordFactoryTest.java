@@ -59,7 +59,7 @@ public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
         factory = new HDRecordFactory(createHiDensityRecordProcessor(mapContainer), mapContainer);
     }
 
-    static MapContainer newMapContainer(boolean isStatisticsEnabled,
+    static MapContainer newMapContainer(boolean isPerEntryStatsEnabled,
                                                 CacheDeserializedValues cacheDeserializedValues) {
         NodeEngine nodeEngine = mock(NodeEngine.class);
         ClusterService clusterService = mock(ClusterService.class);
@@ -72,7 +72,7 @@ public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
         MapContainer mapContainer = mock(MapContainer.class);
         MapConfig mapConfig = mock(MapConfig.class);
         when(mapConfig.getCacheDeserializedValues()).thenReturn(cacheDeserializedValues);
-        when(mapConfig.isStatisticsEnabled()).thenReturn(isStatisticsEnabled);
+        when(mapConfig.isPerEntryStatsEnabled()).thenReturn(isPerEntryStatsEnabled);
         EvictionConfig evictionConfig = new EvictionConfig();
         evictionConfig.setEvictionPolicy(EvictionPolicy.NONE);
         when(mapConfig.getEvictionConfig()).thenReturn(evictionConfig);

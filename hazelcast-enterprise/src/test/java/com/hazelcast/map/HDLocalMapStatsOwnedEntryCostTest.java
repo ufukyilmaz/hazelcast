@@ -1,5 +1,6 @@
 package com.hazelcast.map;
 
+import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.internal.memory.MemoryStats;
@@ -41,7 +42,10 @@ public class HDLocalMapStatsOwnedEntryCostTest extends HazelcastTestSupport {
 
     @Test
     public void hdOwnedEntryCost() {
-        HazelcastInstance instance = createHazelcastInstance(getHDConfig(POOLED));
+        Config config = getHDConfig(POOLED);
+        config.getMapConfig("default").setPerEntryStatsEnabled(true);
+
+        HazelcastInstance instance = createHazelcastInstance(config);
         MemoryStats stats = ((EnterpriseSerializationServiceV1) getNodeEngineImpl(instance).getSerializationService())
                 .getMemoryManager().getMemoryStats();
 

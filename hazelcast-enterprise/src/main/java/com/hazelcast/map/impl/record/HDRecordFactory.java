@@ -37,7 +37,7 @@ public class HDRecordFactory implements RecordFactory<Data> {
         boolean hasHotRestart = mapConfig.getHotRestartConfig().isEnabled();
 
         // when stats are enabled, return full record
-        if (mapConfig.isStatisticsEnabled() || isClusterV41()) {
+        if (mapConfig.isPerEntryStatsEnabled() || isClusterV41()) {
             return newHDRecordWithExtras(value, HDRecordWithStats.SIZE);
         }
 
@@ -60,6 +60,8 @@ public class HDRecordFactory implements RecordFactory<Data> {
             if (mapConfig.getEvictionConfig().getEvictionPolicy() == EvictionPolicy.RANDOM) {
                 return newHDRecordWithExtras(value, HDSimpleRecordWithVersion.SIZE);
             }
+
+            return newHDRecordWithExtras(value, HDRecordWithStats.SIZE);
         }
 
         // return record with only hot-restart related fields
@@ -80,6 +82,8 @@ public class HDRecordFactory implements RecordFactory<Data> {
             if (mapConfig.getEvictionConfig().getEvictionPolicy() == EvictionPolicy.RANDOM) {
                 return newHDRecordWithExtras(value, HDSimpleRecordWithHotRestart.SIZE);
             }
+
+            return newHDRecordWithExtras(value, HDRecordWithStats.SIZE);
         }
 
         throw new IllegalStateException("No HD record type found matching with the provided " + mapConfig);

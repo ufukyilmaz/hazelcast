@@ -59,16 +59,16 @@ import static org.junit.Assume.assumeTrue;
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HDEvictionTest extends EvictionTest {
 
-    @Parameterized.Parameter(value = 1)
+    @Parameterized.Parameter(value = 2)
     public String globalIndex;
 
-    @Parameterized.Parameters(name = "statisticsEnabled:{0},globalIndex:{1}")
+    @Parameterized.Parameters(name = "statisticsEnabled:{0}, perEntryStatsEnabled:{1}, globalIndex:{2}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {true, "true"},
-                {true, "false"},
-                {false, "true"},
-                {false, "false"},
+                {true, true, "true"},
+                {true, false, "false"},
+                {false, true, "true"},
+                {false, false, "false"},
         });
     }
 
@@ -86,7 +86,9 @@ public class HDEvictionTest extends EvictionTest {
 
     @Override
     protected MapConfig newMapConfig(String mapName) {
-        return super.newMapConfig(mapName).setStatisticsEnabled(statisticsEnabled)
+        return super.newMapConfig(mapName).
+                setStatisticsEnabled(statisticsEnabled)
+                .setPerEntryStatsEnabled(perEntryStatsEnabled)
                 .setInMemoryFormat(InMemoryFormat.NATIVE);
     }
 

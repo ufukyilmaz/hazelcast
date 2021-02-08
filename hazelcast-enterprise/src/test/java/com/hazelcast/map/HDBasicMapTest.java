@@ -32,12 +32,16 @@ public class HDBasicMapTest extends BasicMapTest {
 
     @Parameterized.Parameter
     public boolean statisticsEnabled;
+    @Parameterized.Parameter
+    public boolean perEntryStatsEnabled;
 
-    @Parameterized.Parameters(name = "statisticsEnabled:{0}")
+    @Parameterized.Parameters(name = "statisticsEnabled:{0}, perEntryStatsEnabled: {1}")
     public static Collection<Object[]> parameters() {
         return asList(new Object[][]{
-                {true},
-                {false},
+                {true, true},
+                {false, true},
+                {true, false},
+                {false, false},
         });
     }
 
@@ -56,7 +60,9 @@ public class HDBasicMapTest extends BasicMapTest {
         MapConfig ttlMapConfig = new MapConfig("mapWithTTL*");
         ttlMapConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
         ttlMapConfig.setTimeToLiveSeconds(1);
-        ttlMapConfig.setStatisticsEnabled(statisticsEnabled);
+        ttlMapConfig
+                .setStatisticsEnabled(statisticsEnabled)
+                .setPerEntryStatsEnabled(perEntryStatsEnabled);
         getHDConfig().addMapConfig(ttlMapConfig);
         return getHDIndexConfig(super.getConfig()).addMapConfig(ttlMapConfig);
     }

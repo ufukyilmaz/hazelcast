@@ -36,7 +36,7 @@ public class HDMapRecordAccessor
         boolean hasHotRestart = mapConfig.getHotRestartConfig().isEnabled();
 
         // when stats are enabled, return full record
-        if (mapConfig.isStatisticsEnabled()) {
+        if (mapConfig.isPerEntryStatsEnabled()) {
             return new HDRecordWithStats();
         }
 
@@ -59,6 +59,8 @@ public class HDMapRecordAccessor
             if (mapConfig.getEvictionConfig().getEvictionPolicy() == EvictionPolicy.RANDOM) {
                 return new HDSimpleRecordWithVersion();
             }
+
+            return new HDRecordWithStats();
         }
 
         // return record with only hot-restart related fields
@@ -79,6 +81,8 @@ public class HDMapRecordAccessor
             if (mapConfig.getEvictionConfig().getEvictionPolicy() == EvictionPolicy.RANDOM) {
                 return new HDSimpleRecordWithHotRestart();
             }
+
+            return new HDRecordWithStats();
         }
 
         throw new IllegalStateException("No HD record type found matching with the provided " + mapConfig);

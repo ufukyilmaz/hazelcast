@@ -22,11 +22,12 @@
     <description>Hazelcast Jet Data Processor</description>
     <url>http://www.hazelcast.com/</url>
 
+    <groupId>com.hazelcast.jet</groupId>
     <artifactId>hazelcast-jet-core</artifactId>
 
     <parent>
-        <groupId>com.hazelcast.jet</groupId>
-        <artifactId>hazelcast-jet-root</artifactId>
+        <groupId>com.hazelcast</groupId>
+        <artifactId>hazelcast-root</artifactId>
         <version>5.0-SNAPSHOT</version>
     </parent>
 
@@ -105,7 +106,7 @@
         <dependency>
             <groupId>com.hazelcast</groupId>
             <artifactId>hazelcast</artifactId>
-            <version>${hazelcast.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.github.classgraph</groupId>
@@ -127,14 +128,6 @@
             <artifactId>jackson-core</artifactId>
             <version>${jackson.version}</version>
         </dependency>
-        <dependency>
-            <groupId>javax.cache</groupId>
-            <artifactId>cache-api</artifactId>
-            <version>${jsr107.api.version}</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-
         <dependency>
             <groupId>javax.jms</groupId>
             <artifactId>javax.jms-api</artifactId>
@@ -179,6 +172,13 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast</artifactId>
+            <scope>test</scope>
+            <version>${project.version}</version>
+            <classifier>tests</classifier>
+        </dependency>
         <dependency>
             <groupId>nl.jqno.equalsverifier</groupId>
             <artifactId>equalsverifier</artifactId>

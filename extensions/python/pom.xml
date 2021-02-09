@@ -119,7 +119,7 @@
                                 <configuration>
                                     <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
                                     <pluginId>grpc-python</pluginId>
-                                    <pluginExecutable>${grpc_python_plugin_path}</pluginExecutable>
+                                    <pluginExecutable>${tU}</pluginExecutable>
                                     <outputDirectory>${project.basedir}/src/main/resources</outputDirectory>
                                     <clearOutputDirectory>false</clearOutputDirectory>
                                 </configuration>

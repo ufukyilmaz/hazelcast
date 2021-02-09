@@ -72,18 +72,18 @@ public class HDIndexLeakTest
         HazelcastInstance instance = getInstance(format, sorted);
         MemoryStats stats = ((HazelcastInstanceProxy) instance).getOriginal().getMemoryStats();
 
-        assertEquals(0, stats.getUsedNative());
+        assertEquals(0, stats.getUsedNative() - stats.getUsedMetadata());
 
         IMap<Integer, Person> map = instance.getMap("default");
         for (int i = 0; i < PERSON_COUNT; i++) {
             map.put(i, new Person(i));
         }
 
-        assertNotEquals(0, stats.getUsedNative());
+        assertNotEquals(0, stats.getUsedNative() - stats.getUsedMetadata());
 
         map.destroy();
 
-        assertEquals(0, stats.getUsedNative());
+        assertEquals(0, stats.getUsedNative() - stats.getUsedMetadata());
     }
 
     private HazelcastInstance getInstance(InMemoryFormat format, boolean sorted) {

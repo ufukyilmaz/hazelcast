@@ -7,7 +7,7 @@ import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.HDTestSupport.getHDConfig;
+import static com.hazelcast.HDTestSupport.getHDIndexConfig;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
@@ -15,6 +15,7 @@ public class HDClientEntryProcessorTest extends ClientEntryProcessorTest {
 
     @Override
     protected Config getConfig() {
-        return getHDConfig();
+        return getHDIndexConfig();
     }
+
 }

@@ -90,16 +90,16 @@ public class PoolingMemoryManagerTest extends ParameterizedMemoryTest {
         for (MemoryBlock block : blocks) {
             memoryManager.free(block.address(), block.size());
         }
-        assertEquals(0, memoryStats.getUsedNative());
+        assertEquals(0, memoryStats.getUsedNative() - memoryStats.getUsedMetadata());
         memoryManager.compact();
 
         int headerLength = memoryManager.getHeaderSize();
         for (int i = 7; i >= 0; i--) {
             int size = pageSize / (1 << i) - headerLength;
             long address = memoryManager.allocate(size);
-            assertEquals(size + headerLength, memoryStats.getUsedNative());
+            assertEquals(size + headerLength, memoryStats.getUsedNative() - memoryStats.getUsedMetadata());
             memoryManager.free(address, size);
-            assertEquals(0, memoryStats.getUsedNative());
+            assertEquals(0, memoryStats.getUsedNative() - memoryStats.getUsedMetadata());
         }
     }
 

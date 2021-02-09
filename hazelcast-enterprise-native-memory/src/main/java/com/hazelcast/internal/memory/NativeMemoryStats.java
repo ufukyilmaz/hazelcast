@@ -1,7 +1,6 @@
 package com.hazelcast.internal.memory;
 
 import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.NativeOutOfMemoryError;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -13,24 +12,43 @@ class NativeMemoryStats extends DefaultMemoryStats {
         ASSERTS_ENABLED = NativeMemoryStats.class.desiredAssertionStatus();
     }
 
-    private final long maxNative;
+    protected final AtomicLong committedNative = new AtomicLong();
 
-    private final AtomicLong committedNative = new AtomicLong();
-
+    private final long configuredMaxNative;
+    private final AtomicLong maxNative;
     private final AtomicLong internalFragmentation = new AtomicLong();
+    private final MemoryAdjuster memoryAdjuster;
 
     NativeMemoryStats(long maxNative) {
-        this.maxNative = maxNative;
+        this.maxNative = new AtomicLong(maxNative);
+        this.configuredMaxNative = maxNative;
+        this.memoryAdjuster = new MemoryAdjuster(this);
+    }
+
+    public MemoryAdjuster getMemoryAdjuster() {
+        return memoryAdjuster;
     }
 
     @Override
     public final long getMaxNative() {
-        return maxNative;
+        return maxNative.get();
+    }
+
+    public boolean casMaxNative(long currentAllocated, long memoryAfterAllocation) {
+        return maxNative.compareAndSet(currentAllocated, memoryAfterAllocation);
+    }
+
+    public long getConfiguredMaxNative() {
+        return configuredMaxNative;
     }
 
     @Override
     public final long getCommittedNative() {
         return committedNative.get();
+    }
+
+    public boolean casCommittedNative(long currentAllocated, long memoryAfterAllocation) {
+        return committedNative.compareAndSet(currentAllocated, memoryAfterAllocation);
     }
 
     @Override
@@ -40,28 +58,8 @@ class NativeMemoryStats extends DefaultMemoryStats {
 
     @Override
     public final long getFreeNative() {
-        long free = maxNative - getUsedNative();
+        long free = getMaxNative() - getUsedNative();
         return (free > 0 ? free : 0L);
-    }
-
-    void checkAndAddCommittedNative(long size) {
-        if (size > 0) {
-            for (; ; ) {
-                long currentAllocated = committedNative.get();
-                long memoryAfterAllocation = currentAllocated + size;
-                if (maxNative < memoryAfterAllocation) {
-                    throw new NativeOutOfMemoryError("Not enough contiguous memory available!"
-                            + " Cannot allocate " + MemorySize.toPrettyString(size) + "!"
-                            + " Max Native Memory: " + MemorySize.toPrettyString(maxNative)
-                            + ", Committed Native Memory: " + MemorySize.toPrettyString(currentAllocated)
-                            + ", Used Native Memory: " + MemorySize.toPrettyString(getUsedNative())
-                    );
-                }
-                if (committedNative.compareAndSet(currentAllocated, memoryAfterAllocation)) {
-                    break;
-                }
-            }
-        }
     }
 
     final void removeCommittedNative(long size) {

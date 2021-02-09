@@ -112,10 +112,10 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
 
         checkBlockAndPageSize(minBlockSize, pageSize);
         long maxMetadata = (long) (totalSize * metadataSpacePercentage / PERCENTAGE_FACTOR);
-        long maxNative = QuickMath.normalize(totalSize - maxMetadata, pageSize);
+        long maxNative = QuickMath.normalize(totalSize, pageSize);
         malloc = libMallocFactory.create(totalSize);
 
-        memoryStats = new PooledNativeMemoryStats(maxNative, maxMetadata);
+        memoryStats = new PooledNativeMemoryStats(maxNative, maxMetadata, pageSize);
         globalMemoryManager = new GlobalPoolingMemoryManager(minBlockSize, pageSize, malloc, memoryStats, gc);
         globalIndexAllocator = new GlobalIndexPoolingAllocator(malloc, memoryStats, indexNodeSize);
 

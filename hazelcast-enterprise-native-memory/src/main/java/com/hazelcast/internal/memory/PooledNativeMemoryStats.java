@@ -10,10 +10,12 @@ public class PooledNativeMemoryStats extends NativeMemoryStats implements Memory
     private final AtomicLong usedMetadata = new AtomicLong();
 
     private final long maxMetadata;
+    private final int pageSize;
 
-    public PooledNativeMemoryStats(long maxNative, long maxMetadata) {
+    public PooledNativeMemoryStats(long maxNative, long maxMetadata, int pageSize) {
         super(maxNative);
         this.maxMetadata = maxMetadata;
+        this.pageSize = pageSize;
     }
 
     @Override
@@ -36,10 +38,46 @@ public class PooledNativeMemoryStats extends NativeMemoryStats implements Memory
 
     final void addMetadataUsage(long size) {
         usedMetadata.addAndGet(size);
+        usedNative.addAndGet(size);
     }
 
+    @SuppressWarnings("checkstyle:multiplevariabledeclarations")
     final void removeMetadataUsage(long size) {
         usedMetadata.addAndGet(-size);
+        usedNative.addAndGet(-size);
+        committedNative.addAndGet(-size);
+
+        adjustMaxNative(size);
+    }
+
+    /**
+     * Adjusts maxNative memory by decreasing it at
+     * most given size. After decrease, maxNative
+     * cannot be smaller than configuredMaxNative.
+     *
+     * @param size size to decrease
+     */
+    @SuppressWarnings("checkstyle:multiplevariabledeclarations")
+    private void adjustMaxNative(long size) {
+        long maxNative, configuredMaxNative, nextMaxNative;
+        do {
+            maxNative = getMaxNative();
+            configuredMaxNative = getConfiguredMaxNative();
+            if (maxNative <= configuredMaxNative) {
+                break;
+            }
+
+            assert maxNative - size >= 0;
+
+            nextMaxNative = maxNative - size;
+            nextMaxNative = nextMaxNative < configuredMaxNative
+                    ? configuredMaxNative : nextMaxNative;
+
+        } while (!casMaxNative(maxNative, nextMaxNative));
+    }
+
+    public int getPageSize() {
+        return pageSize;
     }
 
     @Override

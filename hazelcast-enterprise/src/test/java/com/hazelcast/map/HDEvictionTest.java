@@ -101,14 +101,14 @@ public class HDEvictionTest extends EvictionTest {
     @Test
     @Override
     public void testEviction_increasingEntrySize() {
-        int maxSizeMB = 2;
+        int configuredMaxSizeInMB = 2;
         String mapName = randomMapName();
 
         MapConfig mapConfig = new MapConfig(mapName + "*").setInMemoryFormat(InMemoryFormat.NATIVE);
         mapConfig.getEvictionConfig()
                 .setComparator((o1, o2) -> 0)
                 .setMaxSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_SIZE)
-                .setSize(maxSizeMB);
+                .setSize(configuredMaxSizeInMB);
 
         Config config = getConfig().addMapConfig(mapConfig);
         config.setProperty(ClusterProperty.PARTITION_COUNT.getName(), "1");
@@ -131,7 +131,7 @@ public class HDEvictionTest extends EvictionTest {
 
         int perIterationIncrement = 2048;
         List<Integer> memoryCosts = calculateEntryMemoryCosts(instance);
-        long beforeUsedMemory = memoryStats.getUsedNative();
+        long beforeUsedMemory = getUsedDataSpace(memoryStats);
         for (int i = 0; i < 100; i++) {
             // Make sure eviction and deferred memory reclamation are
             // completed for the previous map.put(...), so memory stats
@@ -142,17 +142,21 @@ public class HDEvictionTest extends EvictionTest {
             // partition thread.
             map.get(i);
 
+            long beforePutTotalUsed = getUsedDataSpace(memoryStats) - beforeUsedMemory;
             int payloadSizeBytes = i * perIterationIncrement;
-            long beforePutTotalUsed = memoryStats.getUsedNative() - beforeUsedMemory;
             map.put(i, new byte[payloadSizeBytes]);
 
-            if (beforePutTotalUsed + memoryCosts.get(i) > MemoryUnit.MEGABYTES.toBytes(maxSizeMB)) {
-                assertTrueEventually(() -> assertTrue(entryEvictedEventCount.get() == 2));
+            if (beforePutTotalUsed + memoryCosts.get(i) > MemoryUnit.MEGABYTES.toBytes(configuredMaxSizeInMB)) {
+                assertTrueEventually(() -> assertEquals(2, entryEvictedEventCount.get()));
                 entryEvictedEventCount.set(0);
             } else {
-                assertTrue(entryEvictedEventCount.get() == 0);
+                assertEquals(0, entryEvictedEventCount.get());
             }
         }
+    }
+
+    private long getUsedDataSpace(MemoryStats memoryStats) {
+        return memoryStats.getUsedNative() - memoryStats.getUsedMetadata();
     }
 
     private List<Integer> calculateEntryMemoryCosts(HazelcastInstance instance) {

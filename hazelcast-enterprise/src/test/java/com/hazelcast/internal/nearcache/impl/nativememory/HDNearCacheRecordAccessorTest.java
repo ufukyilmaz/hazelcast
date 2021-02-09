@@ -33,7 +33,7 @@ public class HDNearCacheRecordAccessorTest {
 
     @Before
     public void setup() {
-        MemorySize memorySize = new MemorySize(4, MemoryUnit.MEGABYTES);
+        MemorySize memorySize = new MemorySize(5, MemoryUnit.MEGABYTES);
         memoryManager = new PoolingMemoryManager(memorySize);
         memoryManager.registerThread(Thread.currentThread());
         serializationService = new EnterpriseSerializationServiceBuilder()

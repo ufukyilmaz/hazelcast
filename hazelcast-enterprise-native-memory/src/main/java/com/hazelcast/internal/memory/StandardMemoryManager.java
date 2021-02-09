@@ -109,7 +109,7 @@ public final class StandardMemoryManager implements HazelcastMemoryManager, Stat
     public long allocate(long size) {
         assert size > 0 : "Size must be positive: " + size;
 
-        memoryStats.checkAndAddCommittedNative(size);
+        memoryStats.getMemoryAdjuster().adjustDataMemory(size);
 
         try {
             long address = malloc.malloc(size);
@@ -135,7 +135,7 @@ public final class StandardMemoryManager implements HazelcastMemoryManager, Stat
 
         long diff = newSize - currentSize;
         if (diff > 0) {
-            memoryStats.checkAndAddCommittedNative(diff);
+            memoryStats.getMemoryAdjuster().adjustDataMemory(diff);
         }
 
         try {

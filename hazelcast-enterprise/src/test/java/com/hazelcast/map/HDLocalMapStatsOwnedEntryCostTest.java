@@ -58,7 +58,7 @@ public class HDLocalMapStatsOwnedEntryCostTest extends HazelcastTestSupport {
         LocalMapStats localMapStats = map.getLocalMapStats();
         assertEquals(1, localMapStats.getOwnedEntryCount());
         assertEquals(SINGLE_MAP_ENTRY_COST, localMapStats.getOwnedEntryMemoryCost());
-        assertEquals(BEHM_SLOT_COST + stats.getUsedNative(), localMapStats.getOwnedEntryMemoryCost());
+        assertEquals(BEHM_SLOT_COST + getUsedDataSpace(stats), localMapStats.getOwnedEntryMemoryCost());
         assertEquals(0, localMapStats.getHeapCost());
 
         // multiple entries
@@ -71,7 +71,7 @@ public class HDLocalMapStatsOwnedEntryCostTest extends HazelcastTestSupport {
         localMapStats = map.getLocalMapStats();
         assertEquals(numOfEntries, localMapStats.getOwnedEntryCount());
         assertEquals(numOfEntries * SINGLE_MAP_ENTRY_COST, localMapStats.getOwnedEntryMemoryCost());
-        assertEquals(numOfEntries * BEHM_SLOT_COST + stats.getUsedNative(), localMapStats.getOwnedEntryMemoryCost());
+        assertEquals(numOfEntries * BEHM_SLOT_COST + getUsedDataSpace(stats), localMapStats.getOwnedEntryMemoryCost());
         assertEquals(0, localMapStats.getHeapCost());
 
         // empty map
@@ -82,5 +82,9 @@ public class HDLocalMapStatsOwnedEntryCostTest extends HazelcastTestSupport {
         assertEquals(0, localMapStats.getOwnedEntryCount());
         assertEquals(0, localMapStats.getOwnedEntryMemoryCost());
         assertEquals(0, localMapStats.getHeapCost());
+    }
+
+    private static long getUsedDataSpace(MemoryStats stats) {
+        return stats.getUsedNative() - stats.getUsedMetadata();
     }
 }

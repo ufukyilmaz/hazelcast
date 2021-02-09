@@ -129,7 +129,7 @@ public final class NativeMemoryTestUtil {
             StringBuilder sb = new StringBuilder("(");
             String delimiter = "";
             for (int i = 0; i < memoryStats.length; i++) {
-                long usedNative = memoryStats[i].getUsedNative();
+                long usedNative = memoryStats[i].getUsedNative() - memoryStats[i].getUsedMetadata();
                 if (usedNative > 0) {
                     leakingNodes.add(i + 1);
                 }

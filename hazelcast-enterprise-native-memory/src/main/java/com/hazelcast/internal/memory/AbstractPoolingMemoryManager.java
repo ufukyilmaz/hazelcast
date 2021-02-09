@@ -1,8 +1,8 @@
 package com.hazelcast.internal.memory;
 
 import com.hazelcast.internal.memory.impl.LibMalloc;
-import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.QuickMath;
+import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 
@@ -444,30 +444,21 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
         private final LibMalloc malloc;
         private final PooledNativeMemoryStats memoryStats;
 
-        public MetadataMemoryAllocator(LibMalloc malloc, PooledNativeMemoryStats memoryStats) {
+        public MetadataMemoryAllocator(LibMalloc malloc,
+                                       PooledNativeMemoryStats memoryStats) {
             this.malloc = malloc;
             this.memoryStats = memoryStats;
         }
 
         @Override
         public long allocate(long size) {
-            checkSize(size);
+            memoryStats.getMemoryAdjuster().adjustMetadataMemory(size);
+
             long address = malloc.malloc(size);
             checkAddress(address, size);
             AMEM.setMemory(address, size, (byte) 0);
             memoryStats.addMetadataUsage(size);
             return address;
-        }
-
-        private void checkSize(long size) {
-            long limit = memoryStats.getMaxMetadata();
-            long usage = memoryStats.getUsedMetadata();
-            if (usage + size > limit) {
-                throw new NativeOutOfMemoryError("System allocations limit exceeded!"
-                        + " Limit: " + MemorySize.toPrettyString(limit)
-                        + ", usage: " + MemorySize.toPrettyString(usage)
-                        + ", requested: " + MemorySize.toPrettyString(size));
-            }
         }
 
         @Override
@@ -480,8 +471,9 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
         public long reallocate(long address, long currentSize, long newSize) {
             long diff = newSize - currentSize;
             if (diff > 0) {
-                checkSize(diff);
+                memoryStats.getMemoryAdjuster().adjustMetadataMemory(diff);
             }
+
             long newAddress = malloc.realloc(address, newSize);
             checkAddress(newAddress, newSize);
 

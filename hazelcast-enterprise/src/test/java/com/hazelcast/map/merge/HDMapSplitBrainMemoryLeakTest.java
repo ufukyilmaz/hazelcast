@@ -128,7 +128,7 @@ public class HDMapSplitBrainMemoryLeakTest extends SplitBrainTestSupport {
 
     private static long getUsedHDMemory(HazelcastInstance instance) {
         MemoryStats memoryStats = getHazelcastInstanceImpl(instance).getMemoryStats();
-        return memoryStats.getUsedNative();
+        return memoryStats.getUsedNative() - memoryStats.getUsedMetadata();
     }
 
 }

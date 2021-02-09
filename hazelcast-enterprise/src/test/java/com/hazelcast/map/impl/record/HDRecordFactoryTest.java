@@ -131,7 +131,7 @@ public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
 
     @Override
     InternalSerializationService createSerializationService() {
-        MemorySize memorySize = new MemorySize(4, MemoryUnit.MEGABYTES);
+        MemorySize memorySize = new MemorySize(5, MemoryUnit.MEGABYTES);
         memoryManager = new PoolingMemoryManager(memorySize);
 
         return new EnterpriseSerializationServiceBuilder()

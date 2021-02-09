@@ -1,5 +1,6 @@
 package com.hazelcast.internal.memory;
 
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.NativeOutOfMemoryError;
@@ -42,8 +43,16 @@ public class GlobalIndexAllocatorTest extends ParameterizedMemoryTest {
     private GlobalIndexPoolingAllocator memoryAllocator;
     private DelegatingMemoryAllocator delegatingAllocator;
     private LibMalloc malloc;
-    private final PooledNativeMemoryStats stats = new PooledNativeMemoryStats(MemoryUnit.MEGABYTES.toBytes(1),
-            MemoryUnit.MEGABYTES.toBytes(1));
+    private final PooledNativeMemoryStats stats;
+
+    {
+        // 16 bytes is for metadata allocation since
+        // maxNative is shared from data and metadata space
+        long maxNative = MemoryUnit.MEGABYTES.toBytes(1) + 16;
+        stats = new PooledNativeMemoryStats(maxNative,
+                MemoryUnit.MEGABYTES.toBytes(1), NativeMemoryConfig.DEFAULT_PAGE_SIZE);
+    }
+
     private long nodeSize;
 
     @Before
@@ -70,16 +79,16 @@ public class GlobalIndexAllocatorTest extends ParameterizedMemoryTest {
         assertThrows(IllegalArgumentException.class, () -> memoryAllocator.allocate(31));
         assertThrows(IllegalArgumentException.class, () -> memoryAllocator.allocate(0));
 
-        assertEquals(0, stats.getUsedNative());
-        assertEquals(0, stats.getCommittedNative());
+        assertEquals(0, stats.getUsedNative() - stats.getUsedMetadata());
+        assertEquals(0, stats.getCommittedNative() - stats.getUsedMetadata());
 
         long address = delegatingAllocator.allocate(nodeSize);
 
         // Header is zeroed
         assertEquals(0, AMEM.getLong(address));
 
-        assertEquals(nodeSize, stats.getUsedNative());
-        assertEquals(nodeSize, stats.getCommittedNative());
+        assertEquals(nodeSize, stats.getUsedNative() - stats.getUsedMetadata());
+        assertEquals(nodeSize, stats.getCommittedNative() - stats.getUsedMetadata());
 
         assertNotEquals(NULL_ADDRESS, address);
         // Access the memory
@@ -100,8 +109,8 @@ public class GlobalIndexAllocatorTest extends ParameterizedMemoryTest {
         long newAddress = delegatingAllocator.reallocate(address, nodeSize, nodeSize);
 
         assertEquals(address, newAddress);
-        assertEquals(nodeSize, stats.getUsedNative());
-        assertEquals(nodeSize, stats.getCommittedNative());
+        assertEquals(nodeSize, stats.getUsedNative() - stats.getUsedMetadata());
+        assertEquals(nodeSize, stats.getCommittedNative() - stats.getUsedMetadata());
         delegatingAllocator.free(newAddress, nodeSize);
     }
 
@@ -116,8 +125,8 @@ public class GlobalIndexAllocatorTest extends ParameterizedMemoryTest {
 
         // Access the memory
         setMemory(address);
-        assertEquals(nodeSize, stats.getUsedNative());
-        assertEquals(nodeSize, stats.getCommittedNative());
+        assertEquals(nodeSize, stats.getUsedNative() - stats.getUsedMetadata());
+        assertEquals(nodeSize, stats.getCommittedNative() - stats.getUsedMetadata());
 
         delegatingAllocator.free(address, nodeSize);
         assertEquals(1, memoryAllocator.consumeNodeAddressesFromQueue().size());
@@ -127,8 +136,8 @@ public class GlobalIndexAllocatorTest extends ParameterizedMemoryTest {
             assertEquals(1, AMEM.getByte(address + i));
         }
 
-        assertEquals(0, stats.getUsedNative());
-        assertEquals(nodeSize, stats.getCommittedNative());
+        assertEquals(0, stats.getUsedNative() - stats.getUsedMetadata());
+        assertEquals(nodeSize, stats.getCommittedNative() - stats.getUsedMetadata());
     }
 
     @Test
@@ -153,16 +162,16 @@ public class GlobalIndexAllocatorTest extends ParameterizedMemoryTest {
             addresses.add(address);
         }
 
-        assertEquals(10 * nodeSize, stats.getUsedNative());
-        assertEquals(10 * nodeSize, stats.getCommittedNative());
+        assertEquals(10 * nodeSize, stats.getUsedNative() - stats.getUsedMetadata());
+        assertEquals(10 * nodeSize, stats.getCommittedNative() - stats.getUsedMetadata());
 
         assertEquals(0, memoryAllocator.consumeNodeAddressesFromQueue().size());
 
         // Release the blocks
         addresses.forEach(address -> delegatingAllocator.free(address, nodeSize));
 
-        assertEquals(0, stats.getUsedNative());
-        assertEquals(10 * nodeSize, stats.getCommittedNative());
+        assertEquals(0, stats.getUsedNative() - stats.getUsedMetadata());
+        assertEquals(10 * nodeSize, stats.getCommittedNative() - stats.getUsedMetadata());
 
         // Allocate new blocks from the queue
         addresses.forEach(address -> assertEquals((long) address, delegatingAllocator.allocate(nodeSize)));
@@ -173,8 +182,8 @@ public class GlobalIndexAllocatorTest extends ParameterizedMemoryTest {
         long address = delegatingAllocator.allocate(nodeSize);
         assertNotEquals(NULL_ADDRESS, address);
         assertFalse(addresses.contains(address));
-        assertEquals(11 * nodeSize, stats.getUsedNative());
-        assertEquals(11 * nodeSize, stats.getCommittedNative());
+        assertEquals(11 * nodeSize, stats.getUsedNative() - stats.getUsedMetadata());
+        assertEquals(11 * nodeSize, stats.getCommittedNative() - stats.getUsedMetadata());
     }
 
     @Test
@@ -198,29 +207,29 @@ public class GlobalIndexAllocatorTest extends ParameterizedMemoryTest {
             addresses.add(address);
         }
 
-        assertEquals(10 * nodeSize, stats.getUsedNative());
-        assertEquals(10 * nodeSize, stats.getCommittedNative());
+        assertEquals(10 * nodeSize, stats.getUsedNative() - stats.getUsedMetadata());
+        assertEquals(10 * nodeSize, stats.getCommittedNative() - stats.getUsedMetadata());
 
         // Remove the blocks
         addresses.forEach(address -> memoryAllocator.free(address, nodeSize));
 
-        assertEquals(0, stats.getUsedNative());
-        assertEquals(10 * nodeSize, stats.getCommittedNative());
+        assertEquals(0, stats.getUsedNative() - stats.getUsedMetadata());
+        assertEquals(10 * nodeSize, stats.getCommittedNative() - stats.getUsedMetadata());
 
         memoryAllocator.dispose();
 
-        assertEquals(0, stats.getCommittedNative());
+        assertEquals(0, stats.getCommittedNative() - stats.getUsedMetadata());
 
         // Second dispose is no-op
         memoryAllocator.dispose();
 
-        assertEquals(0, stats.getCommittedNative());
+        assertEquals(0, stats.getCommittedNative() - stats.getUsedMetadata());
     }
 
     @Test
     public void testAllocateConcurrency() {
         PooledNativeMemoryStats newStats = new PooledNativeMemoryStats(MemoryUnit.MEGABYTES.toBytes(200),
-                MemoryUnit.MEGABYTES.toBytes(10));
+                MemoryUnit.MEGABYTES.toBytes(10), NativeMemoryConfig.DEFAULT_PAGE_SIZE);
 
         int newNodeSize = 32;
         GlobalIndexPoolingAllocator newMemoryAllocator = new GlobalIndexPoolingAllocator(malloc, newStats, newNodeSize);
@@ -263,13 +272,13 @@ public class GlobalIndexAllocatorTest extends ParameterizedMemoryTest {
         Set<Long> allAddresses = new HashSet<>();
         addressesPerThread.forEach(addresses -> allAddresses.addAll(addresses));
         assertEquals(allocationPerThread * threadsCount, allAddresses.size());
-        assertEquals(allocationPerThread * threadsCount * newNodeSize, newStats.getUsedNative());
-        assertEquals(allocationPerThread * threadsCount * newNodeSize, newStats.getCommittedNative());
+        assertEquals(allocationPerThread * threadsCount * newNodeSize, newStats.getUsedNative() - newStats.getUsedMetadata());
+        assertEquals(allocationPerThread * threadsCount * newNodeSize, newStats.getCommittedNative() - stats.getUsedMetadata());
 
         // Release all addresses
         allAddresses.forEach(address -> newMemoryAllocator.free(address, newNodeSize));
-        assertEquals(0, newStats.getUsedNative());
-        assertEquals(allocationPerThread * threadsCount * newNodeSize, newStats.getCommittedNative());
+        assertEquals(0, newStats.getUsedNative() - newStats.getUsedMetadata());
+        assertEquals(allocationPerThread * threadsCount * newNodeSize, newStats.getCommittedNative() - newStats.getUsedMetadata());
 
         executor.shutdownNow();
         newMemoryAllocator.dispose();
@@ -278,7 +287,7 @@ public class GlobalIndexAllocatorTest extends ParameterizedMemoryTest {
     @Test
     public void testAllocateFreeConcurrency() {
         PooledNativeMemoryStats newStats = new PooledNativeMemoryStats(MemoryUnit.MEGABYTES.toBytes(200),
-                MemoryUnit.MEGABYTES.toBytes(10));
+                MemoryUnit.MEGABYTES.toBytes(10), NativeMemoryConfig.DEFAULT_PAGE_SIZE);
 
         int newNodeSize = 32;
         GlobalIndexPoolingAllocator newMemoryAllocator = new GlobalIndexPoolingAllocator(malloc, newStats, newNodeSize);
@@ -318,7 +327,7 @@ public class GlobalIndexAllocatorTest extends ParameterizedMemoryTest {
 
         assertOpenEventually(latch);
         assertNull(exception.get());
-        assertEquals(0, newStats.getUsedNative());
+        assertEquals(0, newStats.getUsedNative() - newStats.getUsedMetadata());
         executor.shutdownNow();
         newMemoryAllocator.dispose();
     }

@@ -25,6 +25,7 @@ import com.hazelcast.internal.hotrestart.impl.RamStoreRestartLoop;
 import com.hazelcast.internal.hotrestart.impl.encryption.HotRestartStoreEncryptionConfig;
 import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.MemoryAdjuster;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.internal.partition.PartitionReplica;
@@ -756,11 +757,13 @@ public class HotRestartIntegrationService implements RamStoreRegistry, InternalH
         final CountDownLatch doneLatch = new CountDownLatch(partitionThreadCount);
         getOperationExecutor().executeOnPartitionThreads(() -> {
             try {
+                MemoryAdjuster.HOT_RESTART_LOADING_IN_PROGRESS.set(true);
                 loop.run(((OperationThread) currentThread()).getThreadId());
             } catch (Throwable t) {
                 failure.compareAndSet(null, t);
             } finally {
                 doneLatch.countDown();
+                MemoryAdjuster.HOT_RESTART_LOADING_IN_PROGRESS.set(false);
             }
         });
         try {

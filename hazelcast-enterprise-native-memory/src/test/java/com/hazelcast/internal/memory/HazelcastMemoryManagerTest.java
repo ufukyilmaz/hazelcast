@@ -1,5 +1,6 @@
 package com.hazelcast.internal.memory;
 
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -27,7 +28,7 @@ public class HazelcastMemoryManagerTest extends ParameterizedMemoryTest {
     private HazelcastMemoryManager memoryManager;
     private LibMalloc malloc;
     private final PooledNativeMemoryStats stats = new PooledNativeMemoryStats(MemoryUnit.MEGABYTES.toBytes(1),
-            MemoryUnit.MEGABYTES.toBytes(1));
+            MemoryUnit.MEGABYTES.toBytes(1), NativeMemoryConfig.DEFAULT_PAGE_SIZE);
 
     @Before
     public void setup() {

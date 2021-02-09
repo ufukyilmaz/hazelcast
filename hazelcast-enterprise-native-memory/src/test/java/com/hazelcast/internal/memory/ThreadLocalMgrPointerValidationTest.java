@@ -1,5 +1,6 @@
 package com.hazelcast.internal.memory;
 
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.nio.Bits;
 import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
@@ -56,7 +57,7 @@ public class ThreadLocalMgrPointerValidationTest extends ParameterizedMemoryTest
 
         libMalloc = newLibMalloc(allocationSource);
         mgr = new ThreadLocalPoolingMemoryManager(minBlockSize, pageSize, libMalloc,
-                new PooledNativeMemoryStats(maxNative, maxMetadata));
+                new PooledNativeMemoryStats(maxNative, maxMetadata, NativeMemoryConfig.DEFAULT_PAGE_SIZE));
     }
 
     @After

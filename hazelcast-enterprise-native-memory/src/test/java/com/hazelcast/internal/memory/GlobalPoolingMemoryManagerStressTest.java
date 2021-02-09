@@ -1,5 +1,6 @@
 package com.hazelcast.internal.memory;
 
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
@@ -40,7 +41,7 @@ public class GlobalPoolingMemoryManagerStressTest extends ParameterizedMemoryTes
 
         int minBlockSize = DEFAULT_MIN_BLOCK_SIZE;
         int pageSize = DEFAULT_PAGE_SIZE;
-        stats = new PooledNativeMemoryStats(maxNative, maxMetadata);
+        stats = new PooledNativeMemoryStats(maxNative, maxMetadata, NativeMemoryConfig.DEFAULT_PAGE_SIZE);
 
         gc = new SimpleGarbageCollector();
         gc.start();

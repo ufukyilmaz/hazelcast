@@ -273,7 +273,7 @@ public class HotRestartTestUtil {
 
     public static LoggingService createLoggingService() {
         BuildInfo buildInfo = new BuildInfo("0", "0", "0", 0, true, (byte) 0, "0");
-        return new LoggingServiceImpl("group", "log4j2", buildInfo, true);
+        return new LoggingServiceImpl("group", "log4j2", buildInfo, true, null);
     }
 
     public static ILogger createHotRestartLogger() {

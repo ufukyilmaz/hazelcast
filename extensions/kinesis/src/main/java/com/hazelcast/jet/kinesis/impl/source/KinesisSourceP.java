@@ -52,7 +52,7 @@ import java.util.stream.Stream;
 import static com.hazelcast.jet.Traversers.traverseStream;
 import static com.hazelcast.jet.Util.entry;
 import static com.hazelcast.jet.core.BroadcastKey.broadcastKey;
-import static com.hazelcast.jet.impl.util.Util.toLocalTime;
+import static com.hazelcast.jet.impl.util.DateUtil.toLocalTime;
 import static com.hazelcast.jet.kinesis.impl.KinesisUtil.shardBelongsToRange;
 
 public class KinesisSourceP extends AbstractProcessor implements DynamicMetricsProvider {

@@ -446,9 +446,9 @@ public interface BatchStage<T> extends GeneralStage<T> {
      * registered with the builder you get. You supply an aggregate operation
      * for each input stage and in the output you get the individual
      * aggregation results in a {@code Map.Entry(key, itemsByTag)}. Use the tag
-     * you get from {@link AggregateBuilder#add builder.add(stageN, aggrOpN)}
+     * you get from {@link AggregateBuilderImpl#add builder.add(stageN, aggrOpN)}
      * to retrieve the aggregated result for that stage. Use {@link
-     * AggregateBuilder#tag0() builder.tag0()} as the tag of this stage. You
+     * AggregateBuilderImpl#tag0() builder.tag0()} as the tag of this stage. You
      * will also be able to supply a function to the builder that immediately
      * transforms the {@code ItemsByTag} to the desired output type. Your
      * function may return {@code null} and in that case the stage will not
@@ -477,8 +477,8 @@ public interface BatchStage<T> extends GeneralStage<T> {
      *}</pre>
      */
     @Nonnull
-    default <R0> AggregateBuilder<R0> aggregateBuilder(AggregateOperation1<? super T, ?, ? extends R0> aggrOp0) {
-        return new AggregateBuilder<>(this, aggrOp0);
+    default <R0> AggregateBuilderImpl<R0> aggregateBuilder(AggregateOperation1<? super T, ?, ? extends R0> aggrOp0) {
+        return new AggregateBuilderImpl<>(this, aggrOp0);
     }
 
     /**
@@ -502,11 +502,11 @@ public interface BatchStage<T> extends GeneralStage<T> {
      * {@code stage.aggregateN(...)} calls because they offer more static type
      * safety.
      * <p>
-     * To add the other stages, call {@link AggregateBuilder1#add add(stage)}.
+     * To add the other stages, call {@link AggregateBuilder1Impl#add add(stage)}.
      * Collect all the tags returned from {@code add()} and use them when
      * building the aggregate operation. Retrieve the tag of the first stage
      * (from which you obtained this builder) by calling {@link
-     * AggregateBuilder1#tag0()}.
+     * AggregateBuilder1Impl#tag0()}.
      * <p>
      * This example takes three streams of strings and counts the distinct
      * strings across all of them:
@@ -529,8 +529,8 @@ public interface BatchStage<T> extends GeneralStage<T> {
      * }</pre>
      */
     @Nonnull
-    default AggregateBuilder1<T> aggregateBuilder() {
-        return new AggregateBuilder1<>(this);
+    default AggregateBuilder1Impl<T> aggregateBuilder() {
+        return new AggregateBuilder1Impl<>(this);
     }
 
     @Nonnull @Override

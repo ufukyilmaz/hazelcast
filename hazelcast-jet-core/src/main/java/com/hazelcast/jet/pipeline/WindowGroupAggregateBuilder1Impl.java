@@ -43,10 +43,10 @@ import javax.annotation.Nonnull;
  *
  * @since 3.0
  */
-public class WindowGroupAggregateBuilder1<T0, K> {
+public class WindowGroupAggregateBuilder1Impl<T0, K> implements WindowGroupAggregateBuilder1<T0, K> {
     private final GrAggBuilder<K> grAggBuilder;
 
-    WindowGroupAggregateBuilder1(@Nonnull StageWithKeyAndWindow<T0, K> s) {
+    WindowGroupAggregateBuilder1Impl(@Nonnull StageWithKeyAndWindow<T0, K> s) {
         grAggBuilder = new GrAggBuilder<>(s);
     }
 

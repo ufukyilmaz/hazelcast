@@ -45,11 +45,11 @@ import static com.hazelcast.jet.aggregate.AggregateOperations.coAggregateOperati
  *
  * @since 3.0
  */
-public class GroupAggregateBuilder<K, R0> {
+public class GroupAggregateBuilderImpl<K, R0> implements GroupAggregateBuilder<K, R0> {
     private final GrAggBuilder<K> grAggBuilder;
     private final CoAggregateOperationBuilder aggrOpBuilder = coAggregateOperationBuilder();
 
-    <T0> GroupAggregateBuilder(
+    <T0> GroupAggregateBuilderImpl(
             @Nonnull BatchStageWithKey<T0, K> stage0,
             @Nonnull AggregateOperation1<? super T0, ?, ? extends R0> aggrOp0
     ) {

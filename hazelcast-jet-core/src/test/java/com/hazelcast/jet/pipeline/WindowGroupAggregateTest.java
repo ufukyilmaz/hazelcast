@@ -441,7 +441,7 @@ public class WindowGroupAggregateTest extends PipelineStreamTestSupport {
         StreamStageWithKey<Entry<String, Integer>, String> stage1 = fx.newSourceStage();
 
         // When
-        WindowGroupAggregateBuilder<String, Long> b = stage0.window(fx.tumblingWinDef).aggregateBuilder(SUMMING);
+        WindowGroupAggregateBuilderImpl<String, Long> b = stage0.window(fx.tumblingWinDef).aggregateBuilder(SUMMING);
         Tag<Long> tag0 = b.tag0();
         Tag<Long> tag1 = b.add(stage1, SUMMING);
         StreamStage<KeyedWindowResult<String, ItemsByTag>> aggregated = b.build();
@@ -463,7 +463,7 @@ public class WindowGroupAggregateTest extends PipelineStreamTestSupport {
         StreamStageWithKey<Entry<String, Integer>, String> stage0 = fx.newSourceStage();
         StreamStageWithKey<Entry<String, Integer>, String> stage1 = fx.newSourceStage();
 
-        WindowGroupAggregateBuilder1<Entry<String, Integer>, String> b = stage0
+        WindowGroupAggregateBuilder1Impl<Entry<String, Integer>, String> b = stage0
                 .window(fx.tumblingWinDef)
                 .aggregateBuilder();
         Tag<Entry<String, Integer>> tag0_in = b.tag0();

@@ -353,9 +353,9 @@ public interface BatchStageWithKey<T, K> extends GeneralStageWithKey<T, K> {
      * registered with the builder you get. You supply an aggregate operation
      * for each input stage and in the output you get the individual
      * aggregation results in a {@code Map.Entry(key, itemsByTag)}. Use the tag
-     * you get from {@link AggregateBuilder#add builder.add(stageN)} to
+     * you get from {@link AggregateBuilderImpl#add builder.add(stageN)} to
      * retrieve the aggregated result for that stage. Use {@link
-     * AggregateBuilder#tag0() builder.tag0()} as the tag of this stage. You
+     * AggregateBuilderImpl#tag0() builder.tag0()} as the tag of this stage. You
      * will also be able to supply a function to the builder that immediately
      * transforms the {@code ItemsByTag} to the desired output type.
      * <p>
@@ -388,10 +388,10 @@ public interface BatchStageWithKey<T, K> extends GeneralStageWithKey<T, K> {
      *}</pre>
      */
     @Nonnull
-    default <R0> GroupAggregateBuilder<K, R0> aggregateBuilder(
+    default <R0> GroupAggregateBuilderImpl<K, R0> aggregateBuilder(
             @Nonnull AggregateOperation1<? super T, ?, ? extends R0> aggrOp0
     ) {
-        return new GroupAggregateBuilder<>(this, aggrOp0);
+        return new GroupAggregateBuilderImpl<>(this, aggrOp0);
     }
 
     /**
@@ -412,11 +412,11 @@ public interface BatchStageWithKey<T, K> extends GeneralStageWithKey<T, K> {
      * {@code stage.aggregateN(...)} calls because they offer more static type
      * safety.
      * <p>
-     * To add the other stages, call {@link GroupAggregateBuilder1#add
+     * To add the other stages, call {@link GroupAggregateBuilder1Impl#add
      * add(stage)}. Collect all the tags returned from {@code add()} and use
      * them when building the aggregate operation. Retrieve the tag of the
      * first stage (from which you obtained this builder) by calling {@link
-     * GroupAggregateBuilder1#tag0()}.
+     * GroupAggregateBuilder1Impl#tag0()}.
      * <p>
      * This example takes three streams of {@code Map.Entry<String, Long>} and,
      * for each string key, counts the distinct {@code Long} values across all
@@ -445,8 +445,8 @@ public interface BatchStageWithKey<T, K> extends GeneralStageWithKey<T, K> {
      * }</pre>
      */
     @Nonnull
-    default GroupAggregateBuilder1<T, K> aggregateBuilder() {
-        return new GroupAggregateBuilder1<>(this);
+    default GroupAggregateBuilder1Impl<T, K> aggregateBuilder() {
+        return new GroupAggregateBuilder1Impl<>(this);
     }
 
     @Nonnull @Override

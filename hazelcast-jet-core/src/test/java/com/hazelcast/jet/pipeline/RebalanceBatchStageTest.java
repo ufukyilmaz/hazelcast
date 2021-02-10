@@ -554,7 +554,7 @@ public class RebalanceBatchStageTest extends PipelineTestSupport {
                 batchStageFromList(input2).rebalance().groupingKey(keyFn);
 
         // When
-        GroupAggregateBuilder<Integer, Long> b = stage0.aggregateBuilder(SUMMING);
+        GroupAggregateBuilderImpl<Integer, Long> b = stage0.aggregateBuilder(SUMMING);
         Tag<Long> tag0 = b.tag0();
         Tag<Long> tag1 = b.add(stage1, SUMMING);
         Tag<Long> tag2 = b.add(stage2Rebalanced, SUMMING);
@@ -595,7 +595,7 @@ public class RebalanceBatchStageTest extends PipelineTestSupport {
                 batchStageFromList(input2).rebalance().groupingKey(keyFn);
 
         // When
-        GroupAggregateBuilder1<Integer, Integer> b = stage0.aggregateBuilder();
+        GroupAggregateBuilder1Impl<Integer, Integer> b = stage0.aggregateBuilder();
         Tag<Integer> tag0_in = b.tag0();
         Tag<Integer> tag1_in = b.add(stage1);
         Tag<Integer> tag2_in = b.add(stage2Rebalanced);

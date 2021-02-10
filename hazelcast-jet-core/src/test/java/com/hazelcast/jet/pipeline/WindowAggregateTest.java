@@ -411,7 +411,7 @@ public class WindowAggregateTest extends PipelineStreamTestSupport {
         CoAggregateFixture fx = new CoAggregateFixture();
 
         // When
-        WindowAggregateBuilder<Long> b = fx.stage0.aggregateBuilder(SUMMING);
+        WindowAggregateBuilderImpl<Long> b = fx.stage0.aggregateBuilder(SUMMING);
         Tag<Long> tag0 = b.tag0();
         Tag<Long> tag1 = b.add(fx.newStage(), SUMMING);
         StreamStage<WindowResult<ItemsByTag>> aggregated = b.build();
@@ -430,7 +430,7 @@ public class WindowAggregateTest extends PipelineStreamTestSupport {
         CoAggregateFixture fx = new CoAggregateFixture();
 
         // When
-        WindowAggregateBuilder1<Integer> b = fx.stage0.aggregateBuilder();
+        WindowAggregateBuilder1Impl<Integer> b = fx.stage0.aggregateBuilder();
         Tag<Integer> tag0_in = b.tag0();
         Tag<Integer> tag1_in = b.add(fx.newStage());
 

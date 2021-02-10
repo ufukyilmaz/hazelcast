@@ -44,11 +44,11 @@ import static com.hazelcast.jet.aggregate.AggregateOperations.coAggregateOperati
  *
  * @since 3.0
  */
-public class WindowGroupAggregateBuilder<K, R0> {
+public class WindowGroupAggregateBuilderImpl<K, R0> implements WindowGroupAggregateBuilder<K, R0> {
     private final GrAggBuilder<K> grAggBuilder;
     private final CoAggregateOperationBuilder aggrOpBuilder = coAggregateOperationBuilder();
 
-    <T0> WindowGroupAggregateBuilder(
+    <T0> WindowGroupAggregateBuilderImpl(
             @Nonnull StageWithKeyAndWindow<T0, K> stage0,
             @Nonnull AggregateOperation1<? super T0, ?, ? extends R0> aggrOp0
     ) {

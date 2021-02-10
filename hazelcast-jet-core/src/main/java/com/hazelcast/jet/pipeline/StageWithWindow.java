@@ -292,9 +292,9 @@ public interface StageWithWindow<T> {
      * registered with the builder you get. You supply an aggregate operation
      * for each input stage and in the output you get the individual
      * aggregation results in a {@code WindowResult(windowEnd, itemsByTag)}.
-     * Use the tag you get from {@link AggregateBuilder#add builder.add(stageN,
+     * Use the tag you get from {@link AggregateBuilderImpl#add builder.add(stageN,
      * aggrOpN)} to retrieve the aggregated result for that stage. Use {@link
-     * AggregateBuilder#tag0() builder.tag0()} as the tag of this stage. You
+     * AggregateBuilderImpl#tag0() builder.tag0()} as the tag of this stage. You
      * will also be able to supply a function to the builder that immediately
      * transforms the results to the desired output type.
      * <p>
@@ -327,10 +327,10 @@ public interface StageWithWindow<T> {
      *}</pre>
      */
     @Nonnull
-    default <R0> WindowAggregateBuilder<R0> aggregateBuilder(
+    default <R0> WindowAggregateBuilderImpl<R0> aggregateBuilder(
             AggregateOperation1<? super T, ?, ? extends R0> aggrOp
     ) {
-        return new WindowAggregateBuilder<>(streamStage(), aggrOp, windowDefinition());
+        return new WindowAggregateBuilderImpl<>(streamStage(), aggrOp, windowDefinition());
     }
 
     /**
@@ -351,11 +351,11 @@ public interface StageWithWindow<T> {
      * {@code stage.aggregateN(...)} calls because they offer more static type
      * safety.
      * <p>
-     * To add the other stages, call {@link WindowAggregateBuilder1#add
+     * To add the other stages, call {@link WindowAggregateBuilder1Impl#add
      * add(stage)}. Collect all the tags returned from {@code add()} and use
      * them when building the aggregate operation. Retrieve the tag of the
      * first stage (from which you obtained this builder) by calling {@link
-     * WindowAggregateBuilder1#tag0()}.
+     * WindowAggregateBuilder1Impl#tag0()}.
      * <p>
      * This example takes three streams of strings, specifies a 1-second
      * sliding window and counts the distinct strings across all streams:
@@ -380,7 +380,7 @@ public interface StageWithWindow<T> {
      * }</pre>
      */
     @Nonnull
-    default WindowAggregateBuilder1<T> aggregateBuilder() {
-        return new WindowAggregateBuilder1<>(streamStage(), windowDefinition());
+    default WindowAggregateBuilder1Impl<T> aggregateBuilder() {
+        return new WindowAggregateBuilder1Impl<>(streamStage(), windowDefinition());
     }
 }

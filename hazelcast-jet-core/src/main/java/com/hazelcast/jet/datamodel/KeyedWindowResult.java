@@ -20,7 +20,7 @@ import javax.annotation.Nonnull;
 import java.util.Map.Entry;
 import java.util.Objects;
 
-import static com.hazelcast.jet.impl.util.Util.toLocalTime;
+import static com.hazelcast.jet.impl.util.DateUtil.toLocalTime;
 
 /**
  * Holds the result of a group-and-aggregate operation performed over a

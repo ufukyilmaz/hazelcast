@@ -16,7 +16,7 @@
 
 package com.hazelcast.jet.pipeline;
 
-import com.hazelcast.jet.impl.util.Util;
+import com.hazelcast.jet.impl.util.DateUtil;
 import com.hazelcast.logging.AbstractLogger;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.LoggerFactory;
@@ -39,7 +39,7 @@ public class MockLoggingFactory implements LoggerFactory {
 
             @Override
             public void log(Level level, String message, Throwable thrown) {
-                System.out.printf("%s %s: %s%n", Util.toLocalTime(System.currentTimeMillis()), level, message);
+                System.out.printf("%s %s: %s%n", DateUtil.toLocalTime(System.currentTimeMillis()), level, message);
                 capturedMessages.add(message);
                 if (thrown != null) {
                     thrown.printStackTrace();

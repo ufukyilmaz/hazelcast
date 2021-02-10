@@ -222,12 +222,12 @@ public interface JetInstance {
     }
 
     /**
-     * Returns the {@link JobStateSnapshot} object representing an exported
+     * Returns the {@link JobStateSnapshotImpl} object representing an exported
      * snapshot with the given name. Returns {@code null} if no such snapshot
      * exists.
      */
     @Nullable
-    default JobStateSnapshot getJobStateSnapshot(@Nonnull String name) {
+    default JobStateSnapshotImpl getJobStateSnapshot(@Nonnull String name) {
         String mapName = exportedSnapshotMapName(name);
         if (!((AbstractJetInstance) this).existsDistributedObject(MapService.SERVICE_NAME, mapName)) {
             return null;
@@ -237,7 +237,7 @@ public interface JetInstance {
         if (validationRecord instanceof SnapshotValidationRecord) {
             // update the cache - for robustness. For example after the map was copied
             getMap(JobRepository.EXPORTED_SNAPSHOTS_DETAIL_CACHE).set(name, validationRecord);
-            return new JobStateSnapshot(this, name, (SnapshotValidationRecord) validationRecord);
+            return new JobStateSnapshotImpl(this, name, (SnapshotValidationRecord) validationRecord);
         } else {
             return null;
         }
@@ -248,10 +248,10 @@ public interface JetInstance {
      * cluster.
      */
     @Nonnull
-    default Collection<JobStateSnapshot> getJobStateSnapshots() {
+    default Collection<JobStateSnapshotImpl> getJobStateSnapshots() {
         return getHazelcastInstance().getMap(JobRepository.EXPORTED_SNAPSHOTS_DETAIL_CACHE)
                 .entrySet().stream()
-                .map(entry -> new JobStateSnapshot(this, (String) entry.getKey(),
+                .map(entry -> new JobStateSnapshotImpl(this, (String) entry.getKey(),
                         (SnapshotValidationRecord) entry.getValue()))
                 .collect(toList());
     }

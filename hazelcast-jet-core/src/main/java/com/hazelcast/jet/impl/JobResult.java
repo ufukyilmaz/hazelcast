@@ -34,7 +34,7 @@ import static com.hazelcast.jet.Util.idToString;
 import static com.hazelcast.jet.core.JobStatus.COMPLETED;
 import static com.hazelcast.jet.core.JobStatus.FAILED;
 import static com.hazelcast.jet.impl.util.Util.exceptionallyCompletedFuture;
-import static com.hazelcast.jet.impl.util.Util.toLocalDateTime;
+import static com.hazelcast.jet.impl.util.DateUtil.toLocalDateTime;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 public class JobResult implements IdentifiedDataSerializable {

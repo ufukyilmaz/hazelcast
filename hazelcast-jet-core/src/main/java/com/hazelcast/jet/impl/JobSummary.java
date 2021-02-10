@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 
 import static com.hazelcast.jet.Util.idToString;
-import static com.hazelcast.jet.impl.util.Util.toLocalTime;
+import static com.hazelcast.jet.impl.util.DateUtil.toLocalTime;
 
 public class JobSummary implements IdentifiedDataSerializable {
 

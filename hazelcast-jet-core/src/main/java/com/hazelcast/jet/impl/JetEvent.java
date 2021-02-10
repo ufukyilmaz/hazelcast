@@ -20,7 +20,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Objects;
 
-import static com.hazelcast.jet.impl.util.Util.toLocalTime;
+import static com.hazelcast.jet.impl.util.DateUtil.toLocalTime;
 
 /**
  * Holds a stream event and its timestamp. Jet processors receive and send

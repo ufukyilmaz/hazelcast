@@ -19,7 +19,7 @@ package com.hazelcast.jet.datamodel;
 import javax.annotation.Nonnull;
 import java.util.Objects;
 
-import static com.hazelcast.jet.impl.util.Util.toLocalTime;
+import static com.hazelcast.jet.impl.util.DateUtil.toLocalTime;
 
 /**
  * Holds the result of an aggregate operation performed over a time

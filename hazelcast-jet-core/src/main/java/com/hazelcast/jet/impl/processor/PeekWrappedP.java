@@ -33,7 +33,7 @@ import java.util.function.Predicate;
 import java.util.stream.IntStream;
 
 import static com.hazelcast.jet.Util.entry;
-import static com.hazelcast.jet.impl.util.Util.toLocalTime;
+import static com.hazelcast.jet.impl.util.DateUtil.toLocalTime;
 
 /**
  * Internal API, see {@link DiagnosticProcessors}.

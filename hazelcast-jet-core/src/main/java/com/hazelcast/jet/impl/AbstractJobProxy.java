@@ -22,6 +22,7 @@ import com.hazelcast.core.MemberLeftException;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.jet.Job;
+import com.hazelcast.jet.Util;
 import com.hazelcast.jet.config.JobConfig;
 import com.hazelcast.jet.impl.util.NonCompletableFuture;
 import com.hazelcast.logging.ILogger;
@@ -40,7 +41,7 @@ import java.util.function.Supplier;
 import static com.hazelcast.jet.impl.util.ExceptionUtil.peel;
 import static com.hazelcast.jet.impl.util.ExceptionUtil.rethrow;
 import static com.hazelcast.jet.impl.util.Util.memoizeConcurrent;
-import static com.hazelcast.jet.impl.util.Util.toLocalDateTime;
+import static com.hazelcast.jet.impl.util.DateUtil.toLocalDateTime;
 
 /**
  * Base {@link Job} implementation for both client and member proxy.
@@ -80,6 +81,12 @@ public abstract class AbstractJobProxy<T> implements Job {
         } catch (Throwable t) {
             throw rethrow(t);
         }
+    }
+
+    @Nonnull
+    @Override
+    public String getIdString() {
+        return Util.idToString(jobId);
     }
 
     @Override

@@ -77,6 +77,7 @@ import static com.hazelcast.jet.Util.idToString;
 import static com.hazelcast.jet.core.Edge.between;
 import static com.hazelcast.jet.core.processor.SinkProcessors.writeMapP;
 import static com.hazelcast.jet.core.processor.SourceProcessors.readMapP;
+import static com.hazelcast.jet.impl.util.DateUtil.toLocalTime;
 import static com.hazelcast.jet.impl.util.ExceptionUtil.sneakyThrow;
 import static java.lang.Math.abs;
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
@@ -88,7 +89,6 @@ import static java.util.stream.IntStream.range;
 
 public final class Util {
 
-    private static final DateTimeFormatter LOCAL_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private static final Pattern TRAILING_NUMBER_PATTERN = Pattern.compile("(.*)-([0-9]+)");
 
     private Util() {
@@ -298,18 +298,6 @@ public final class Util {
 
     public static String jobIdAndExecutionId(long jobId, long executionId) {
         return "job " + idToString(jobId) + ", execution " + idToString(executionId);
-    }
-
-    private static ZonedDateTime toZonedDateTime(long timestamp) {
-        return Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault());
-    }
-
-    public static LocalDateTime toLocalDateTime(long timestamp) {
-        return toZonedDateTime(timestamp).toLocalDateTime();
-    }
-
-    public static String toLocalTime(long timestamp) {
-        return toZonedDateTime(timestamp).toLocalTime().format(LOCAL_TIME_FORMATTER);
     }
 
     /**

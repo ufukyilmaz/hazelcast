@@ -60,7 +60,7 @@ import static com.hazelcast.jet.config.ProcessingGuarantee.EXACTLY_ONCE;
 import static com.hazelcast.jet.core.BroadcastKey.broadcastKey;
 import static com.hazelcast.jet.impl.util.LoggingUtil.logFine;
 import static com.hazelcast.jet.impl.util.Util.logLateEvent;
-import static com.hazelcast.jet.impl.util.Util.toLocalDateTime;
+import static com.hazelcast.jet.impl.util.DateUtil.toLocalDateTime;
 import static java.lang.Math.min;
 import static java.lang.System.arraycopy;
 import static java.util.Collections.emptyList;

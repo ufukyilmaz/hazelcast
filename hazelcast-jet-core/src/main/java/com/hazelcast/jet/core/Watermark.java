@@ -19,7 +19,7 @@ package com.hazelcast.jet.core;
 import com.hazelcast.jet.impl.execution.BroadcastItem;
 
 import static com.hazelcast.jet.impl.execution.WatermarkCoalescer.IDLE_MESSAGE;
-import static com.hazelcast.jet.impl.util.Util.toLocalTime;
+import static com.hazelcast.jet.impl.util.DateUtil.toLocalTime;
 
 /**
  * Watermark is an item occasionally inserted into a disordered

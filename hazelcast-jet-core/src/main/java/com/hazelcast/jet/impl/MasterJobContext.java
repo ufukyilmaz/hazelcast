@@ -44,6 +44,7 @@ import com.hazelcast.jet.impl.operation.GetLocalJobMetricsOperation.ExecutionNot
 import com.hazelcast.jet.impl.operation.InitExecutionOperation;
 import com.hazelcast.jet.impl.operation.StartExecutionOperation;
 import com.hazelcast.jet.impl.operation.TerminateExecutionOperation;
+import com.hazelcast.jet.impl.util.DateUtil;
 import com.hazelcast.jet.impl.util.ExceptionUtil;
 import com.hazelcast.jet.impl.util.LoggingUtil;
 import com.hazelcast.jet.impl.util.NonCompletableFuture;
@@ -694,7 +695,7 @@ public class MasterJobContext {
     private String formatExecutionSummary(String conclusion, long completionTime) {
         StringBuilder sb = new StringBuilder();
         sb.append("Execution of ").append(mc.jobIdString()).append(' ').append(conclusion);
-        sb.append("\n\t").append("Start time: ").append(Util.toLocalDateTime(executionStartTime));
+        sb.append("\n\t").append("Start time: ").append(DateUtil.toLocalDateTime(executionStartTime));
         sb.append("\n\t").append("Duration: ").append(formatJobDuration(completionTime - executionStartTime));
         if (jobMetrics.stream().noneMatch(rjm -> rjm.getBlob() != null)) {
             sb.append("\n\tTo see additional job metrics enable JobConfig.storeMetricsAfterJobCompletion");

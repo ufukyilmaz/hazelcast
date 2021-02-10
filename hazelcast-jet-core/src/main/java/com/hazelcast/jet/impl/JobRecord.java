@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.Set;
 
 import static com.hazelcast.jet.Util.idToString;
-import static com.hazelcast.jet.impl.util.Util.toLocalDateTime;
+import static com.hazelcast.jet.impl.util.DateUtil.toLocalDateTime;
 
 /**
  * Static metadata information about the job. There's one instance for each

@@ -68,7 +68,7 @@ public class JetConsoleLogHandler extends StreamHandler {
             String loggerName = abbreviateLoggerName(record.getLoggerName());
             String message = record.getMessage();
             return String.format("%s [%s%5s%s] [%s%s%s] %s%s",
-                    Util.toLocalTime(record.getMillis()),
+                    DateUtil.toLocalTime(record.getMillis()),
                     getLevelColor(record.getLevel()),
                     getLevel(record.getLevel()),
                     ANSI_RESET,

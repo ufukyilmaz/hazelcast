@@ -16,7 +16,7 @@
 
 package com.hazelcast.jet.pipeline.test;
 
-import com.hazelcast.jet.impl.util.Util;
+import com.hazelcast.jet.impl.util.DateUtil;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -56,7 +56,7 @@ public class SimpleEvent implements Serializable {
     @Override
     public String toString() {
         return "SimpleEvent(" +
-            "timestamp=" + Util.toLocalTime(timestamp) +
+            "timestamp=" + DateUtil.toLocalTime(timestamp) +
             ", sequence=" + sequence +
             ')';
     }

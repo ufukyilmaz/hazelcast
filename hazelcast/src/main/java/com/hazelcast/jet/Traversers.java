@@ -16,9 +16,6 @@
 
 package com.hazelcast.jet;
 
-import com.hazelcast.jet.core.Processor;
-import com.hazelcast.jet.core.ResettableSingletonTraverser;
-
 import javax.annotation.Nonnull;
 import java.util.Enumeration;
 import java.util.Iterator;

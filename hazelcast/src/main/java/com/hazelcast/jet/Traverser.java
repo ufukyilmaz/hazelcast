@@ -16,7 +16,6 @@
 
 package com.hazelcast.jet;
 
-import com.hazelcast.jet.core.AppendableTraverser;
 import com.hazelcast.jet.impl.util.FlatMappingTraverser;
 
 import javax.annotation.CheckReturnValue;

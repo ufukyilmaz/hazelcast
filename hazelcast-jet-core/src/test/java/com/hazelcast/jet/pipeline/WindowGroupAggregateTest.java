@@ -25,6 +25,8 @@ import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.datamodel.Tag;
 import com.hazelcast.jet.datamodel.Tuple2;
 import com.hazelcast.jet.datamodel.Tuple3;
+import com.hazelcast.jet.impl.pipeline.WindowGroupAggregateBuilder1Impl;
+import com.hazelcast.jet.impl.pipeline.WindowGroupAggregateBuilderImpl;
 import com.hazelcast.jet.pipeline.test.SimpleEvent;
 import com.hazelcast.jet.pipeline.test.TestSources;
 import org.junit.Rule;

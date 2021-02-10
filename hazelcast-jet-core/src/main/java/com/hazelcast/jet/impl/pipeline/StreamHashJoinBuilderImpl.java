@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.hazelcast.jet.pipeline;
+package com.hazelcast.jet.impl.pipeline;
 
 import com.hazelcast.function.BiFunctionEx;
 import com.hazelcast.jet.core.Processor;
 import com.hazelcast.jet.datamodel.ItemsByTag;
-import com.hazelcast.jet.impl.pipeline.StreamStageImpl;
+import com.hazelcast.jet.pipeline.StreamHashJoinBuilder;
+import com.hazelcast.jet.pipeline.StreamStage;
 
 /**
  * Offers a step-by-step fluent API to build a hash-join pipeline stage.

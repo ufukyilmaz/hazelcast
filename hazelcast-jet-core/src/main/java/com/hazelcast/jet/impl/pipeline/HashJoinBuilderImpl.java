@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.hazelcast.jet.pipeline;
+package com.hazelcast.jet.impl.pipeline;
 
 import com.hazelcast.function.BiFunctionEx;
 import com.hazelcast.jet.core.Processor;
 import com.hazelcast.jet.datamodel.ItemsByTag;
-import com.hazelcast.jet.impl.pipeline.BatchStageImpl;
+import com.hazelcast.jet.pipeline.BatchStage;
+import com.hazelcast.jet.pipeline.HashJoinBuilder;
 
 /**
  * Offers a step-by-step fluent API to build a hash-join pipeline stage.

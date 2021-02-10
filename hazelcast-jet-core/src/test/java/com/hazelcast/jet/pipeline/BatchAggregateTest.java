@@ -27,6 +27,10 @@ import com.hazelcast.jet.datamodel.ItemsByTag;
 import com.hazelcast.jet.datamodel.Tag;
 import com.hazelcast.jet.datamodel.Tuple2;
 import com.hazelcast.jet.datamodel.Tuple3;
+import com.hazelcast.jet.impl.pipeline.AggregateBuilder1Impl;
+import com.hazelcast.jet.impl.pipeline.AggregateBuilderImpl;
+import com.hazelcast.jet.impl.pipeline.GroupAggregateBuilder1Impl;
+import com.hazelcast.jet.impl.pipeline.GroupAggregateBuilderImpl;
 import org.junit.Before;
 import org.junit.Test;
 

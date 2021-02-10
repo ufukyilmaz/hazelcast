@@ -25,6 +25,8 @@ import com.hazelcast.jet.datamodel.Tag;
 import com.hazelcast.jet.datamodel.Tuple2;
 import com.hazelcast.jet.datamodel.Tuple3;
 import com.hazelcast.jet.datamodel.WindowResult;
+import com.hazelcast.jet.impl.pipeline.WindowAggregateBuilder1Impl;
+import com.hazelcast.jet.impl.pipeline.WindowAggregateBuilderImpl;
 import org.junit.Test;
 
 import java.util.List;

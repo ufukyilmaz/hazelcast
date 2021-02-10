@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hazelcast.jet.pipeline;
+package com.hazelcast.jet.impl.pipeline;
 
 import com.hazelcast.function.BiFunctionEx;
 import com.hazelcast.jet.datamodel.ItemsByTag;
@@ -24,6 +24,10 @@ import com.hazelcast.jet.impl.pipeline.ComputeStageImplBase;
 import com.hazelcast.jet.impl.pipeline.FunctionAdapter;
 import com.hazelcast.jet.impl.pipeline.PipelineImpl;
 import com.hazelcast.jet.impl.pipeline.transform.HashJoinTransform;
+import com.hazelcast.jet.pipeline.BatchStage;
+import com.hazelcast.jet.pipeline.GeneralHashJoinBuilder;
+import com.hazelcast.jet.pipeline.GeneralStage;
+import com.hazelcast.jet.pipeline.JoinClause;
 
 import java.util.HashMap;
 import java.util.List;

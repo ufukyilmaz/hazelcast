@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hazelcast.jet.pipeline;
+package com.hazelcast.jet.impl.pipeline;
 
 import com.hazelcast.function.BiFunctionEx;
 import com.hazelcast.jet.Util;
@@ -22,6 +22,9 @@ import com.hazelcast.jet.aggregate.AggregateOperation;
 import com.hazelcast.jet.core.Processor;
 import com.hazelcast.jet.datamodel.Tag;
 import com.hazelcast.jet.impl.pipeline.GrAggBuilder;
+import com.hazelcast.jet.pipeline.BatchStage;
+import com.hazelcast.jet.pipeline.BatchStageWithKey;
+import com.hazelcast.jet.pipeline.GroupAggregateBuilder1;
 
 import javax.annotation.Nonnull;
 import java.util.Map.Entry;

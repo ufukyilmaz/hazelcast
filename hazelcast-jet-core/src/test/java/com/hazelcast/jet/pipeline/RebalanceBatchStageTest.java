@@ -30,6 +30,9 @@ import com.hazelcast.jet.datamodel.ItemsByTag;
 import com.hazelcast.jet.datamodel.Tag;
 import com.hazelcast.jet.datamodel.Tuple2;
 import com.hazelcast.jet.datamodel.Tuple3;
+import com.hazelcast.jet.impl.pipeline.GroupAggregateBuilder1Impl;
+import com.hazelcast.jet.impl.pipeline.GroupAggregateBuilderImpl;
+import com.hazelcast.jet.impl.pipeline.HashJoinBuilderImpl;
 import org.junit.Test;
 
 import javax.annotation.Nonnull;

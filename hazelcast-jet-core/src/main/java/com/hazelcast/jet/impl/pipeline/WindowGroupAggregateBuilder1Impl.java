@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
-package com.hazelcast.jet.pipeline;
+package com.hazelcast.jet.impl.pipeline;
 
 import com.hazelcast.jet.aggregate.AggregateOperation;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.datamodel.Tag;
 import com.hazelcast.jet.impl.pipeline.GrAggBuilder;
+import com.hazelcast.jet.pipeline.StageWithKeyAndWindow;
+import com.hazelcast.jet.pipeline.StreamStage;
+import com.hazelcast.jet.pipeline.StreamStageWithKey;
+import com.hazelcast.jet.pipeline.WindowGroupAggregateBuilder1;
 
 import javax.annotation.Nonnull;
 

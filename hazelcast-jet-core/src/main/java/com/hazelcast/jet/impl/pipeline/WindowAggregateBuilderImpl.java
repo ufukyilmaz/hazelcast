@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hazelcast.jet.pipeline;
+package com.hazelcast.jet.impl.pipeline;
 
 import com.hazelcast.jet.aggregate.AggregateOperation;
 import com.hazelcast.jet.aggregate.AggregateOperation1;
@@ -25,6 +25,10 @@ import com.hazelcast.jet.datamodel.WindowResult;
 import com.hazelcast.jet.impl.pipeline.AggBuilder;
 import com.hazelcast.jet.impl.pipeline.AggBuilder.CreateOutStageFn;
 import com.hazelcast.jet.impl.pipeline.StreamStageImpl;
+import com.hazelcast.jet.pipeline.StageWithWindow;
+import com.hazelcast.jet.pipeline.StreamStage;
+import com.hazelcast.jet.pipeline.WindowAggregateBuilder;
+import com.hazelcast.jet.pipeline.WindowDefinition;
 
 import javax.annotation.Nonnull;
 

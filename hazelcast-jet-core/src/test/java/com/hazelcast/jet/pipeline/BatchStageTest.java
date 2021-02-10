@@ -34,6 +34,7 @@ import com.hazelcast.jet.datamodel.Tuple2;
 import com.hazelcast.jet.datamodel.Tuple3;
 import com.hazelcast.jet.function.QuadFunction;
 import com.hazelcast.jet.function.TriFunction;
+import com.hazelcast.jet.impl.pipeline.HashJoinBuilderImpl;
 import com.hazelcast.jet.pipeline.test.TestSources;
 import com.hazelcast.map.IMap;
 import com.hazelcast.replicatedmap.ReplicatedMap;

@@ -14,35 +14,42 @@
  * limitations under the License.
  */
 
-package com.hazelcast.jet.pipeline;
+package com.hazelcast.jet.impl.pipeline;
 
 import com.hazelcast.jet.aggregate.AggregateOperation;
 import com.hazelcast.jet.datamodel.Tag;
+import com.hazelcast.jet.datamodel.WindowResult;
 import com.hazelcast.jet.impl.pipeline.AggBuilder;
 import com.hazelcast.jet.impl.pipeline.AggBuilder.CreateOutStageFn;
-import com.hazelcast.jet.impl.pipeline.BatchStageImpl;
+import com.hazelcast.jet.impl.pipeline.StreamStageImpl;
+import com.hazelcast.jet.pipeline.StageWithWindow;
+import com.hazelcast.jet.pipeline.StreamStage;
+import com.hazelcast.jet.pipeline.WindowAggregateBuilder1;
+import com.hazelcast.jet.pipeline.WindowDefinition;
 
 import javax.annotation.Nonnull;
 
 /**
- * Offers a step-by-step API to build a pipeline stage that co-aggregates
- * the data from several input stages. To obtain it, call {@link
- * BatchStage#aggregateBuilder()} on the first stage you are co-aggregating
- * and refer to that method's Javadoc for further details.
+ * Offers a step-by-step fluent API to build a pipeline stage that
+ * performs a windowed co-aggregation of the data from several input stages.
+ * To obtain it, call {@link StageWithWindow#aggregateBuilder()} on one of
+ * the stages to co-aggregate and refer to that method's Javadoc for
+ * further details.
  * <p>
  * <strong>Note:</strong> this is not a builder of {@code
- * AggregateOperation}. If that's what you are looking for, go {@link
+ * AggregateOperation}. If that' s what you are looking for, go {@link
  * AggregateOperation#withCreate here}.
  *
- * @param <T0> type of items in stage-0 (the one you obtained this builder from)
+ * @param <T0> the type of the stream-0 item
  *
  * @since 3.0
  */
-public class AggregateBuilder1Impl<T0> implements AggregateBuilder1<T0> {
+public class WindowAggregateBuilder1Impl<T0> implements WindowAggregateBuilder1<T0> {
+    @Nonnull
     private final AggBuilder aggBuilder;
 
-    AggregateBuilder1Impl(@Nonnull BatchStage<T0> stage) {
-        this.aggBuilder = new AggBuilder(stage, null);
+    WindowAggregateBuilder1Impl(@Nonnull StreamStage<T0> s, @Nonnull WindowDefinition wDef) {
+        this.aggBuilder = new AggBuilder(s, wDef);
     }
 
     /**
@@ -63,24 +70,23 @@ public class AggregateBuilder1Impl<T0> implements AggregateBuilder1<T0> {
      * {@link #build build()}.
      */
     @Nonnull
-    public <T> Tag<T> add(@Nonnull BatchStage<T> stage) {
+    public <E> Tag<E> add(StreamStage<E> stage) {
         return aggBuilder.add(stage);
     }
 
     /**
-     * Creates and returns a pipeline stage that performs the co-aggregation
-     * of pipeline stages registered with this builder object. The tags you
-     * register with the aggregate operation must match the tags you registered
-     * with this builder. Refer to the documentation on {@link
-     * BatchStage#aggregateBuilder()} for more details.
+     * Creates and returns a pipeline stage that performs a windowed
+     * co-aggregation of the pipeline stages registered with this builder
+     * object. The tags you register with the aggregate operation must match
+     * the tags you registered with this builder.
      *
-     * @param aggrOp the aggregate operation to perform
-     * @param <R> type of the output item
+     * @param aggrOp        the aggregate operation to perform
+     * @param <R>           the type of the aggregation result
      * @return a new stage representing the co-aggregation
      */
     @Nonnull
-    public <R> BatchStage<R> build(@Nonnull AggregateOperation<?, R> aggrOp) {
-        CreateOutStageFn<R, BatchStage<R>> createOutStageFn = BatchStageImpl::new;
+    public <A, R> StreamStage<WindowResult<R>> build(@Nonnull AggregateOperation<A, R> aggrOp) {
+        CreateOutStageFn<WindowResult<R>, StreamStage<WindowResult<R>>> createOutStageFn = StreamStageImpl::new;
         return aggBuilder.build(aggrOp, createOutStageFn);
     }
 }

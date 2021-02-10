@@ -27,12 +27,10 @@ import com.hazelcast.jet.impl.pipeline.transform.Transform;
 import com.hazelcast.jet.impl.pipeline.transform.WindowGroupTransform;
 import com.hazelcast.jet.pipeline.BatchStage;
 import com.hazelcast.jet.pipeline.BatchStageWithKey;
-import com.hazelcast.jet.pipeline.GroupAggregateBuilder1Impl;
 import com.hazelcast.jet.pipeline.StageWithKeyAndWindow;
 import com.hazelcast.jet.pipeline.StreamStage;
 import com.hazelcast.jet.pipeline.StreamStageWithKey;
 import com.hazelcast.jet.pipeline.WindowDefinition;
-import com.hazelcast.jet.pipeline.WindowGroupAggregateBuilder1Impl;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;

@@ -222,12 +222,12 @@ public interface JetInstance {
     }
 
     /**
-     * Returns the {@link JobStateSnapshotImpl} object representing an exported
+     * Returns the {@link JobStateSnapshot} object representing an exported
      * snapshot with the given name. Returns {@code null} if no such snapshot
      * exists.
      */
     @Nullable
-    default JobStateSnapshotImpl getJobStateSnapshot(@Nonnull String name) {
+    default JobStateSnapshot getJobStateSnapshot(@Nonnull String name) {
         String mapName = exportedSnapshotMapName(name);
         if (!((AbstractJetInstance) this).existsDistributedObject(MapService.SERVICE_NAME, mapName)) {
             return null;
@@ -248,7 +248,7 @@ public interface JetInstance {
      * cluster.
      */
     @Nonnull
-    default Collection<JobStateSnapshotImpl> getJobStateSnapshots() {
+    default Collection<JobStateSnapshot> getJobStateSnapshots() {
         return getHazelcastInstance().getMap(JobRepository.EXPORTED_SNAPSHOTS_DETAIL_CACHE)
                 .entrySet().stream()
                 .map(entry -> new JobStateSnapshotImpl(this, (String) entry.getKey(),

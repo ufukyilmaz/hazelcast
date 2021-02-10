@@ -22,8 +22,7 @@ import com.hazelcast.cluster.Member;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.jet.Job;
-import com.hazelcast.jet.JobStateSnapshotImpl;
-import com.hazelcast.jet.Util;
+import com.hazelcast.jet.JobStateSnapshot;
 import com.hazelcast.jet.config.JobConfig;
 import com.hazelcast.jet.core.JobStatus;
 import com.hazelcast.jet.core.JobSuspensionCause;
@@ -136,16 +135,16 @@ public class ClientJobProxy extends AbstractJobProxy<JetClientInstanceImpl> {
     }
 
     @Override
-    public JobStateSnapshotImpl cancelAndExportSnapshot(String name) {
+    public JobStateSnapshot cancelAndExportSnapshot(String name) {
         return doExportSnapshot(name, true);
     }
 
     @Override
-    public JobStateSnapshotImpl exportSnapshot(String name) {
+    public JobStateSnapshot exportSnapshot(String name) {
         return doExportSnapshot(name, false);
     }
 
-    private JobStateSnapshotImpl doExportSnapshot(String name, boolean cancelJob) {
+    private JobStateSnapshot doExportSnapshot(String name, boolean cancelJob) {
         ClientMessage request = JetExportSnapshotCodec.encodeRequest(getId(), name, cancelJob);
         try {
             invocation(request, masterUuid()).invoke().get();

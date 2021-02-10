@@ -58,7 +58,7 @@ public class JetTestInstanceFactory {
     }
 
     public JetInstance newMember() {
-        return newMember(JetConfig.loadDefault());
+        return newMember(new JetConfig());
     }
 
     public JetInstance newMember(Config config) {

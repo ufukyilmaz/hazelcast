@@ -18,8 +18,6 @@ package com.hazelcast.jet;
 
 import com.hazelcast.config.RingbufferConfig;
 import com.hazelcast.jet.function.Observer;
-import com.hazelcast.jet.impl.observer.BlockingIteratorObserver;
-import com.hazelcast.jet.pipeline.Sinks;
 import com.hazelcast.ringbuffer.Ringbuffer;
 
 import javax.annotation.Nonnull;
@@ -170,11 +168,7 @@ public interface Observable<T> extends Iterable<T> {
      * events until consumed.
      */
     @Nonnull @Override
-    default Iterator<T> iterator() {
-        BlockingIteratorObserver<T> observer = new BlockingIteratorObserver<>();
-        addObserver(observer);
-        return observer;
-    }
+    Iterator<T> iterator();
 
     /**
      * Allows you to post-process the results of a Jet job on the client side

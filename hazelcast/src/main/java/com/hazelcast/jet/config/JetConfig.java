@@ -20,9 +20,6 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.internal.util.Preconditions;
 import com.hazelcast.jet.core.JetProperties;
-import com.hazelcast.jet.impl.config.ConfigProvider;
-import com.hazelcast.jet.impl.config.XmlJetConfigBuilder;
-import com.hazelcast.jet.impl.config.YamlJetConfigBuilder;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 
@@ -106,7 +103,8 @@ public class JetConfig {
      */
     @Nonnull
     public static JetConfig loadDefault() {
-        return ConfigProvider.locateAndGetJetConfig();
+        return new JetConfig();
+        //return ConfigProvider.locateAndGetJetConfig();
     }
 
     /**
@@ -119,7 +117,8 @@ public class JetConfig {
     @Nonnull
     public static JetConfig loadDefault(Properties properties) {
         checkTrue(properties != null, "properties can't be null");
-        return ConfigProvider.locateAndGetJetConfig(properties);
+        return new JetConfig();
+//        return ConfigProvider.locateAndGetJetConfig(properties);
     }
 
     /**
@@ -204,7 +203,7 @@ public class JetConfig {
         } else if (path.endsWith(".yaml") || path.endsWith(".yml")) {
             return loadYamlFromStream(in, properties);
         } else {
-           throw new IllegalArgumentException("Unknown configuration file extension");
+            throw new IllegalArgumentException("Unknown configuration file extension");
         }
     }
 
@@ -245,7 +244,8 @@ public class JetConfig {
      */
     @Nonnull
     public static JetConfig loadXmlFromStream(@Nonnull InputStream configStream, @Nonnull Properties properties) {
-        return new XmlJetConfigBuilder(configStream).setProperties(properties).build();
+        return new JetConfig();
+//        return new XmlJetConfigBuilder(configStream).setProperties(properties).build();
     }
 
     /**
@@ -278,7 +278,8 @@ public class JetConfig {
         }
         checkTrue(properties != null, "properties can't be null");
         InputStream in = new ByteArrayInputStream(stringToBytes(xml));
-        return new XmlJetConfigBuilder(in).setProperties(properties).build();
+        return new JetConfig();
+//        return new XmlJetConfigBuilder(in).setProperties(properties).build();
     }
 
     /**
@@ -320,7 +321,8 @@ public class JetConfig {
      */
     @Nonnull
     public static JetConfig loadYamlFromStream(@Nonnull InputStream configStream, @Nonnull Properties properties) {
-        return new YamlJetConfigBuilder(configStream).setProperties(properties).build();
+        return new JetConfig();
+//        return new YamlJetConfigBuilder(configStream).setProperties(properties).build();
     }
 
     /**
@@ -357,7 +359,8 @@ public class JetConfig {
         }
         checkTrue(properties != null, "properties can't be null");
         InputStream in = new ByteArrayInputStream(stringToBytes(yaml));
-        return new YamlJetConfigBuilder(in).setProperties(properties).build();
+        return new JetConfig();
+        //return new YamlJetConfigBuilder(in).setProperties(properties).build();
     }
 
     /**
@@ -454,7 +457,8 @@ public class JetConfig {
     @Nonnull
     @Deprecated
     public static JetConfig loadFromStream(@Nonnull InputStream configStream, @Nonnull Properties properties) {
-        return XmlJetConfigBuilder.loadConfig(configStream, properties);
+        return new JetConfig();
+        //return XmlJetConfigBuilder.loadConfig(configStream, properties);
     }
 
     /**

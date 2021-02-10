@@ -17,7 +17,6 @@
 package com.hazelcast.jet.config;
 
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.jet.Job;
 
 import javax.annotation.Nonnull;
 

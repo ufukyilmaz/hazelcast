@@ -16,7 +16,6 @@
 
 package com.hazelcast.jet.datamodel;
 
-import com.hazelcast.jet.impl.serialization.SerializerHookConstants;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Serializer;
@@ -37,6 +36,17 @@ import static com.hazelcast.jet.datamodel.Tuple5.tuple5;
  * com.hazelcast.jet.datamodel} package. This is not a public-facing API.
  */
 class DataModelSerializerHooks {
+
+    public static final int WINDOW_RESULT = -320;
+    public static final int KEYED_WINDOW_RESULT = -321;
+    public static final int TIMESTAMPED_ITEM = -325;
+    public static final int TUPLE2 = -309;
+    public static final int TUPLE3 = -310;
+    public static final int TUPLE4 = -311;
+    public static final int TUPLE5 = -312;
+
+    public static final int TAG = -313;
+    public static final int ITEMS_BY_TAG = -314;
 
     public static final class WindowResultHook implements SerializerHook<WindowResult> {
 
@@ -67,7 +77,7 @@ class DataModelSerializerHooks {
 
                 @Override
                 public int getTypeId() {
-                    return SerializerHookConstants.WINDOW_RESULT;
+                    return WINDOW_RESULT;
                 }
             };
         }
@@ -108,7 +118,7 @@ class DataModelSerializerHooks {
 
                 @Override
                 public int getTypeId() {
-                    return SerializerHookConstants.KEYED_WINDOW_RESULT;
+                    return KEYED_WINDOW_RESULT;
                 }
             };
         }
@@ -130,7 +140,7 @@ class DataModelSerializerHooks {
             return new StreamSerializer<TimestampedItem>() {
                 @Override
                 public int getTypeId() {
-                    return SerializerHookConstants.TIMESTAMPED_ITEM;
+                    return TIMESTAMPED_ITEM;
                 }
 
                 @Override
@@ -178,7 +188,7 @@ class DataModelSerializerHooks {
 
                 @Override
                 public int getTypeId() {
-                    return SerializerHookConstants.TUPLE2;
+                    return TUPLE2;
                 }
             };
         }
@@ -212,7 +222,7 @@ class DataModelSerializerHooks {
 
                 @Override
                 public int getTypeId() {
-                    return SerializerHookConstants.TUPLE3;
+                    return TUPLE3;
                 }
             };
         }
@@ -247,7 +257,7 @@ class DataModelSerializerHooks {
 
                 @Override
                 public int getTypeId() {
-                    return SerializerHookConstants.TUPLE4;
+                    return TUPLE4;
                 }
             };
         }
@@ -283,7 +293,7 @@ class DataModelSerializerHooks {
 
                 @Override
                 public int getTypeId() {
-                    return SerializerHookConstants.TUPLE5;
+                    return TUPLE5;
                 }
             };
         }
@@ -315,7 +325,7 @@ class DataModelSerializerHooks {
 
                 @Override
                 public int getTypeId() {
-                    return SerializerHookConstants.TAG;
+                    return TAG;
                 }
             };
         }
@@ -367,7 +377,7 @@ class DataModelSerializerHooks {
 
         @Override
         public int getTypeId() {
-            return SerializerHookConstants.ITEMS_BY_TAG;
+            return ITEMS_BY_TAG;
         }
     }
 }

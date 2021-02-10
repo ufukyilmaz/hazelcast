@@ -24,8 +24,8 @@ import com.hazelcast.jet.aggregate.AggregateOperation;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import static com.hazelcast.internal.serialization.impl.SerializationUtil.checkSerializable;
 import static com.hazelcast.internal.util.Preconditions.checkNotNull;
-import static com.hazelcast.jet.impl.util.Util.checkSerializable;
 
 public class AggregateOperationImpl<A, R> implements AggregateOperation<A, R> {
     final BiConsumerEx<? super A, ?>[] accumulateFns;

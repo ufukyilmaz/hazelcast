@@ -33,6 +33,8 @@ import com.hazelcast.jet.impl.pipeline.transform.GroupTransform;
 import com.hazelcast.jet.pipeline.BatchStage;
 import com.hazelcast.jet.pipeline.BatchStageWithKey;
 import com.hazelcast.jet.pipeline.GeneralStage;
+import com.hazelcast.jet.pipeline.GroupAggregateBuilder;
+import com.hazelcast.jet.pipeline.GroupAggregateBuilder1;
 import com.hazelcast.jet.pipeline.ServiceFactory;
 
 import javax.annotation.Nonnull;
@@ -187,5 +189,17 @@ public class BatchStageWithKeyImpl<T, K> extends StageWithGroupingBase<T, K> imp
                         Util::entry),
                 asList((GeneralStage<?>) computeStage1, (GeneralStage<?>) computeStage2),
                 DO_NOT_ADAPT);
+    }
+
+    @Nonnull
+    @Override
+    public <R0> GroupAggregateBuilder<K, R0> aggregateBuilder(@Nonnull AggregateOperation1<? super T, ?, ? extends R0> aggrOp0) {
+        return new GroupAggregateBuilderImpl<>(this, aggrOp0);
+    }
+
+    @Nonnull
+    @Override
+    public GroupAggregateBuilder1<T, K> aggregateBuilder() {
+        return new GroupAggregateBuilder1Impl<>(this);
     }
 }

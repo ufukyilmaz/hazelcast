@@ -23,6 +23,7 @@ import com.hazelcast.config.DiscoveryConfig;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.internal.util.StringUtil;
+import com.hazelcast.jet.DAGInterface;
 import com.hazelcast.jet.Jet;
 import com.hazelcast.jet.JetCacheManager;
 import com.hazelcast.jet.JetInstance;
@@ -321,7 +322,7 @@ public final class JetBootstrap {
         }
 
         @Nonnull @Override
-        public Job newJob(@Nonnull DAG dag, @Nonnull JobConfig config) {
+        public Job newJob(@Nonnull DAGInterface dag, @Nonnull JobConfig config) {
             return remember(instance.newJob(dag, updateJobConfig(config)));
         }
 
@@ -331,7 +332,7 @@ public final class JetBootstrap {
         }
 
         @Nonnull @Override
-        public Job newJobIfAbsent(@Nonnull DAG dag, @Nonnull JobConfig config) {
+        public Job newJobIfAbsent(@Nonnull DAGInterface dag, @Nonnull JobConfig config) {
             return remember(instance.newJobIfAbsent(dag, updateJobConfig(config)));
         }
 

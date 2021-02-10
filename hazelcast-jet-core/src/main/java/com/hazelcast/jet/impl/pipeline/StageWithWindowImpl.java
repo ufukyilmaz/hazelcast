@@ -25,6 +25,8 @@ import com.hazelcast.jet.impl.pipeline.transform.WindowAggregateTransform;
 import com.hazelcast.jet.pipeline.StageWithKeyAndWindow;
 import com.hazelcast.jet.pipeline.StageWithWindow;
 import com.hazelcast.jet.pipeline.StreamStage;
+import com.hazelcast.jet.pipeline.WindowAggregateBuilder;
+import com.hazelcast.jet.pipeline.WindowAggregateBuilder1;
 import com.hazelcast.jet.pipeline.WindowDefinition;
 
 import javax.annotation.Nonnull;
@@ -141,5 +143,17 @@ public class StageWithWindowImpl<T> implements StageWithWindow<T> {
                 ),
                 asList(stage1, stage2),
                 ADAPT_TO_JET_EVENT);
+    }
+
+    @Nonnull
+    @Override
+    public <R0> WindowAggregateBuilder<R0> aggregateBuilder(AggregateOperation1<? super T, ?, ? extends R0> aggrOp) {
+        return new WindowAggregateBuilderImpl<>(streamStage, aggrOp, wDef);
+    }
+
+    @Nonnull
+    @Override
+    public WindowAggregateBuilder1<T> aggregateBuilder() {
+        return new WindowAggregateBuilder1Impl<>(streamStage, wDef);
     }
 }

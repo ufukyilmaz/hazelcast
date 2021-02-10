@@ -32,8 +32,11 @@ import com.hazelcast.jet.function.TriFunction;
 import com.hazelcast.jet.impl.pipeline.transform.AbstractTransform;
 import com.hazelcast.jet.impl.pipeline.transform.AggregateTransform;
 import com.hazelcast.jet.impl.pipeline.transform.Transform;
+import com.hazelcast.jet.pipeline.AggregateBuilder;
+import com.hazelcast.jet.pipeline.AggregateBuilder1;
 import com.hazelcast.jet.pipeline.BatchStage;
 import com.hazelcast.jet.pipeline.BatchStageWithKey;
+import com.hazelcast.jet.pipeline.HashJoinBuilder;
 import com.hazelcast.jet.pipeline.JoinClause;
 import com.hazelcast.jet.pipeline.ServiceFactory;
 
@@ -297,5 +300,23 @@ public class BatchStageImpl<T> extends ComputeStageImplBase<T> implements BatchS
     @SuppressWarnings("unchecked")
     <RET> RET newStage(@Nonnull AbstractTransform transform, @Nonnull FunctionAdapter fnAdapter) {
         return (RET) new BatchStageImpl<>(transform, pipelineImpl);
+    }
+
+    @Nonnull
+    @Override
+    public HashJoinBuilder<T> hashJoinBuilder() {
+        return new HashJoinBuilderImpl<>(this);
+    }
+
+    @Nonnull
+    @Override
+    public <R0> AggregateBuilder<R0> aggregateBuilder(AggregateOperation1<? super T, ?, ? extends R0> aggrOp0) {
+        return new AggregateBuilderImpl<>(this, aggrOp0);
+    }
+
+    @Nonnull
+    @Override
+    public AggregateBuilder1<T> aggregateBuilder() {
+        return new AggregateBuilder1Impl<>(this);
     }
 }

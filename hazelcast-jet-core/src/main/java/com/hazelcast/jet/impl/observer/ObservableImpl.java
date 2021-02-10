@@ -39,6 +39,7 @@ import com.hazelcast.spi.exception.DistributedObjectDestroyedException;
 import com.hazelcast.spi.impl.executionservice.ExecutionService;
 
 import javax.annotation.Nonnull;
+import java.util.Iterator;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -146,6 +147,14 @@ public class ObservableImpl<T> implements Observable<T> {
     @Nonnull
     public static String ringbufferName(String observableName) {
         return JET_OBSERVABLE_NAME_PREFIX + observableName;
+    }
+
+    @Nonnull
+    @Override
+    public Iterator<T> iterator() {
+        BlockingIteratorObserver<T> observer = new BlockingIteratorObserver<>();
+        addObserver(observer);
+        return observer;
     }
 
     private static class RingbufferListener<T> {

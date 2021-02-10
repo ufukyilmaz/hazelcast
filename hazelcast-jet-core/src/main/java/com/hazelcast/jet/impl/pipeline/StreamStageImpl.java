@@ -31,6 +31,7 @@ import com.hazelcast.jet.pipeline.BatchStage;
 import com.hazelcast.jet.pipeline.JoinClause;
 import com.hazelcast.jet.pipeline.ServiceFactory;
 import com.hazelcast.jet.pipeline.StageWithWindow;
+import com.hazelcast.jet.pipeline.StreamHashJoinBuilder;
 import com.hazelcast.jet.pipeline.StreamStage;
 import com.hazelcast.jet.pipeline.StreamStageWithKey;
 import com.hazelcast.jet.pipeline.WindowDefinition;
@@ -258,5 +259,11 @@ public class StreamStageImpl<T> extends ComputeStageImplBase<T> implements Strea
     public StreamStage<T> setName(@Nonnull String name) {
         super.setName(name);
         return this;
+    }
+
+    @Nonnull
+    @Override
+    public StreamHashJoinBuilder<T> hashJoinBuilder() {
+        return new StreamHashJoinBuilderImpl<>(this);
     }
 }

@@ -28,6 +28,8 @@ import com.hazelcast.jet.pipeline.StageWithKeyAndWindow;
 import com.hazelcast.jet.pipeline.StreamStage;
 import com.hazelcast.jet.pipeline.StreamStageWithKey;
 import com.hazelcast.jet.pipeline.WindowDefinition;
+import com.hazelcast.jet.pipeline.WindowGroupAggregateBuilder;
+import com.hazelcast.jet.pipeline.WindowGroupAggregateBuilder1;
 
 import javax.annotation.Nonnull;
 
@@ -123,4 +125,15 @@ public class StageWithKeyAndWindowImpl<T, K>
                 fnAdapter);
     }
 
+    @Nonnull
+    @Override
+    public <R0> WindowGroupAggregateBuilder<K, R0> aggregateBuilder(@Nonnull AggregateOperation1<? super T, ?, ? extends R0> aggrOp0) {
+        return new WindowGroupAggregateBuilderImpl<>(this, aggrOp0);
+    }
+
+    @Nonnull
+    @Override
+    public WindowGroupAggregateBuilder1<T, K> aggregateBuilder() {
+        return new WindowGroupAggregateBuilder1Impl<>(this);
+    }
 }

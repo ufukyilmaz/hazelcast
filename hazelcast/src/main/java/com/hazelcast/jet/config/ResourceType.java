@@ -16,7 +16,6 @@
 
 package com.hazelcast.jet.config;
 
-import com.hazelcast.jet.core.ProcessorSupplier;
 import com.hazelcast.spi.annotation.PrivateApi;
 
 /**

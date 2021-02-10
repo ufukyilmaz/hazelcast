@@ -283,9 +283,9 @@ public interface StageWithKeyAndWindow<T, K> {
      * registered with the builder you get. You supply an aggregate operation
      * for each input stage and in the output you get the individual
      * aggregation results as {@link KeyedWindowResult KeyedWindowResult(key,
-     * itemsByTag)}. Use the tag you get from {@link AggregateBuilderImpl#add
+     * itemsByTag)}. Use the tag you get from {@link AggregateBuilder#add
      * builder.add(stageN, aggrOpN)} to retrieve the aggregated result for that
-     * stage. Use {@link AggregateBuilderImpl#tag0() builder.tag0()} as the tag of
+     * stage. Use {@link AggregateBuilder#tag0() builder.tag0()} as the tag of
      * this stage.
      * <p>
      * This builder is mainly intended to build a co-aggregation of four or
@@ -325,11 +325,9 @@ public interface StageWithKeyAndWindow<T, K> {
      *}</pre>
      */
     @Nonnull
-    default <R0> WindowGroupAggregateBuilderImpl<K, R0> aggregateBuilder(
+    <R0> WindowGroupAggregateBuilder<K, R0> aggregateBuilder(
             @Nonnull AggregateOperation1<? super T, ?, ? extends R0> aggrOp0
-    ) {
-        return new WindowGroupAggregateBuilderImpl<>(this, aggrOp0);
-    }
+    );
 
     /**
      * Offers a step-by-step API to build a pipeline stage that co-aggregates
@@ -349,11 +347,11 @@ public interface StageWithKeyAndWindow<T, K> {
      * {@code stage.aggregateN(...)} calls because they offer more static type
      * safety.
      * <p>
-     * To add the other stages, call {@link WindowGroupAggregateBuilder1Impl#add
+     * To add the other stages, call {@link WindowGroupAggregateBuilder1#add
      * builder.add(stage)}. Collect all the tags returned from {@code add()}
      * and use them when building the aggregate operation. Retrieve the tag of
      * the first stage (from which you obtained this builder) by calling {@link
-     * WindowGroupAggregateBuilder1Impl#tag0() builder.tag0()}.
+     * WindowGroupAggregateBuilder1#tag0() builder.tag0()}.
      * <p>
      * This example takes three streams of {@code Map.Entry<String, Long>},
      * specifies a 1-second sliding window and, for each string key, counts
@@ -384,7 +382,5 @@ public interface StageWithKeyAndWindow<T, K> {
      * }</pre>
      */
     @Nonnull
-    default WindowGroupAggregateBuilder1Impl<T, K> aggregateBuilder() {
-        return new WindowGroupAggregateBuilder1Impl<>(this);
-    }
+    WindowGroupAggregateBuilder1<T, K> aggregateBuilder();
 }

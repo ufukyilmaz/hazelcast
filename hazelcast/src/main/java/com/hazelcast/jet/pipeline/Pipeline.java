@@ -17,7 +17,7 @@
 package com.hazelcast.jet.pipeline;
 
 import com.hazelcast.jet.core.DAG;
-import com.hazelcast.jet.impl.pipeline.PipelineImpl;
+import com.hazelcast.jet.impl.util.ReflectionUtils;
 
 import javax.annotation.Nonnull;
 import java.io.Serializable;
@@ -45,6 +45,8 @@ import java.io.Serializable;
  */
 public interface Pipeline extends Serializable {
 
+    String IMPL_CLASSNAME = "com.hazelcast.jet.impl.pipeline.PipelineImpl";
+
     /**
      * Creates a new, empty pipeline.
      *
@@ -52,7 +54,7 @@ public interface Pipeline extends Serializable {
      */
     @Nonnull
     static Pipeline create() {
-        return new PipelineImpl();
+        return ReflectionUtils.newInstance(Pipeline.class.getClassLoader(), IMPL_CLASSNAME);
     }
 
     /**

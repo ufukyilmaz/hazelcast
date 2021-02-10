@@ -74,6 +74,12 @@ import static java.util.Collections.singletonList;
 public interface ProcessorMetaSupplier extends Serializable {
 
     /**
+     * The value of {@link #preferredLocalParallelism()} with the meaning
+     * "use the default local parallelism".
+     */
+    int LOCAL_PARALLELISM_USE_DEFAULT = -1;
+
+    /**
      * Returns the metadata on this supplier, a string-to-string map. There is
      * no predefined metadata; this facility exists to allow the DAG vertices
      * to contribute some information to the execution planning phase.
@@ -87,11 +93,10 @@ public interface ProcessorMetaSupplier extends Serializable {
 
     /**
      * Returns the local parallelism the vertex should be configured with.
-     * The default implementation returns {@link
-     * Vertex#LOCAL_PARALLELISM_USE_DEFAULT}.
+     * The default implementation returns {@link #LOCAL_PARALLELISM_USE_DEFAULT}.
      */
     default int preferredLocalParallelism() {
-        return Vertex.LOCAL_PARALLELISM_USE_DEFAULT;
+        return LOCAL_PARALLELISM_USE_DEFAULT;
     }
 
     /**
@@ -153,11 +158,11 @@ public interface ProcessorMetaSupplier extends Serializable {
     /**
      * Wraps the provided {@code ProcessorSupplier} into a meta-supplier that
      * will always return it. The {@link #preferredLocalParallelism()} of
-     * the meta-supplier will be {@link Vertex#LOCAL_PARALLELISM_USE_DEFAULT}.
+     * the meta-supplier will be {@link #LOCAL_PARALLELISM_USE_DEFAULT}.
      */
     @Nonnull
     static ProcessorMetaSupplier of(@Nonnull ProcessorSupplier procSupplier) {
-        return of(Vertex.LOCAL_PARALLELISM_USE_DEFAULT, procSupplier);
+        return of(LOCAL_PARALLELISM_USE_DEFAULT, procSupplier);
     }
 
     /**
@@ -182,11 +187,11 @@ public interface ProcessorMetaSupplier extends Serializable {
      * Specifically, returns a meta-supplier that will always return the
      * result of calling {@link ProcessorSupplier#of(SupplierEx)}.
      * The {@link #preferredLocalParallelism()} of the meta-supplier will be
-     * {@link Vertex#LOCAL_PARALLELISM_USE_DEFAULT}.
+     * {@link #LOCAL_PARALLELISM_USE_DEFAULT}.
      */
     @Nonnull
     static ProcessorMetaSupplier of(@Nonnull SupplierEx<? extends Processor> procSupplier) {
-        return of(Vertex.LOCAL_PARALLELISM_USE_DEFAULT, procSupplier);
+        return of(LOCAL_PARALLELISM_USE_DEFAULT, procSupplier);
     }
 
     /**
@@ -202,7 +207,7 @@ public interface ProcessorMetaSupplier extends Serializable {
             int preferredLocalParallelism,
             @Nonnull FunctionEx<? super Address, ? extends ProcessorSupplier> addressToSupplier
     ) {
-        Vertex.checkLocalParallelism(preferredLocalParallelism);
+        checkLocalParallelism(preferredLocalParallelism);
         return new ProcessorMetaSupplier() {
             @Override
             public int preferredLocalParallelism() {
@@ -220,13 +225,13 @@ public interface ProcessorMetaSupplier extends Serializable {
      * Factory method that creates a {@link ProcessorMetaSupplier} from the
      * supplied function that maps a cluster member address to a {@link
      * ProcessorSupplier}. The {@link #preferredLocalParallelism()} of
-     * the meta-supplier will be {@link Vertex#LOCAL_PARALLELISM_USE_DEFAULT}.
+     * the meta-supplier will be {@link #LOCAL_PARALLELISM_USE_DEFAULT}.
      */
     @Nonnull
     static ProcessorMetaSupplier of(
             @Nonnull FunctionEx<? super Address, ? extends ProcessorSupplier> addressToSupplier
     ) {
-        return of(Vertex.LOCAL_PARALLELISM_USE_DEFAULT, addressToSupplier);
+        return of(LOCAL_PARALLELISM_USE_DEFAULT, addressToSupplier);
     }
 
 
@@ -395,6 +400,17 @@ public interface ProcessorMetaSupplier extends Serializable {
         }
 
         return new SpecificMemberPms(supplier, memberAddress);
+    }
+
+    /**
+     * Says whether the given integer is valid as the value of
+     * localParallelism.
+     */
+    static int checkLocalParallelism(int parallelism) {
+        if (parallelism != LOCAL_PARALLELISM_USE_DEFAULT && parallelism <= 0) {
+            throw new IllegalArgumentException("Parallelism must be either -1 or a positive number");
+        }
+        return parallelism;
     }
 
     /**

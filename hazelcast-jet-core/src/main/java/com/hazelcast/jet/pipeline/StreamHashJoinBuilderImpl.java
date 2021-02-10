@@ -38,9 +38,9 @@ import com.hazelcast.jet.impl.pipeline.StreamStageImpl;
  *
  * @since 3.0
  */
-public class StreamHashJoinBuilder<T0> extends GeneralHashJoinBuilder<T0> {
+public class StreamHashJoinBuilderImpl<T0> extends GeneralHashJoinBuilderImpl<T0> implements StreamHashJoinBuilder<T0> {
 
-    StreamHashJoinBuilder(StreamStage<T0> stage0) {
+    StreamHashJoinBuilderImpl(StreamStage<T0> stage0) {
         super(stage0, StreamStageImpl::new);
     }
 

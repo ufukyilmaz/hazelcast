@@ -38,9 +38,9 @@ import com.hazelcast.jet.impl.pipeline.BatchStageImpl;
  *
  * @since 3.0
  */
-public class HashJoinBuilder<T0> extends GeneralHashJoinBuilder<T0> {
+public class HashJoinBuilderImpl<T0> extends GeneralHashJoinBuilderImpl<T0> implements HashJoinBuilder<T0> {
 
-    HashJoinBuilder(BatchStage<T0> stage0) {
+    HashJoinBuilderImpl(BatchStage<T0> stage0) {
         super(stage0, BatchStageImpl::new);
     }
 

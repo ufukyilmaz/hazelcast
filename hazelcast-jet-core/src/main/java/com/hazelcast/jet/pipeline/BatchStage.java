@@ -266,8 +266,8 @@ public interface BatchStage<T> extends GeneralStage<T> {
     );
 
     @Nonnull @Override
-    default HashJoinBuilder<T> hashJoinBuilder() {
-        return new HashJoinBuilder<>(this);
+    default HashJoinBuilderImpl<T> hashJoinBuilder() {
+        return new HashJoinBuilderImpl<>(this);
     }
 
     /**

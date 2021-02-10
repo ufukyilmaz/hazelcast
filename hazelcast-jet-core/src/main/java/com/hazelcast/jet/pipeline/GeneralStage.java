@@ -951,7 +951,7 @@ public interface GeneralStage<T> extends Stage {
      * @return the newly attached stage
      */
     @Nonnull
-    GeneralHashJoinBuilder<T> hashJoinBuilder();
+    GeneralHashJoinBuilderImpl<T> hashJoinBuilder();
 
     /**
      * Specifies the function that will extract a key from the items in the

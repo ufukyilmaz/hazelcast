@@ -1123,7 +1123,7 @@ public class BatchStageTest extends PipelineTestSupport {
                         .flatMap(i -> traverseItems(entry(i, prefixD + i)));
 
         // When
-        HashJoinBuilder<Integer> b = batchStageFromList(input).hashJoinBuilder();
+        HashJoinBuilderImpl<Integer> b = batchStageFromList(input).hashJoinBuilder();
         Tag<String> tagA = b.addInner(enrichingStage1, joinMapEntries(wholeItem()));
         Tag<String> tagB = b.addInner(enrichingStage2, joinMapEntries(wholeItem()));
         Tag<String> tagC = b.add(enrichingStage3, joinMapEntries(wholeItem()));
@@ -1197,7 +1197,7 @@ public class BatchStageTest extends PipelineTestSupport {
                 batchStageFromList(input).flatMap(i -> traverseItems(entry(i, prefixC + i), entry(i, prefixD + i)));
 
         // When
-        HashJoinBuilder<Integer> b = batchStageFromList(input).hashJoinBuilder();
+        HashJoinBuilderImpl<Integer> b = batchStageFromList(input).hashJoinBuilder();
         Tag<String> tagA = b.add(enrichingStage1, joinMapEntries(wholeItem()));
         Tag<String> tagB = b.add(enrichingStage2, joinMapEntries(wholeItem()));
         GeneralStage<Tuple2<Integer, ItemsByTag>> joined =

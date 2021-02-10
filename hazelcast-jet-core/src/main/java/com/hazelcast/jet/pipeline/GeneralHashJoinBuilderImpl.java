@@ -54,14 +54,14 @@ import static java.util.stream.Stream.concat;
  * @since 3.0
  */
 @SuppressWarnings("rawtypes")
-public abstract class GeneralHashJoinBuilder<T0> {
+public abstract class GeneralHashJoinBuilderImpl<T0> implements GeneralHashJoinBuilder<T0> {
     private final GeneralStage<T0> stage0;
     private final PipelineImpl pipelineImpl;
     private final FunctionAdapter fnAdapter;
     private final CreateOutStageFn<T0> createOutStageFn;
     private final Map<Tag<?>, StageAndClause<?, T0, ?, ?>> clauses = new HashMap<>();
 
-    GeneralHashJoinBuilder(GeneralStage<T0> stage0, CreateOutStageFn<T0> createOutStageFn) {
+    GeneralHashJoinBuilderImpl(GeneralStage<T0> stage0, CreateOutStageFn<T0> createOutStageFn) {
         this.stage0 = stage0;
         this.pipelineImpl = (PipelineImpl) stage0.getPipeline();
         this.createOutStageFn = createOutStageFn;

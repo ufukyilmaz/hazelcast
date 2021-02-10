@@ -1339,7 +1339,7 @@ public class StreamStageTest extends PipelineStreamTestSupport {
         BatchStage<Entry<Integer, String>> enrichingStage2 = enrichingStage(input, prefixB);
 
         // When
-        StreamHashJoinBuilder<Integer> builder = streamStageFromList(input).hashJoinBuilder();
+        StreamHashJoinBuilderImpl<Integer> builder = streamStageFromList(input).hashJoinBuilder();
         Tag<String> tagA = builder.add(enrichingStage1, joinMapEntries(wholeItem()));
         Tag<String> tagB = builder.add(enrichingStage2, joinMapEntries(wholeItem()));
         @SuppressWarnings("Convert2MethodRef")

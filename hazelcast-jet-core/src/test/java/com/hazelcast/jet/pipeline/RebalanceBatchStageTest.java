@@ -325,7 +325,7 @@ public class RebalanceBatchStageTest extends PipelineTestSupport {
                 batchStageFromList(input).map(i -> entry(i, prefix + i));
 
         // When
-        HashJoinBuilder<Integer> b = stage0Rebalanced.hashJoinBuilder();
+        HashJoinBuilderImpl<Integer> b = stage0Rebalanced.hashJoinBuilder();
         Tag<String> tag1 = b.add(enrichingStage, joinMapEntries(wholeItem()));
         // Method reference avoided due to JDK bug
         BatchStage<Entry<Integer, ItemsByTag>> joined = b.build((k, v) -> entry(k, v));

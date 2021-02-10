@@ -217,8 +217,8 @@ public interface StreamStage<T> extends GeneralStage<T> {
     );
 
     @Nonnull @Override
-    default StreamHashJoinBuilder<T> hashJoinBuilder() {
-        return new StreamHashJoinBuilder<>(this);
+    default StreamHashJoinBuilderImpl<T> hashJoinBuilder() {
+        return new StreamHashJoinBuilderImpl<>(this);
     }
 
     @Nonnull @Override

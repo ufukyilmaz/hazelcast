@@ -52,7 +52,7 @@ public class RebalanceStreamStageTest extends PipelineStreamTestSupport {
 
         // Then
         mapped.writeTo(sink);
-        DAG dag = p.toDag();
+        DAG dag = (DAG)p.toDag();
         Edge srcToMap = dag.getInboundEdges("map").get(0);
         assertTrue("Rebalancing should make the edge distributed", srcToMap.isDistributed());
         assertNull("Didn't rebalance by key, the edge must not be partitioned", srcToMap.getPartitioner());
@@ -73,7 +73,7 @@ public class RebalanceStreamStageTest extends PipelineStreamTestSupport {
 
         // Then
         mapped.writeTo(sink);
-        DAG dag = p.toDag();
+        DAG dag = (DAG)p.toDag();
         Edge srcToMap = dag.getInboundEdges("map").get(0);
         assertTrue("Rebalancing should make the edge distributed", srcToMap.isDistributed());
         assertNotNull("Rebalanced by key, the edge must be partitioned", srcToMap.getPartitioner());
@@ -91,7 +91,7 @@ public class RebalanceStreamStageTest extends PipelineStreamTestSupport {
 
         // Then
         mapped.writeTo(sink);
-        DAG dag = p.toDag();
+        DAG dag = (DAG)p.toDag();
         Edge srcToMap = dag.getInboundEdges("map").get(0);
         assertTrue("Rebalancing should make the edge distributed", srcToMap.isDistributed());
         assertNull("Didn't rebalance by key, the edge must not be partitioned", srcToMap.getPartitioner());
@@ -112,7 +112,7 @@ public class RebalanceStreamStageTest extends PipelineStreamTestSupport {
 
         // Then
         mapped.writeTo(sink);
-        DAG dag = p.toDag();
+        DAG dag = (DAG)p.toDag();
         Edge srcToMap = dag.getInboundEdges("map").get(0);
         assertTrue("Rebalancing should make the edge distributed", srcToMap.isDistributed());
         assertNotNull("Rebalanced by key, the edge must be partitioned", srcToMap.getPartitioner());
@@ -210,7 +210,7 @@ public class RebalanceStreamStageTest extends PipelineStreamTestSupport {
     }
 
     private void assertSingleStageAggregation() {
-        DAG dag = p.toDag();
+        DAG dag = (DAG)p.toDag();
         try {
             Edge srcToAggregate = dag.getOutboundEdges("add-timestamps").get(0);
             assertTrue("Outbound edge after rebalancing must be distributed", srcToAggregate.isDistributed());
@@ -224,7 +224,7 @@ public class RebalanceStreamStageTest extends PipelineStreamTestSupport {
     }
 
     private void assertTwoStageAggregation(boolean isRebalanceByKey) {
-        DAG dag = p.toDag();
+        DAG dag = (DAG)p.toDag();
         try {
             Edge srcToAggregate = dag.getOutboundEdges("add-timestamps").get(0);
             assertEquals(

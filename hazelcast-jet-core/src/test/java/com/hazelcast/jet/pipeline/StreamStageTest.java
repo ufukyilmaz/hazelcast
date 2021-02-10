@@ -19,6 +19,7 @@ package com.hazelcast.jet.pipeline;
 import com.hazelcast.function.BiFunctionEx;
 import com.hazelcast.function.FunctionEx;
 import com.hazelcast.function.PredicateEx;
+import com.hazelcast.jet.DAGInterface;
 import com.hazelcast.jet.Traversers;
 import com.hazelcast.jet.Util;
 import com.hazelcast.jet.accumulator.LongAccumulator;
@@ -309,9 +310,9 @@ public class StreamStageTest extends PipelineStreamTestSupport {
                 streamToString(sinkList.stream(), Object::toString));
     }
 
-    private void assertVertexCount(DAG dag, int expectedCount) {
+    private void assertVertexCount(DAGInterface dag, int expectedCount) {
         int[] count = {0};
-        dag.iterator().forEachRemaining(v -> count[0]++);
+        ((DAG)dag).iterator().forEachRemaining(v -> count[0]++);
         assertEquals("unexpected vertex count in DAG:\n" + dag.toDotString(), expectedCount, count[0]);
     }
 
@@ -1340,7 +1341,7 @@ public class StreamStageTest extends PipelineStreamTestSupport {
         BatchStage<Entry<Integer, String>> enrichingStage2 = enrichingStage(input, prefixB);
 
         // When
-        StreamHashJoinBuilderImpl<Integer> builder = streamStageFromList(input).hashJoinBuilder();
+        StreamHashJoinBuilder<Integer> builder = streamStageFromList(input).hashJoinBuilder();
         Tag<String> tagA = builder.add(enrichingStage1, joinMapEntries(wholeItem()));
         Tag<String> tagB = builder.add(enrichingStage2, joinMapEntries(wholeItem()));
         @SuppressWarnings("Convert2MethodRef")

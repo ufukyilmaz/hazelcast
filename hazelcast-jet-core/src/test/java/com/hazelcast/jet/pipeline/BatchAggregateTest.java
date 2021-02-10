@@ -243,7 +243,7 @@ public class BatchAggregateTest extends PipelineTestSupport {
         AggregateBuilderFixture fx = new AggregateBuilderFixture();
 
         // When
-        AggregateBuilderImpl<Long> b = batchStageFromInput().aggregateBuilder(SUMMING);
+        AggregateBuilder<Long> b = batchStageFromInput().aggregateBuilder(SUMMING);
         Tag<Long> tag0 = b.tag0();
         Tag<Long> tag1 = b.add(fx.stage1, SUMMING);
         Tag<Long> tag2 = b.add(fx.stage2, SUMMING);
@@ -265,7 +265,7 @@ public class BatchAggregateTest extends PipelineTestSupport {
         AggregateBuilderFixture fx = new AggregateBuilderFixture();
 
         // When
-        AggregateBuilder1Impl<Integer> b = batchStageFromInput().aggregateBuilder();
+        AggregateBuilder1<Integer> b = batchStageFromInput().aggregateBuilder();
         Tag<Integer> tag0_in = b.tag0();
         Tag<Integer> tag1_in = b.add(fx.stage1);
         Tag<Integer> tag2_in = b.add(fx.stage2);
@@ -296,7 +296,7 @@ public class BatchAggregateTest extends PipelineTestSupport {
         BatchStage<Integer> stage2 = batchStageFromInput();
 
         // When
-        AggregateBuilderImpl<Long> b = batchStageFromInput().aggregateBuilder(SUMMING);
+        AggregateBuilder<Long> b = batchStageFromInput().aggregateBuilder(SUMMING);
         Tag<Long> tag0 = b.tag0();
         Tag<Long> tag1 = b.add(stage1, SUMMING);
         Tag<Long> tag2 = b.add(stage2, SUMMING);
@@ -319,7 +319,7 @@ public class BatchAggregateTest extends PipelineTestSupport {
         BatchStage<Integer> stage2 = batchStageFromInput();
 
         // When
-        AggregateBuilder1Impl<Integer> b = batchStageFromInput().aggregateBuilder();
+        AggregateBuilder1<Integer> b = batchStageFromInput().aggregateBuilder();
         Tag<Integer> tag0_in = b.tag0();
         Tag<Integer> tag1_in = b.add(stage1);
         Tag<Integer> tag2_in = b.add(stage2);
@@ -498,7 +498,7 @@ public class BatchAggregateTest extends PipelineTestSupport {
         BatchStageWithKey<Integer, Integer> stage2 = fx.srcStage2().groupingKey(fx.keyFn);
 
         // When
-        GroupAggregateBuilderImpl<Integer, Long> b = stage0.aggregateBuilder(SUMMING);
+        GroupAggregateBuilder<Integer, Long> b = stage0.aggregateBuilder(SUMMING);
         Tag<Long> tag0 = b.tag0();
         Tag<Long> tag1 = b.add(stage1, SUMMING);
         Tag<Long> tag2 = b.add(stage2, SUMMING);
@@ -530,7 +530,7 @@ public class BatchAggregateTest extends PipelineTestSupport {
         BatchStageWithKey<Integer, Integer> stage2 = fx.srcStage2().groupingKey(fx.keyFn);
 
         // When
-        GroupAggregateBuilder1Impl<Integer, Integer> b = stage0.aggregateBuilder();
+        GroupAggregateBuilder1<Integer, Integer> b = stage0.aggregateBuilder();
         Tag<Integer> tag0_in = b.tag0();
         Tag<Integer> tag1_in = b.add(stage1);
         Tag<Integer> tag2_in = b.add(stage2);
@@ -569,7 +569,7 @@ public class BatchAggregateTest extends PipelineTestSupport {
         BatchStageWithKey<Integer, Integer> stage2 = fx.srcStage2().groupingKey(fx.keyFn);
 
         // When
-        GroupAggregateBuilder1Impl<Integer, Integer> b = stage0.aggregateBuilder();
+        GroupAggregateBuilder1<Integer, Integer> b = stage0.aggregateBuilder();
         Tag<Integer> tag0_in = b.tag0();
         Tag<Integer> tag1_in = b.add(stage1);
         Tag<Integer> tag2_in = b.add(stage2);

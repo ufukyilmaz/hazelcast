@@ -212,7 +212,7 @@ public class StreamSourceStageTest extends StreamSourceStageTestBase {
                 ProcessorMetaSupplier.of(lp, ProcessorSupplier.of(noopP()))))
          .withTimestamps(o -> 0L, 0)
          .writeTo(Sinks.noop());
-        DAG dag = p.toDag();
+        DAG dag = (DAG)p.toDag();
 
         // Then
         Vertex srcVertex = requireNonNull(dag.getVertex("src"));
@@ -233,7 +233,7 @@ public class StreamSourceStageTest extends StreamSourceStageTestBase {
          .withTimestamps(o -> 0L, 0)
          .setLocalParallelism(lp)
          .writeTo(Sinks.noop());
-        DAG dag = p.toDag();
+        DAG dag = (DAG)p.toDag();
 
         // Then
         Vertex srcVertex = requireNonNull(dag.getVertex("src"));
@@ -254,7 +254,7 @@ public class StreamSourceStageTest extends StreamSourceStageTestBase {
         p.readFrom(source)
          .withTimestamps(o -> 0L, 0)
          .writeTo(Sinks.noop());
-        DAG dag = p.toDag();
+        DAG dag = (DAG)p.toDag();
 
         // Then
         Vertex srcVertex = requireNonNull(dag.getVertex("src"));

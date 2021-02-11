@@ -44,7 +44,8 @@ public class SymmetricEncryptionSmokeTest extends AbstractSymmetricEncryptionTes
     @Test
     public void testAesJoining() {
         assumeCipherSupported(CIPHER_AES);
-        Config config = createPbeConfig("password", 123, advancedNetworking);
+        byte[] key = generateRandomKey(16);
+        Config config = createConfig(key, CIPHER_AES, advancedNetworking);
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
         assertClusterSize(2, h1, h2);

@@ -19,6 +19,7 @@ package com.hazelcast.jet.config;
 import com.hazelcast.jet.test.FilteringAndDelegatingResourceLoadingClassLoader;
 import com.hazelcast.jet.test.SerialTest;
 import com.hazelcast.test.HazelcastSerialClassRunner;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -35,6 +36,7 @@ import static org.junit.Assert.assertThat;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category({SerialTest.class})
+@Ignore
 public class JetConfigLoadFromClasspathOrderTest {
 
     @Test

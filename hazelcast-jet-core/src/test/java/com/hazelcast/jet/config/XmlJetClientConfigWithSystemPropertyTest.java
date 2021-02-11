@@ -23,6 +23,7 @@ import com.hazelcast.jet.impl.config.XmlJetClientConfigLocator;
 import com.hazelcast.jet.impl.util.IOUtil;
 import com.hazelcast.jet.test.SerialTest;
 import com.hazelcast.test.HazelcastSerialClassRunner;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -38,6 +39,7 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category({SerialTest.class})
+@Ignore
 public class XmlJetClientConfigWithSystemPropertyTest extends AbstractJetConfigWithSystemPropertyTest {
 
     private static final String JET_CLIENT_XML = "hazelcast-client-test.xml";

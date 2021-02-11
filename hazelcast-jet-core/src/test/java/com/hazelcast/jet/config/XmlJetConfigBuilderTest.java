@@ -19,6 +19,7 @@ package com.hazelcast.jet.config;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.jet.impl.config.XmlJetConfigBuilder;
 import com.hazelcast.test.HazelcastParallelClassRunner;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -29,6 +30,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(HazelcastParallelClassRunner.class)
+@Ignore
 public class XmlJetConfigBuilderTest extends AbstractJetConfigBuilderTest {
 
     public static final String JET_START_TAG = "<hazelcast-jet xmlns=\"http://www.hazelcast.com/schema/jet-config\">\n";

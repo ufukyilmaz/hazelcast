@@ -77,7 +77,9 @@ public final class Jet {
 
     static {
         JetBootstrap.configureLogging();
-        assertHazelcastVersion();
+//        TODO can this be completely deleted or should we still check the version (e.g. that the user doesn't have mismatched jars
+//        what does sql do?
+//        assertHazelcastVersion();
     }
 
     private Jet() {

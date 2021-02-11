@@ -1,16 +1,25 @@
 package com.hazelcast.spi.impl.securestore.impl;
 
 import com.hazelcast.config.JavaKeyStoreSecureStoreConfig;
+import com.hazelcast.core.HazelcastException;
 import com.hazelcast.internal.util.StringUtil;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+
+import static com.hazelcast.internal.util.EmptyStatement.ignore;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
+import java.util.Random;
 
 public class TestJavaKeyStoreSecureStoreUtils {
 
@@ -74,13 +83,38 @@ public class TestJavaKeyStoreSecureStoreUtils {
                     ks.setCertificateEntry("certificate-entry", cert);
                 }
             }
-            try (FileOutputStream out = new FileOutputStream(path)) {
-                ks.store(out, password.toCharArray());
-            }
+            storeKeyStoreWithTimeout(path.toPath(), password, ks);
         } catch (Exception e) {
             throw new AssertionError(e);
         }
         return config;
+    }
+
+    /**
+     * Stores keystore and handles Windows file locking issues by retrying with a timeout.
+     */
+    protected static void storeKeyStoreWithTimeout(Path path, String password, KeyStore ks)
+            throws Exception {
+        long endTime = System.nanoTime() + SECONDS.toNanos(5);
+        IOException lastException = null;
+        Random rnd = new Random();
+        do {
+            try {
+                try (OutputStream out = Files.newOutputStream(path)) {
+                    ks.store(out, password.toCharArray());
+                }
+                return;
+            } catch (IOException e) {
+                lastException = e;
+            }
+            try {
+                //random delay up to half a second
+                Thread.sleep(rnd.nextInt(500));
+            } catch (InterruptedException e) {
+                ignore(e);
+            }
+        } while (System.nanoTime() - endTime < 0);
+        throw new HazelcastException("Storing keystore timed out.", lastException);
     }
 
 }

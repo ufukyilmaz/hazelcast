@@ -25,11 +25,13 @@ import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 
 import static com.hazelcast.internal.nio.IOUtil.closeResource;
+import static com.hazelcast.internal.nio.IOUtil.moveWithTimeout;
 import static com.hazelcast.internal.util.Preconditions.checkNotNull;
 
 /**
@@ -39,11 +41,14 @@ import static com.hazelcast.internal.util.Preconditions.checkNotNull;
  */
 public class EncryptionManager {
 
+
     // public because of unit tests
     public static final String KEY_FILE_NAME = "key.bin";
 
     // the full 256 bits of SHA-256
     private static final int KEY_HASH_SIZE = 32;
+
+    private static final int FILE_RENAME_TIMEOUT_SECONDS = 15;
 
     private final File homeDir;
     private final int keySize;
@@ -181,8 +186,7 @@ public class EncryptionManager {
             } finally {
                 closeResource(out);
             }
-            File keyFile = getKeyFile();
-            IOUtil.rename(tmp, keyFile);
+            moveWithTimeout(tmp.toPath(), getKeyFile().toPath(), Duration.ofSeconds(FILE_RENAME_TIMEOUT_SECONDS));
         }
         logger.fine("Writing the key file finished.");
     }

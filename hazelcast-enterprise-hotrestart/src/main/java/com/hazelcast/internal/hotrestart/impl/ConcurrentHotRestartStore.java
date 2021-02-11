@@ -199,6 +199,7 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
                 }
                 persistenceConveyor.drainerDone();
             } catch (Throwable t) {
+                logger.warning("Something went wrong", t);
                 persistenceConveyor.drainerFailed(t);
             } finally {
                 try {

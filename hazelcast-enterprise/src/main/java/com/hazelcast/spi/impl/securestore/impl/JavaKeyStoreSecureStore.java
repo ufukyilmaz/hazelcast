@@ -10,6 +10,8 @@ import javax.crypto.SecretKey;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.security.DigestInputStream;
 import java.security.GeneralSecurityException;
 import java.security.Key;
@@ -29,7 +31,7 @@ import java.util.TreeSet;
  */
 public class JavaKeyStoreSecureStore extends AbstractSecureStore {
 
-    private final JavaKeyStoreSecureStoreConfig config;
+    protected final JavaKeyStoreSecureStoreConfig config;
 
     JavaKeyStoreSecureStore(@Nonnull JavaKeyStoreSecureStoreConfig config, @Nonnull Node node) {
         super(config.getPollingInterval(), node);
@@ -95,7 +97,7 @@ public class JavaKeyStoreSecureStore extends AbstractSecureStore {
         };
     }
 
-    private byte[] retrieveCurrentEncryptionKey() {
+    protected byte[] retrieveCurrentEncryptionKey() {
         List<byte[]> keys = retrieveEncryptionKeys();
         return keys.isEmpty() ? null : keys.get(0);
     }
@@ -114,7 +116,7 @@ public class JavaKeyStoreSecureStore extends AbstractSecureStore {
         private byte[] lastChecksum;
         private byte[] lastKey;
 
-        private KeyStoreWatcher() {
+        protected KeyStoreWatcher() {
             try {
                 this.md = MessageDigest.getInstance("SHA-256");
             } catch (NoSuchAlgorithmException e) {
@@ -128,7 +130,8 @@ public class JavaKeyStoreSecureStore extends AbstractSecureStore {
         private byte[] checksum() {
             md.reset();
             byte[] buffer = new byte[1024];
-            try (DigestInputStream dis = new DigestInputStream(new FileInputStream(config.getPath()), md)) {
+            try (DigestInputStream dis = new DigestInputStream(
+                    Files.newInputStream(config.getPath().toPath(), StandardOpenOption.READ), md)) {
                 int len;
                 do {
                     len = dis.read(buffer, 0, buffer.length);

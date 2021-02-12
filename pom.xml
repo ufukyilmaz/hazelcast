@@ -239,6 +239,7 @@
                     <include>**/*.html</include>
                     <include>**/*.bat</include>
                     <include>**/*.sh</include>
+                    <include>**/*.py</include>
                     <include>**/*.properties</include>
                     <include>**/*.xml</include>
                     <include>**/*.yaml</include>

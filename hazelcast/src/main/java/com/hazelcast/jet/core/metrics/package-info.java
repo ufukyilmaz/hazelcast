@@ -14,26 +14,9 @@
  * limitations under the License.
  */
 
-package com.hazelcast.jet;
-
-import javax.annotation.Nonnull;
-
-import static com.hazelcast.jet.core.ProcessorMetaSupplier.LOCAL_PARALLELISM_USE_DEFAULT;
-
-public interface DAGInterface {
-
-    /**
-     * Returns a DOT format (graphviz) representation of the DAG.
-     */
-    @Nonnull
-    default String toDotString() {
-        return toDotString(LOCAL_PARALLELISM_USE_DEFAULT);
-    }
-
-    /**
-     * Returns a DOT format (graphviz) representation of the DAG and annotates
-     * the vertices using default parallelism with the supplied value.
-     */
-    @Nonnull
-    String toDotString(int defaultParallelism);
-}
+/**
+ * Jet's Job Metric API.
+ *
+ * @since 3.2
+ */
+package com.hazelcast.jet.core.metrics;

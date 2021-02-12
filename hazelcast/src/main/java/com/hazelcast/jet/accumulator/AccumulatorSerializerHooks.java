@@ -29,7 +29,7 @@ import java.math.BigInteger;
  * Hazelcast serializer hooks for the classes in the {@code
  * com.hazelcast.jet.accumulator} package. This is not a public-facing API.
  */
-class AccumulatorSerializerHooks {
+final class AccumulatorSerializerHooks {
 
     public static final int LONG_ACC = -303;
     public static final int DOUBLE_ACC = -304;
@@ -37,6 +37,12 @@ class AccumulatorSerializerHooks {
     public static final int LIN_TREND_ACC = -306;
     public static final int LONG_LONG_ACC = -307;
     public static final int LONG_DOUBLE_ACC = -308;
+
+    /**
+     * Private constructor
+     */
+    private AccumulatorSerializerHooks() {
+    }
 
     public static final class LongAccHook implements SerializerHook<LongAccumulator> {
 

@@ -37,7 +37,7 @@ public final class JetConfigDataSerializerHook implements DataSerializerHook {
      */
     public static final int JOB_CONFIG = 0;
 
-    public static final int FACTORY_ID = FactoryIdHelper.getFactoryId(JET_CONFIG_DS_FACTORY, JET_CONFIG_DS_FACTORY_ID);
+    static final int FACTORY_ID = FactoryIdHelper.getFactoryId(JET_CONFIG_DS_FACTORY, JET_CONFIG_DS_FACTORY_ID);
 
     @Override
     public int getFactoryId() {

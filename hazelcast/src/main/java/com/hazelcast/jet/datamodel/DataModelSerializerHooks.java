@@ -35,7 +35,7 @@ import static com.hazelcast.jet.datamodel.Tuple5.tuple5;
  * Hazelcast serializer hooks for the classes in the {@code
  * com.hazelcast.jet.datamodel} package. This is not a public-facing API.
  */
-class DataModelSerializerHooks {
+final class DataModelSerializerHooks {
 
     public static final int WINDOW_RESULT = -320;
     public static final int KEYED_WINDOW_RESULT = -321;
@@ -47,6 +47,9 @@ class DataModelSerializerHooks {
 
     public static final int TAG = -313;
     public static final int ITEMS_BY_TAG = -314;
+
+    private DataModelSerializerHooks() {
+    }
 
     public static final class WindowResultHook implements SerializerHook<WindowResult> {
 

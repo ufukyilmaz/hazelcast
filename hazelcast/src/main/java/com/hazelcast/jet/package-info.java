@@ -14,26 +14,12 @@
  * limitations under the License.
  */
 
+/**
+ * Hazelcast Jet is a distributed computation engine running on top of
+ * Hazelcast IMDG technology. To use it, refer to the Javadoc on the
+ * {@link com.hazelcast.jet.pipeline Pipeline API} and to the Reference
+ * Manual.
+ *
+ * @since 3.0
+ */
 package com.hazelcast.jet;
-
-import javax.annotation.Nonnull;
-
-import static com.hazelcast.jet.core.ProcessorMetaSupplier.LOCAL_PARALLELISM_USE_DEFAULT;
-
-public interface DAGInterface {
-
-    /**
-     * Returns a DOT format (graphviz) representation of the DAG.
-     */
-    @Nonnull
-    default String toDotString() {
-        return toDotString(LOCAL_PARALLELISM_USE_DEFAULT);
-    }
-
-    /**
-     * Returns a DOT format (graphviz) representation of the DAG and annotates
-     * the vertices using default parallelism with the supplied value.
-     */
-    @Nonnull
-    String toDotString(int defaultParallelism);
-}

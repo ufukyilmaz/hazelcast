@@ -32,7 +32,8 @@ public class MetaSupplierFromProcessorSupplier implements ProcessorMetaSupplier,
     private int preferredLocalParallelism;
     private ProcessorSupplier processorSupplier;
 
-    @SuppressWarnings("unused") // for deserialization
+    // for deserialization
+    @SuppressWarnings("unused")
     public MetaSupplierFromProcessorSupplier() {
     }
 

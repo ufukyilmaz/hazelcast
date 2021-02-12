@@ -43,7 +43,7 @@ public class EdgeConfig implements Serializable {
     /**
      * The default {@link #setPacketSizeLimit(int) packet size limit}.
      */
-    public static final int DEFAULT_PACKET_SIZE_LIMIT = 1 << 14;
+    public static final int DEFAULT_PACKET_SIZE_LIMIT = 16384;
 
     private int queueSize = DEFAULT_QUEUE_SIZE;
     private int receiveWindowMultiplier = DEFAULT_RECEIVE_WINDOW_MULTIPLIER;

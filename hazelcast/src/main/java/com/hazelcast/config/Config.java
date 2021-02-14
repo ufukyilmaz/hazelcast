@@ -45,6 +45,7 @@ import com.hazelcast.internal.config.XmlConfigLocator;
 import com.hazelcast.internal.config.YamlConfigLocator;
 import com.hazelcast.internal.config.override.ExternalConfigurationOverride;
 import com.hazelcast.internal.util.Preconditions;
+import com.hazelcast.jet.config.JetConfig;
 import com.hazelcast.map.IMap;
 import com.hazelcast.multimap.MultiMap;
 import com.hazelcast.partition.strategy.StringPartitioningStrategy;
@@ -184,6 +185,8 @@ public class Config {
     private MetricsConfig metricsConfig = new MetricsConfig();
 
     private InstanceTrackingConfig instanceTrackingConfig = new InstanceTrackingConfig();
+
+    private JetConfig jetConfig = new JetConfig();
 
     public Config() {
     }
@@ -2680,12 +2683,29 @@ public class Config {
     }
 
     /**
-     * Returns the configuration for tracking use of this Hazelcast instance.
+     * Sets the configuration for tracking use of this Hazelcast instance.
      */
     @Nonnull
     public Config setInstanceTrackingConfig(@Nonnull InstanceTrackingConfig instanceTrackingConfig) {
         Preconditions.checkNotNull(instanceTrackingConfig, "instanceTrackingConfig");
         this.instanceTrackingConfig = instanceTrackingConfig;
+        return this;
+    }
+
+    /**
+     * Returns the Jet config
+     */
+    @Nonnull
+    public JetConfig getJetConfig() {
+        return jetConfig;
+    }
+
+    /**
+     * Sets the Jet config
+     */
+    @Nonnull
+    public Config setJetConfig(JetConfig jetConfig) {
+        this.jetConfig = jetConfig;
         return this;
     }
 
@@ -2748,6 +2768,7 @@ public class Config {
                 + ", sqlConfig=" + sqlConfig
                 + ", metricsConfig=" + metricsConfig
                 + ", auditlogConfig=" + auditlogConfig
+                + ", jetConfig=" + jetConfig
                 + '}';
     }
 }

@@ -16,6 +16,7 @@
 
 package com.hazelcast.jet.elastic;
 
+import com.hazelcast.config.Config;
 import com.hazelcast.jet.JetInstance;
 import com.hazelcast.jet.JetTestInstanceFactory;
 import com.hazelcast.jet.config.JetConfig;
@@ -37,7 +38,7 @@ public class LocalClusterElasticSourcesTest extends CommonElasticSourcesTest {
     // Cluster startup takes >1s, reusing the cluster between tests
     private static Supplier<JetInstance> jet = Util.memoize(() -> {
         JetTestInstanceFactory factory = new JetTestInstanceFactory();
-        instances = factory.newMembers(new JetConfig(), 3);
+        instances = factory.newMembers(new Config(), 3);
         return instances[0];
     });
 

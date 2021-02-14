@@ -61,7 +61,7 @@ public class GrpcServiceTest extends SimpleTestInClusterSupport {
 
     @BeforeClass
     public static void setup() {
-        initialize(2, new JetConfig());
+        initialize(2, null);
     }
 
     @After

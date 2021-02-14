@@ -44,17 +44,6 @@ public final class JetProperties {
             = new HazelcastProperty("jet.job.scan.period", SECONDS.toMillis(5), MILLISECONDS);
 
     /**
-     * Whether a JVM shutdown hook is registered to shutdown the node
-     * gracefully when the process is terminated. The shutdown hook will
-     * terminate all running jobs and then gracefully terminate the note, in a
-     * way that is equivalent to calling {@link JetInstance#shutdown()}.
-     *
-     * @since 3.2
-     */
-    public static final HazelcastProperty JET_SHUTDOWNHOOK_ENABLED
-            = new HazelcastProperty("jet.shutdownhook.enabled", SHUTDOWNHOOK_ENABLED.getDefaultValue());
-
-    /**
      * Maximum number of time in seconds the job results will be kept in
      * the cluster. They will be automatically deleted after this period
      * is reached.

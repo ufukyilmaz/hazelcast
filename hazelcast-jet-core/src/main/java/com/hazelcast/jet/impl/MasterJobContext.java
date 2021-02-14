@@ -160,7 +160,7 @@ public class MasterJobContext {
     MasterJobContext(MasterContext masterContext, ILogger logger) {
         this.mc = masterContext;
         this.logger = logger;
-        this.defaultParallelism = mc.getJetService().getJetInstance().getConfig()
+        this.defaultParallelism = mc.getJetService().getConfig()
               .getInstanceConfig().getCooperativeThreadCount();
     }
 

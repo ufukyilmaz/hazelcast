@@ -492,7 +492,7 @@ public class Node {
             logger.finest("We are being asked to shutdown when state = " + state);
         }
         if (nodeExtension != null) {
-            nodeExtension.beforeShutdown();
+            nodeExtension.beforeShutdown(terminate);
         }
         if (!setShuttingDown()) {
             waitIfAlreadyShuttingDown();

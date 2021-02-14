@@ -16,6 +16,7 @@
 
 package com.hazelcast.jet.core.metrics;
 
+import com.hazelcast.config.Config;
 import com.hazelcast.function.FunctionEx;
 import com.hazelcast.function.SupplierEx;
 import com.hazelcast.jet.DAGInterface;
@@ -70,9 +71,9 @@ public class MetricsTest extends SimpleTestInClusterSupport {
 
     @BeforeClass
     public static void beforeClass() {
-        JetConfig config = new JetConfig();
+        Config config = new Config();
         config.setProperty("hazelcast.jmx", "true");
-        config.getHazelcastConfig().getMetricsConfig().setCollectionFrequencySeconds(1);
+        config.getMetricsConfig().setCollectionFrequencySeconds(1);
         initialize(1, config);
     }
 

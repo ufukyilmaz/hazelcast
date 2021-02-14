@@ -115,6 +115,10 @@ class NodeExtensionCommon {
         jetService.getJobCoordinationService().clusterChangeDone();
     }
 
+    void beforeShutdown() {
+        jetService.shutDownJobs();
+    }
+
     void handlePacket(Packet packet) {
         jetService.handlePacket(packet);
     }
@@ -171,4 +175,5 @@ class NodeExtensionCommon {
     JetInstance getJetInstance() {
         return jetService.getJetInstance();
     }
+
 }

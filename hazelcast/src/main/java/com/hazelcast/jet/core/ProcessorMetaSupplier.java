@@ -19,23 +19,17 @@ package com.hazelcast.jet.core;
 import com.hazelcast.cluster.Address;
 import com.hazelcast.function.FunctionEx;
 import com.hazelcast.function.SupplierEx;
-import com.hazelcast.internal.serialization.SerializableByConvention;
-import com.hazelcast.jet.JetException;
 import com.hazelcast.jet.JetInstance;
 import com.hazelcast.jet.config.JobConfig;
 import com.hazelcast.jet.config.ProcessingGuarantee;
 import com.hazelcast.jet.impl.processor.ExpectNothingP;
 import com.hazelcast.jet.impl.processor.MetaSupplierFromProcessorSupplier;
+import com.hazelcast.jet.impl.processor.SpecificMemberPms;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.partition.strategy.StringPartitioningStrategy;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
@@ -346,61 +340,6 @@ public interface ProcessorMetaSupplier extends Serializable {
             @Nonnull ProcessorSupplier supplier,
             @Nonnull Address memberAddress
     ) {
-        /**
-         * A meta-supplier that will only use the given {@code ProcessorSupplier}
-         * on a node with given {@link Address}.
-         */
-        @SuppressFBWarnings(value = "SE_BAD_FIELD", justification = "the class is never java-serialized")
-        @SerializableByConvention
-        class SpecificMemberPms implements ProcessorMetaSupplier, DataSerializable {
-
-            private ProcessorSupplier supplier;
-            private Address memberAddress;
-
-            @SuppressWarnings("unused")
-            private SpecificMemberPms() {
-            }
-
-            private SpecificMemberPms(ProcessorSupplier supplier, Address memberAddress) {
-                this.supplier = supplier;
-                this.memberAddress = memberAddress;
-            }
-
-            @Override
-            public void init(@Nonnull Context context) throws Exception {
-                if (context.localParallelism() != 1) {
-                    throw new IllegalArgumentException(
-                            "Local parallelism of " + context.localParallelism() + " was requested for a vertex that "
-                                    + "supports only total parallelism of 1. Local parallelism must be 1.");
-                }
-            }
-
-            @Nonnull @Override
-            public Function<? super Address, ? extends ProcessorSupplier> get(@Nonnull List<Address> addresses) {
-                if (!addresses.contains(memberAddress)) {
-                    throw new JetException("Cluster does not contain the required member: " + memberAddress);
-                }
-                return addr -> addr.equals(memberAddress) ? supplier : count -> singletonList(new ExpectNothingP());
-            }
-
-            @Override
-            public int preferredLocalParallelism() {
-                return 1;
-            }
-
-            @Override
-            public void writeData(ObjectDataOutput out) throws IOException {
-                out.writeObject(supplier);
-                out.writeObject(memberAddress);
-            }
-
-            @Override
-            public void readData(ObjectDataInput in) throws IOException {
-                supplier = in.readObject();
-                memberAddress = in.readObject();
-            }
-        }
-
         return new SpecificMemberPms(supplier, memberAddress);
     }
 

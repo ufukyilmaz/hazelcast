@@ -16,16 +16,22 @@
 
 package com.hazelcast.jet.pipeline;
 
-import com.hazelcast.internal.serialization.SerializableByConvention;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
+
+import java.io.IOException;
 
 /**
  * Represents the definition of a session window.
  *
  * @since 3.0
  */
-@SerializableByConvention
 public class SessionWindowDefinition extends WindowDefinition {
-    private final long sessionTimeout;
+
+    private long sessionTimeout;
+
+    SessionWindowDefinition() {
+    }
 
     SessionWindowDefinition(long sessionTimeout) {
         this.sessionTimeout = sessionTimeout;
@@ -42,5 +48,22 @@ public class SessionWindowDefinition extends WindowDefinition {
      */
     public long sessionTimeout() {
         return sessionTimeout;
+    }
+
+    @Override
+    public int getClassId() {
+        return JetPipelineDataSerializerHook.SESSION_WINDOW_DEFINITION;
+    }
+
+    @Override
+    public void writeData(ObjectDataOutput out) throws IOException {
+        super.writeData(out);
+        out.writeLong(sessionTimeout);
+    }
+
+    @Override
+    public void readData(ObjectDataInput in) throws IOException {
+        super.readData(in);
+        sessionTimeout = in.readLong();
     }
 }

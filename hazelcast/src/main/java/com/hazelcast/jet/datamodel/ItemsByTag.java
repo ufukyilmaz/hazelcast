@@ -16,13 +16,17 @@
 
 package com.hazelcast.jet.datamodel;
 
+import com.hazelcast.internal.serialization.impl.SerializationUtil;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * A heterogeneous map from {@code Tag<E>} to {@code E}, where {@code E}
@@ -36,10 +40,14 @@ import java.util.Set;
  *
  * @since 3.0
  */
-public final class ItemsByTag {
+public final class ItemsByTag implements IdentifiedDataSerializable {
+
     private static final Object NONE = new Object();
 
-    private final Map<Tag<?>, Object> map = new HashMap<>();
+    private Map<Tag<?>, Object> map = new HashMap<>();
+
+    public ItemsByTag() {
+    }
 
     /**
      * Accepts an argument list of alternating tags and values, interprets
@@ -99,9 +107,23 @@ public final class ItemsByTag {
         return "ItemsByTag" + map;
     }
 
-    // For the Hazelcast serializer hook
-    @Nonnull
-    Set<Entry<Tag<?>, Object>> entrySet() {
-        return map.entrySet();
+    @Override
+    public int getFactoryId() {
+        return JetDatamodelDataSerializerHook.FACTORY_ID;
+    }
+
+    @Override
+    public int getClassId() {
+        return JetDatamodelDataSerializerHook.ITEMS_BY_TAG;
+    }
+
+    @Override
+    public void writeData(ObjectDataOutput out) throws IOException {
+        SerializationUtil.writeMap(map, out);
+    }
+
+    @Override
+    public void readData(ObjectDataInput in) throws IOException {
+        map = SerializationUtil.readMap(in);
     }
 }

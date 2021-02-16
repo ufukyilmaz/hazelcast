@@ -24,7 +24,6 @@ import com.hazelcast.spi.annotation.PrivateApi;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
-import java.io.Serializable;
 import java.net.URL;
 import java.util.Objects;
 
@@ -156,14 +155,14 @@ public class ResourceConfig implements IdentifiedDataSerializable {
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeString(id);
-        out.writeString(resourceType.name());
+        out.writeShort(resourceType.getId());
         out.writeObject(url);
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
         id = in.readString();
-        resourceType = ResourceType.valueOf(in.readString());
+        resourceType = ResourceType.getById(in.readShort());
         url = in.readObject();
     }
 }

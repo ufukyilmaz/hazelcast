@@ -16,7 +16,10 @@
 
 package com.hazelcast.jet.pipeline;
 
-import com.hazelcast.internal.serialization.SerializableByConvention;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
+
+import java.io.IOException;
 
 import static com.hazelcast.internal.util.Preconditions.checkPositive;
 import static com.hazelcast.internal.util.Preconditions.checkTrue;
@@ -26,10 +29,13 @@ import static com.hazelcast.internal.util.Preconditions.checkTrue;
  *
  * @since 3.0
  */
-@SerializableByConvention
 public class SlidingWindowDefinition extends WindowDefinition {
-    private final long windowSize;
-    private final long slideBy;
+
+    private long windowSize;
+    private long slideBy;
+
+    SlidingWindowDefinition() {
+    }
 
     SlidingWindowDefinition(long windowSize, long slideBy) {
         checkPositive(windowSize, "windowSize must be positive");
@@ -58,5 +64,24 @@ public class SlidingWindowDefinition extends WindowDefinition {
      */
     public long slideBy() {
         return slideBy;
+    }
+
+    @Override
+    public int getClassId() {
+        return JetPipelineDataSerializerHook.SLIDING_WINDOW_DEFINITION;
+    }
+
+    @Override
+    public void writeData(ObjectDataOutput out) throws IOException {
+        super.writeData(out);
+        out.writeLong(windowSize);
+        out.writeLong(slideBy);
+    }
+
+    @Override
+    public void readData(ObjectDataInput in) throws IOException {
+        super.readData(in);
+        windowSize = in.readLong();
+        slideBy = in.readLong();
     }
 }

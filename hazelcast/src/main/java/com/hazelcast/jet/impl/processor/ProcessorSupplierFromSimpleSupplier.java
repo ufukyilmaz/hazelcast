@@ -23,6 +23,7 @@ import com.hazelcast.jet.core.ProcessorSupplier;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
+import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @SerializableByConvention
-public class ProcessorSupplierFromSimpleSupplier implements ProcessorSupplier, DataSerializable {
+public class ProcessorSupplierFromSimpleSupplier implements ProcessorSupplier, IdentifiedDataSerializable {
 
     private SupplierEx<? extends Processor> simpleSupplier;
 
@@ -57,5 +58,15 @@ public class ProcessorSupplierFromSimpleSupplier implements ProcessorSupplier, D
     @Override
     public void readData(ObjectDataInput in) throws IOException {
         simpleSupplier = in.readObject();
+    }
+
+    @Override
+    public int getFactoryId() {
+        return JetProcessorDataSerializerHook.FACTORY_ID;
+    }
+
+    @Override
+    public int getClassId() {
+        return JetProcessorDataSerializerHook.PROCESSOR_SUPPLIER_FROM_SIMPLE_SUPPLIER;
     }
 }

@@ -16,9 +16,11 @@
 
 package com.hazelcast.jet.datamodel;
 
-import com.hazelcast.internal.serialization.SerializableByConvention;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 
-import java.io.Serializable;
+import java.io.IOException;
 
 /**
  * A tag object useful as a key in heterogeneous maps. Carries static type
@@ -33,13 +35,16 @@ import java.io.Serializable;
  *
  * @since 3.0
  */
-@SerializableByConvention
-public final class Tag<T> implements Comparable<Tag<?>>, Serializable {
+public final class Tag<T> implements Comparable<Tag<?>>, IdentifiedDataSerializable {
+
     private static final Tag TAG_0 = new Tag(0);
     private static final Tag TAG_1 = new Tag(1);
     private static final Tag TAG_2 = new Tag(2);
 
-    private final int index;
+    private int index;
+
+    Tag() {
+    }
 
     private Tag(int index) {
         this.index = index;
@@ -110,5 +115,25 @@ public final class Tag<T> implements Comparable<Tag<?>>, Serializable {
     @Override
     public String toString() {
         return "Tag" + index;
+    }
+
+    @Override
+    public int getFactoryId() {
+        return JetDatamodelDataSerializerHook.FACTORY_ID;
+    }
+
+    @Override
+    public int getClassId() {
+        return JetDatamodelDataSerializerHook.TAG;
+    }
+
+    @Override
+    public void writeData(ObjectDataOutput out) throws IOException {
+        out.writeInt(index);
+    }
+
+    @Override
+    public void readData(ObjectDataInput in) throws IOException {
+        index = in.readInt();
     }
 }

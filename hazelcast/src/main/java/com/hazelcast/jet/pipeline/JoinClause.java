@@ -17,10 +17,12 @@
 package com.hazelcast.jet.pipeline;
 
 import com.hazelcast.function.FunctionEx;
-import com.hazelcast.internal.serialization.SerializableByConvention;
 import com.hazelcast.jet.core.Processor;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 
-import java.io.Serializable;
+import java.io.IOException;
 import java.util.Map.Entry;
 
 import static com.hazelcast.internal.serialization.impl.SerializationUtil.checkSerializable;
@@ -54,11 +56,14 @@ import static com.hazelcast.internal.serialization.impl.SerializationUtil.checkS
  *
  * @since 3.0
  */
-@SerializableByConvention
-public final class JoinClause<K, T0, T1, T1_OUT> implements Serializable {
-    private final FunctionEx<? super T0, ? extends K> leftKeyFn;
-    private final FunctionEx<? super T1, ? extends K> rightKeyFn;
-    private final FunctionEx<? super T1, ? extends T1_OUT> rightProjectFn;
+public final class JoinClause<K, T0, T1, T1_OUT> implements IdentifiedDataSerializable {
+
+    private FunctionEx<? super T0, ? extends K> leftKeyFn;
+    private FunctionEx<? super T1, ? extends K> rightKeyFn;
+    private FunctionEx<? super T1, ? extends T1_OUT> rightProjectFn;
+
+    JoinClause() {
+    }
 
     private JoinClause(
             FunctionEx<? super T0, ? extends K> leftKeyFn,
@@ -138,5 +143,29 @@ public final class JoinClause<K, T0, T1, T1_OUT> implements Serializable {
      */
     public FunctionEx<? super T1, ? extends T1_OUT> rightProjectFn() {
         return rightProjectFn;
+    }
+
+    @Override
+    public int getFactoryId() {
+        return JetPipelineDataSerializerHook.FACTORY_ID;
+    }
+
+    @Override
+    public int getClassId() {
+        return JetPipelineDataSerializerHook.JOIN_CLAUSE;
+    }
+
+    @Override
+    public void writeData(ObjectDataOutput out) throws IOException {
+        out.writeObject(leftKeyFn);
+        out.writeObject(rightKeyFn);
+        out.writeObject(rightProjectFn);
+    }
+
+    @Override
+    public void readData(ObjectDataInput in) throws IOException {
+        leftKeyFn = in.readObject();
+        rightKeyFn = in.readObject();
+        rightProjectFn = in.readObject();
     }
 }

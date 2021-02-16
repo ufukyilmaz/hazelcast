@@ -21,11 +21,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.Iterator;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import static com.hazelcast.jet.Util.entry;
 import static com.hazelcast.jet.datamodel.ItemsByTag.itemsByTag;
 import static com.hazelcast.jet.datamodel.Tag.tag;
 import static com.hazelcast.jet.datamodel.Tag.tag0;
@@ -97,20 +92,5 @@ public class ItemsByTagTest {
         assertNotNull(ibt.toString());
         ibt.put(tag2(), "x");
         assertNotNull(ibt.toString());
-    }
-
-    @Test
-    public void when_entrySet_then_hasAllItems() {
-        // Given
-        ibt.put(tag2(), "x");
-
-        // When
-        Set<Entry<Tag<?>, Object>> entrySet = ibt.entrySet();
-
-        // Then
-        assertNotNull(entrySet);
-        Iterator<Entry<Tag<?>, Object>> it = entrySet.iterator();
-        assertTrue(it.hasNext());
-        assertEquals(entry(tag2(), "x"), it.next());
     }
 }

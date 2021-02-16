@@ -23,6 +23,7 @@ import com.hazelcast.internal.partition.service.TestGetOperation;
 import com.hazelcast.internal.partition.service.TestPutOperation;
 import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.spi.impl.operationservice.OperationService;
+import com.hazelcast.test.annotation.Repeat;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
 
@@ -46,10 +47,12 @@ import static org.junit.Assert.assertTrue;
 
 public abstract class AbstractGracefulShutdownCorrectnessTest extends PartitionCorrectnessTestSupport {
 
+
     @Parameterized.Parameter(2)
     public int shutdownNodeCount;
 
     @Test(timeout = 6000 * 10 * 10)
+    @Repeat(200)
     public void testPartitionData_whenNodesShutdown() throws InterruptedException {
         Config config = getConfig(true, false);
 

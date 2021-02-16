@@ -164,6 +164,6 @@ public class ResourceConfig implements IdentifiedDataSerializable {
     public void readData(ObjectDataInput in) throws IOException {
         id = in.readString();
         resourceType = ResourceType.valueOf(in.readString());
-        url = in.readObject(URL.class);
+        url = in.readObject();
     }
 }

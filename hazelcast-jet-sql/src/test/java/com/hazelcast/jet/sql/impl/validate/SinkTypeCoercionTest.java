@@ -23,6 +23,7 @@ import com.hazelcast.sql.impl.type.QueryDataTypeFamily;
 import com.hazelcast.sql.impl.type.converter.Converters;
 import com.hazelcast.test.HazelcastSerialParametersRunnerFactory;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -64,6 +65,7 @@ import static org.junit.Assume.assumeFalse;
 
 @RunWith(Parameterized.class)
 @UseParametersRunnerFactory(HazelcastSerialParametersRunnerFactory.class)
+@Ignore
 public class SinkTypeCoercionTest extends SqlTestSupport {
 
     @Parameter

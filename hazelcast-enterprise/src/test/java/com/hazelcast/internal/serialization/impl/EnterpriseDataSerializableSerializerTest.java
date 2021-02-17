@@ -93,7 +93,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         TestDataSerializable original = new TestDataSerializable(123);
         when(input.getClassLoader()).thenReturn(getClass().getClassLoader());
         when(input.readByte()).thenReturn(createHeader(false, false));
-        when(input.readUTF()).thenReturn(original.getClass().getName());
+        when(input.readString()).thenReturn(original.getClass().getName());
         when(input.readInt()).thenReturn(original.value);
         when(input.getVersion()).thenReturn(Version.UNKNOWN);
         when(input.getWanProtocolVersion()).thenReturn(Version.UNKNOWN);
@@ -107,7 +107,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
 
         InOrder calls = inOrder(input);
         calls.verify(input).readByte();
-        calls.verify(input).readUTF();
+        calls.verify(input).readString();
         calls.verify(input).getVersion();
         calls.verify(input).getWanProtocolVersion();
         calls.verify(input).setVersion(UNKNOWN);
@@ -141,7 +141,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
                 .thenReturn(createHeader(false, true))
                 .thenReturn(MAJOR_VERSION_BYTE)
                 .thenReturn(MINOR_VERSION_BYTE);
-        when(input.readUTF()).thenReturn(original.getClass().getName());
+        when(input.readString()).thenReturn(original.getClass().getName());
         when(input.readInt()).thenReturn(original.value);
         when(input.getVersion()).thenReturn(UNKNOWN);
         when(input.getWanProtocolVersion()).thenReturn(UNKNOWN);
@@ -155,7 +155,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
 
         InOrder calls = inOrder(input);
         calls.verify(input).readByte();
-        calls.verify(input).readUTF();
+        calls.verify(input).readString();
         calls.verify(input).getVersion();
         calls.verify(input).getWanProtocolVersion();
         calls.verify(input, times(2)).readByte();
@@ -189,7 +189,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
                 .thenReturn(createHeader(false, true))
                 .thenReturn((byte) -MAJOR_VERSION_BYTE)
                 .thenReturn(MINOR_VERSION_BYTE);
-        when(input.readUTF()).thenReturn(original.getClass().getName());
+        when(input.readString()).thenReturn(original.getClass().getName());
         when(input.readInt()).thenReturn(original.value);
         when(input.getVersion()).thenReturn(UNKNOWN);
         when(input.getWanProtocolVersion()).thenReturn(UNKNOWN);
@@ -203,7 +203,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
 
         InOrder calls = inOrder(input);
         calls.verify(input).readByte();
-        calls.verify(input).readUTF();
+        calls.verify(input).readString();
         calls.verify(input).getVersion();
         calls.verify(input).getWanProtocolVersion();
         calls.verify(input, times(2)).readByte();
@@ -401,7 +401,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         calls.verify(output).getVersion();
         calls.verify(output).getWanProtocolVersion();
         calls.verify(output).writeByte(createHeader(false, false));
-        calls.verify(output).writeUTF(TestDataSerializable.class.getName());
+        calls.verify(output).writeString(TestDataSerializable.class.getName());
         calls.verify(output).writeInt(original.value);
         calls.verify(output).getWanProtocolVersion();
         calls.verify(output).setVersion(UNKNOWN);
@@ -420,7 +420,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         calls.verify(output).setVersion(CLUSTER_VERSION);
         calls.verify(output).getVersion();
         calls.verify(output).writeByte(createHeader(false, true));
-        calls.verify(output).writeUTF(TestVersionedDataSerializable.class.getName());
+        calls.verify(output).writeString(TestVersionedDataSerializable.class.getName());
         calls.verify(output).writeInt(original.value);
         // Mockito calls a hash method on the proxy, so we cannot verifyNoMoreInteractions()
     }
@@ -508,7 +508,7 @@ public class EnterpriseDataSerializableSerializerTest extends HazelcastTestSuppo
         calls.verify(output).getVersion();
         calls.verify(output).getWanProtocolVersion();
         calls.verify(output).writeByte(createHeader(false, true));
-        calls.verify(output).writeUTF(instance.getClass().getName());
+        calls.verify(output).writeString(instance.getClass().getName());
         calls.verify(output).writeByte(-MAJOR_VERSION_BYTE);
         calls.verify(output).writeByte(MINOR_VERSION_BYTE);
         calls.verify(output).writeInt(expectedValue);

@@ -233,7 +233,7 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
             skipBytesSafely(input, FACTORY_AND_CLASS_ID_BYTE_LENGTH);
         } else {
             // read class-name
-            input.readUTF();
+            input.readString();
         }
 
         if (isVersioned(header)) {

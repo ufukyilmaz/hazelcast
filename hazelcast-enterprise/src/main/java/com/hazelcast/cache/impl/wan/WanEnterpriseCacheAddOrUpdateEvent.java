@@ -48,14 +48,14 @@ public class WanEnterpriseCacheAddOrUpdateEvent extends WanEnterpriseCacheEvent<
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         super.writeData(out);
-        out.writeUTF(mergePolicy);
+        out.writeString(mergePolicy);
         out.writeObject(entryView);
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
         super.readData(in);
-        mergePolicy = in.readUTF();
+        mergePolicy = in.readString();
         entryView = in.readObject();
     }
 

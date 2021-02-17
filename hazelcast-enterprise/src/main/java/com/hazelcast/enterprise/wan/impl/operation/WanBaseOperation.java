@@ -56,13 +56,13 @@ public abstract class WanBaseOperation extends Operation implements PartitionAwa
 
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
-        out.writeUTF(wanReplicationName);
-        out.writeUTF(wanPublisherId);
+        out.writeString(wanReplicationName);
+        out.writeString(wanPublisherId);
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
-        wanReplicationName = in.readUTF();
-        wanPublisherId = in.readUTF();
+        wanReplicationName = in.readString();
+        wanPublisherId = in.readString();
     }
 }

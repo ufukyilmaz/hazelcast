@@ -203,7 +203,7 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
     }
 
     private DataSerializable readDataSerializable(ObjectDataInput in, byte header, DataSerializable instance) throws IOException {
-        String className = in.readUTF();
+        String className = in.readString();
         try {
             // if versions were previously set while processing an outer object,
             // keep the current values and restore them in the end
@@ -288,9 +288,9 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
         out.writeByte(createHeader(false, versioned));
 
         if (obj instanceof TypedDataSerializable) {
-            out.writeUTF(((TypedDataSerializable) obj).getClassType().getName());
+            out.writeString(((TypedDataSerializable) obj).getClassType().getName());
         } else {
-            out.writeUTF(obj.getClass().getName());
+            out.writeString(obj.getClass().getName());
         }
 
         if (wanProtocolVersion != Version.UNKNOWN) {

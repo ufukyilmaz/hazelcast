@@ -60,12 +60,12 @@ public class MemberClusterStartInfo implements DataSerializable, Versioned {
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         PartitionTableWriter.writePartitionTable(out, partitionTable);
-        out.writeUTF(dataLoadStatus.name());
+        out.writeString(dataLoadStatus.name());
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
         partitionTable = PartitionTableReader.readPartitionTable(in);
-        dataLoadStatus = DataLoadStatus.valueOf(in.readUTF());
+        dataLoadStatus = DataLoadStatus.valueOf(in.readString());
     }
 }

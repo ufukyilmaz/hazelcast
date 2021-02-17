@@ -83,7 +83,7 @@ public class PartitionWanEventQueueMap extends ConcurrentHashMap<String, WanEven
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeInt(size());
         for (Map.Entry<String, WanEventQueue> entry : entrySet()) {
-            out.writeUTF(entry.getKey());
+            out.writeString(entry.getKey());
             out.writeObject(entry.getValue());
         }
     }
@@ -92,7 +92,7 @@ public class PartitionWanEventQueueMap extends ConcurrentHashMap<String, WanEven
     public void readData(ObjectDataInput in) throws IOException {
         int size = in.readInt();
         for (int i = 0; i < size; i++) {
-            String name = in.readUTF();
+            String name = in.readString();
             WanEventQueue queue = in.readObject();
             put(name, queue);
         }

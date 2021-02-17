@@ -124,7 +124,7 @@ public abstract class AbstractWanAntiEntropyEvent implements IdentifiedDataSeria
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         writeUUID(out, uuid);
-        out.writeUTF(mapName);
+        out.writeString(mapName);
         out.writeInt(partitionSet.size());
         for (Integer partitionId : partitionSet) {
             out.writeInt(partitionId);
@@ -134,7 +134,7 @@ public abstract class AbstractWanAntiEntropyEvent implements IdentifiedDataSeria
     @Override
     public void readData(ObjectDataInput in) throws IOException {
         uuid = readUUID(in);
-        mapName = in.readUTF();
+        mapName = in.readString();
         int size = in.readInt();
         partitionSet = SetUtil.createHashSet(size);
         for (int i = 0; i < size; i++) {

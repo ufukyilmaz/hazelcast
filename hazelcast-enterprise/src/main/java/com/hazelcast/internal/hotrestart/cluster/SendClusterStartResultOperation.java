@@ -68,7 +68,7 @@ public class SendClusterStartResultOperation extends Operation implements JoinOp
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        out.writeUTF(result.name());
+        out.writeString(result.name());
         out.writeInt(excludedMemberUuids.size());
         for (UUID uuid : excludedMemberUuids) {
             UUIDSerializationUtil.writeUUID(out, uuid);
@@ -76,14 +76,14 @@ public class SendClusterStartResultOperation extends Operation implements JoinOp
         boolean clusterStateExists = clusterState != null;
         out.writeBoolean(clusterStateExists);
         if (clusterStateExists) {
-            out.writeUTF(clusterState.name());
+            out.writeString(clusterState.name());
         }
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        result = HotRestartClusterStartStatus.valueOf(in.readUTF());
+        result = HotRestartClusterStartStatus.valueOf(in.readString());
         int uuidCount = in.readInt();
         excludedMemberUuids = new HashSet<>();
         for (int i = 0; i < uuidCount; i++) {
@@ -91,7 +91,7 @@ public class SendClusterStartResultOperation extends Operation implements JoinOp
         }
         boolean clusterStateExists = in.readBoolean();
         if (clusterStateExists) {
-            clusterState = ClusterState.valueOf(in.readUTF());
+            clusterState = ClusterState.valueOf(in.readString());
         }
     }
 

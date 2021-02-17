@@ -135,7 +135,7 @@ public class HotRestartBackupOperation extends Operation implements AllowedDurin
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        out.writeUTF(transactionPhase.toString());
+        out.writeString(transactionPhase.toString());
         out.writeLong(backupSeq);
         out.writeObject(initiator);
         UUIDSerializationUtil.writeUUID(out, txnId);
@@ -145,7 +145,7 @@ public class HotRestartBackupOperation extends Operation implements AllowedDurin
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        transactionPhaseName = in.readUTF();
+        transactionPhaseName = in.readString();
         try {
             transactionPhase = Transaction.State.valueOf(transactionPhaseName);
         } catch (IllegalArgumentException ignored) {

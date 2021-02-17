@@ -81,8 +81,8 @@ public class WanProtocolNegotiationOperation extends Operation implements JoinOp
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
-        sourceClusterName = in.readUTF();
-        targetClusterName = in.readUTF();
+        sourceClusterName = in.readString();
+        targetClusterName = in.readString();
         int sourceWanProtocolVersionSize = in.readInt();
         sourceWanProtocolVersions = new ArrayList<>(sourceWanProtocolVersionSize);
         for (int i = 0; i < sourceWanProtocolVersionSize; i++) {
@@ -92,8 +92,8 @@ public class WanProtocolNegotiationOperation extends Operation implements JoinOp
 
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
-        out.writeUTF(sourceClusterName);
-        out.writeUTF(targetClusterName);
+        out.writeString(sourceClusterName);
+        out.writeString(targetClusterName);
         out.writeInt(sourceWanProtocolVersions.size());
         for (Version version : sourceWanProtocolVersions) {
             out.writeObject(version);

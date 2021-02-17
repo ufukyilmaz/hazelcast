@@ -196,7 +196,7 @@ public class EnterprisePortableTest {
                 .addClassDefinition(
                         new ClassDefinitionBuilder(FACTORY_ID, TestSerializationConstants.RAW_DATA_PORTABLE)
                                 .addLongField("l").addCharArrayField("c").addPortableField("p", createNamedPortableClassDefinition(1)).build())
-                .addClassDefinition(new ClassDefinitionBuilder(FACTORY_ID, TestSerializationConstants.NAMED_PORTABLE).addUTFField("name")
+                .addClassDefinition(new ClassDefinitionBuilder(FACTORY_ID, TestSerializationConstants.NAMED_PORTABLE).addStringField("name")
                         .addIntField("myint").build());
 
         InternalSerializationService serializationService

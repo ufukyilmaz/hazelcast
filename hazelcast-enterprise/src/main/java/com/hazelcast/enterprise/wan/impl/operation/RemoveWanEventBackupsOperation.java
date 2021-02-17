@@ -70,8 +70,8 @@ public class RemoveWanEventBackupsOperation extends WanBaseOperation
         for (Entry<DistributedObjectIdentifier, Integer> eventCountEntry : eventCounts.entrySet()) {
             DistributedObjectIdentifier id = eventCountEntry.getKey();
             Integer count = eventCountEntry.getValue();
-            out.writeUTF(id.getServiceName());
-            out.writeUTF(id.getObjectName());
+            out.writeString(id.getServiceName());
+            out.writeString(id.getObjectName());
             out.writeInt(id.getTotalBackupCount());
             out.writeInt(count);
         }
@@ -84,8 +84,8 @@ public class RemoveWanEventBackupsOperation extends WanBaseOperation
 
         eventCounts = MapUtil.createHashMap(eventCountSize);
         for (int i = 0; i < eventCountSize; i++) {
-            String serviceName = in.readUTF();
-            String objectName = in.readUTF();
+            String serviceName = in.readString();
+            String objectName = in.readString();
             int totalBackupCount = in.readInt();
             int eventCount = in.readInt();
             eventCounts.put(new DistributedObjectIdentifier(serviceName, objectName, totalBackupCount), eventCount);

@@ -129,9 +129,9 @@ public class PersistentConfigDescriptors {
                 final FileOutputStream fileOut = new FileOutputStream(tmpFile);
 
                 out = createObjectDataOutputStream(fileOut, serializationService);
-                out.writeUTF(serviceName);
+                out.writeString(serviceName);
                 out.writeInt(id);
-                out.writeUTF(name);
+                out.writeString(name);
                 out.writeObject(config);
                 idToDesc.put(id, desc);
                 nameToDesc.put(cacheKey, desc);
@@ -192,9 +192,9 @@ public class PersistentConfigDescriptors {
                 ObjectDataInputStream in = null;
                 try {
                     in = createObjectDataInputStream(new FileInputStream(configFile), serializationService);
-                    String serviceName = in.readUTF();
+                    String serviceName = in.readString();
                     int id = in.readInt();
-                    String name = in.readUTF();
+                    String name = in.readString();
                     config = in.readObject();
                     desc = new ConfigDescriptor(serviceName, name, id);
                 } catch (IOException e) {

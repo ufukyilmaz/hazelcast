@@ -94,13 +94,13 @@ public class WanMerkleTreeNodeCompareOperation extends Operation
 
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
-        out.writeUTF(mapName);
+        out.writeString(mapName);
         out.writeObject(remoteLevels);
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
-        mapName = in.readUTF();
+        mapName = in.readString();
         remoteLevels = in.readObject();
     }
 

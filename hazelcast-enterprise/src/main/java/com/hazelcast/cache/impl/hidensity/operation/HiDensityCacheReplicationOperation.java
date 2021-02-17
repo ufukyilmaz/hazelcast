@@ -147,7 +147,7 @@ public final class HiDensityCacheReplicationOperation
             Map<Data, HiDensityCacheRecord> value = entry.getValue();
             int subCount = value.size();
             out.writeInt(subCount);
-            out.writeUTF(entry.getKey());
+            out.writeString(entry.getKey());
 
             for (Map.Entry<Data, HiDensityCacheRecord> e : value.entrySet()) {
                 HiDensityCacheRecord record = e.getValue();
@@ -183,7 +183,7 @@ public final class HiDensityCacheReplicationOperation
         int count = in.readInt();
         for (int i = 0; i < count; i++) {
             int subCount = in.readInt();
-            String name = in.readUTF();
+            String name = in.readString();
             Map<Data, CacheRecordHolder> m = new HashMap<Data, CacheRecordHolder>(subCount);
             destination.put(name, m);
 

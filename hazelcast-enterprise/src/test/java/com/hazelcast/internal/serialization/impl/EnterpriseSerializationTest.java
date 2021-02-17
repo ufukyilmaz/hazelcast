@@ -77,13 +77,13 @@ public class EnterpriseSerializationTest extends HazelcastTestSupport {
                 new GlobalSerializerConfig().setImplementation(new StreamSerializer<DummyValue>() {
                     @Override
                     public void write(ObjectDataOutput out, DummyValue v) throws IOException {
-                        out.writeUTF(v.s);
+                        out.writeString(v.s);
                         out.writeInt(v.k);
                     }
 
                     @Override
                     public DummyValue read(ObjectDataInput in) throws IOException {
-                        return new DummyValue(in.readUTF(), in.readInt());
+                        return new DummyValue(in.readString(), in.readInt());
                     }
 
                     @Override

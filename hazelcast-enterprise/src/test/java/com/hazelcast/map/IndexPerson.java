@@ -87,8 +87,8 @@ public class IndexPerson implements DataSerializable {
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeLong(personId);
         out.writeLong(age);
-        out.writeUTF(firstName);
-        out.writeUTF(lastName);
+        out.writeString(firstName);
+        out.writeString(lastName);
         out.writeDouble(salary);
         out.writeLong(count);
     }
@@ -96,8 +96,8 @@ public class IndexPerson implements DataSerializable {
     public void readData(ObjectDataInput in) throws IOException {
         personId = in.readLong();
         age = in.readLong();
-        firstName = in.readUTF();
-        lastName = in.readUTF();
+        firstName = in.readString();
+        lastName = in.readString();
         salary = in.readDouble();
         count = in.readLong();
     }

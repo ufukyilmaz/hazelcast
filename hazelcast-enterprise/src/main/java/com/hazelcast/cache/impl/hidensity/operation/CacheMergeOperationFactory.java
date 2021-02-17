@@ -48,7 +48,7 @@ public class CacheMergeOperationFactory extends PartitionAwareOperationFactory {
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeUTF(name);
+        out.writeString(name);
         out.writeIntArray(partitions);
         for (List<CacheMergeTypes<Object, Object>> list : mergingEntries) {
             out.writeInt(list.size());
@@ -61,7 +61,7 @@ public class CacheMergeOperationFactory extends PartitionAwareOperationFactory {
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
-        name = in.readUTF();
+        name = in.readString();
         partitions = in.readIntArray();
         //noinspection unchecked
         mergingEntries = new List[partitions.length];

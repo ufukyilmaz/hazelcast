@@ -69,8 +69,8 @@ public class WanProtocolNegotiationResponse implements IdentifiedDataSerializabl
         out.writeObject(chosenWanProtocolVersion);
         out.writeInt(metadata.size());
         for (Entry<String, String> entry : metadata.entrySet()) {
-            out.writeUTF(entry.getKey());
-            out.writeUTF(entry.getValue());
+            out.writeString(entry.getKey());
+            out.writeString(entry.getValue());
         }
     }
 
@@ -83,7 +83,7 @@ public class WanProtocolNegotiationResponse implements IdentifiedDataSerializabl
         int metadataSize = in.readInt();
         metadata = MapUtil.createHashMap(metadataSize);
         for (int i = 0; i < metadataSize; i++) {
-            metadata.put(in.readUTF(), in.readUTF());
+            metadata.put(in.readString(), in.readString());
         }
     }
 }

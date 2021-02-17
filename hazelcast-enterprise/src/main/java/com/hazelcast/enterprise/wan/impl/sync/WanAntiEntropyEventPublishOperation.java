@@ -49,16 +49,16 @@ public class WanAntiEntropyEventPublishOperation extends Operation
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        out.writeUTF(wanReplicationName);
-        out.writeUTF(wanPublisherId);
+        out.writeString(wanReplicationName);
+        out.writeString(wanPublisherId);
         out.writeObject(event);
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        wanReplicationName = in.readUTF();
-        wanPublisherId = in.readUTF();
+        wanReplicationName = in.readString();
+        wanPublisherId = in.readString();
         event = in.readObject();
     }
 

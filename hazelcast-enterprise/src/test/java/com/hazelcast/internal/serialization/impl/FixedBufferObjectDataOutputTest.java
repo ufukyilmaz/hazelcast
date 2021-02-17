@@ -235,7 +235,7 @@ public class FixedBufferObjectDataOutputTest {
     @Test
     public void writeUTF() {
         String s = randomString();
-        out.writeUTF(s);
+        out.writeString(s);
 
         byte[] bytes = s.getBytes(UTF_8);
         assertEquals(bytes.length, readInt(out.getBuffer(), 0, bigEndian));

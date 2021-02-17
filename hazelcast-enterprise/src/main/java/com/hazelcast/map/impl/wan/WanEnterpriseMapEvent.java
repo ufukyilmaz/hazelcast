@@ -60,21 +60,21 @@ public abstract class WanEnterpriseMapEvent<T>
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeUTF(mapName);
+        out.writeString(mapName);
         out.writeInt(backupCount);
         out.writeInt(clusterNames.size());
         for (String clusterName : clusterNames) {
-            out.writeUTF(clusterName);
+            out.writeString(clusterName);
         }
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
-        mapName = in.readUTF();
+        mapName = in.readString();
         backupCount = in.readInt();
         int clusterNameCount = in.readInt();
         for (int i = 0; i < clusterNameCount; i++) {
-            clusterNames.add(in.readUTF());
+            clusterNames.add(in.readString());
         }
     }
 

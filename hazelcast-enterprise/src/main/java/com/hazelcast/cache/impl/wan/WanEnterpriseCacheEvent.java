@@ -64,23 +64,23 @@ public abstract class WanEnterpriseCacheEvent<T>
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeUTF(cacheName);
-        out.writeUTF(managerPrefix);
+        out.writeString(cacheName);
+        out.writeString(managerPrefix);
         out.writeInt(backupCount);
         out.writeInt(clusterNames.size());
         for (String clusterName : clusterNames) {
-            out.writeUTF(clusterName);
+            out.writeString(clusterName);
         }
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
-        cacheName = in.readUTF();
-        managerPrefix = in.readUTF();
+        cacheName = in.readString();
+        managerPrefix = in.readString();
         backupCount = in.readInt();
         int clusterNameCount = in.readInt();
         for (int i = 0; i < clusterNameCount; i++) {
-            clusterNames.add(in.readUTF());
+            clusterNames.add(in.readString());
         }
     }
 

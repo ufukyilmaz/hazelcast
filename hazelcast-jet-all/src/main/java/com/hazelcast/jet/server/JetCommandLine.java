@@ -723,9 +723,7 @@ public class JetCommandLine implements Runnable {
                 FutureUtil.getValue(getClusterMetadata(hazelcastClient, clientClusterService.getMasterMember()));
         Cluster cluster = client.getCluster();
         Set<Member> members = cluster.getMembers();
-        String versionString = clusterMetadata.getJetVersion() != null
-                ? "Hazelcast Jet " + clusterMetadata.getJetVersion()
-                : "Hazelcast IMDG " + clusterMetadata.getMemberVersion();
+        String versionString = "Hazelcast Platform " + clusterMetadata.getMemberVersion();
         return new AttributedStringBuilder()
                 .style(AttributedStyle.BOLD.foreground(PRIMARY_COLOR))
                 .append("Connected to ")
@@ -743,9 +741,6 @@ public class JetCommandLine implements Runnable {
         JetClientInstanceImpl client = (JetClientInstanceImpl) jet;
         HazelcastClientInstanceImpl hazelcastClient = client.getHazelcastClient();
         ClientClusterService clientClusterService = hazelcastClient.getClientClusterService();
-        MCClusterMetadata clusterMetadata =
-                FutureUtil.getValue(getClusterMetadata(hazelcastClient, clientClusterService.getMasterMember()));
-        String jetVersion = clusterMetadata.getJetVersion();
         AttributedStringBuilder builder = new AttributedStringBuilder()
                 .style(AttributedStyle.BOLD.foreground(PRIMARY_COLOR))
                 .append("Available Commands:\n")
@@ -754,15 +749,9 @@ public class JetCommandLine implements Runnable {
                 .append("  help     Provides information about available commands\n")
                 .append("  history  Shows the command history of the current session\n")
                 .append("Hints:\n")
-                .append("  Semicolon completes a query\n");
-        if (jetVersion != null) {
-            // connected to a Jet cluster
-            builder.append("  Ctrl+C cancels a streaming query\n")
-                    .append("  https://jet-start.sh/docs/sql/intro");
-        } else {
-            // connected to an IMDG cluster
-            builder.append("  https://docs.hazelcast.org/docs/latest/manual/html-single/#sql");
-        }
+                .append("  Semicolon completes a query\n")
+                .append("  Ctrl+C cancels a streaming query\n")
+                .append("  https://docs.hazelcast.com/");
         return builder.toAnsi();
     }
 

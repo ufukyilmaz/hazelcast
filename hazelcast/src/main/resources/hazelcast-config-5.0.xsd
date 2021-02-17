@@ -74,6 +74,7 @@
                 <xs:element name="metrics" type="metrics" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="instance-tracking" type="instance-tracking" minOccurs="0" maxOccurs="1"/>
                 <xs:element name="sql" type="sql" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="jet" type="jet" minOccurs="0" maxOccurs="1"/>
             </xs:choice>
             <xs:attribute name="id" type="xs:string" use="optional" default="default"/>
         </xs:complexType>
@@ -5053,6 +5054,36 @@
         </xs:all>
     </xs:complexType>
 
+    <xs:complexType name="jet">
+        <xs:annotation>
+            <xs:documentation>
+                Jet configuration.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:all>
+            <xs:element name="instance" minOccurs="0">
+                <xs:complexType>
+                    <xs:all>
+                        <xs:element name="cooperative-thread-count" type="positive-int" minOccurs="0"/>
+                        <xs:element name="flow-control-period" type="positive-int" minOccurs="0"/>
+                        <xs:element name="backup-count" type="backup-count" minOccurs="0" />
+                        <xs:element name="scale-up-delay-millis" type="non-negative-long" minOccurs="0" />
+                        <xs:element name="lossless-restart-enabled" type="xs:boolean" minOccurs="0" />
+                    </xs:all>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="edge-defaults" minOccurs="0">
+                <xs:complexType>
+                    <xs:all>
+                        <xs:element name="queue-size" type="positive-int" minOccurs="0"/>
+                        <xs:element name="packet-size-limit" type="positive-int" minOccurs="0"/>
+                        <xs:element name="receive-window-multiplier" type="positive-int" minOccurs="0"/>
+                    </xs:all>
+                </xs:complexType>
+            </xs:element>
+        </xs:all>
+    </xs:complexType>
+
     <xs:complexType name="realms">
         <xs:sequence>
             <xs:element name="realm" type="realm" minOccurs="0" maxOccurs="unbounded"/>
@@ -5185,4 +5216,17 @@
     <xs:complexType name="realm-reference">
         <xs:attribute name="realm" type="xs:string" use="required"/>
     </xs:complexType>
+
+    <!-- SIMPLE TYPES -->
+
+    <xs:simpleType name="positive-int">
+        <xs:restriction base="xs:int">
+            <xs:minInclusive value="1"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="non-negative-long">
+        <xs:restriction base="xs:long">
+            <xs:minInclusive value="0"/>
+        </xs:restriction>
+    </xs:simpleType>
 </xs:schema>

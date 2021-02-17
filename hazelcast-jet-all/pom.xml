@@ -50,6 +50,16 @@
     </properties>
 
     <build>
+        <!-- ignore the testjob module -->
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <excludes>
+                    <exclude>com/hazelcast/jet/server/testjob/**</exclude>
+                </excludes>
+            </testResource>
+        </testResources>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

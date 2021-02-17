@@ -27,9 +27,17 @@
         <dependencySet>
             <useProjectArtifact>false</useProjectArtifact>
             <includes>
+                <include>com.hazelcast:hazelcast</include>
                 <include>com.hazelcast.jet:hazelcast-jet</include>
-                <include>com.hazelcast.jet:hazelcast-jet-spring</include>
                 <include>com.hazelcast.jet:hazelcast-jet-sql</include>
+                <include>com.hazelcast:hazelcast-aws</include>
+                <include>com.hazelcast:hazelcast-kubernetes</include>
+                <include>com.hazelcast:hazelcast-gcp</include>
+                <include>com.hazelcast:hazelcast-azure</include>
+                <include>com.hazelcast:hazelcast-hibernate53</include>
+                <include>com.hazelcast:hazelcast-spring</include>
+                <include>com.hazelcast:hazelcast-sql</include>
+                <include>com.hazelcast:hazelcast-wm</include>
                 <include>org.apache.logging.log4j:*</include>
                 <include>org.slf4j:*</include>
                 <include>io.prometheus.jmx:jmx_prometheus_javaagent</include>
@@ -62,8 +70,9 @@
             <outputFileNameMapping>hello-world.${artifact.extension}</outputFileNameMapping>
         </dependencySet>
     </dependencySets>
+<!--
     <files>
-        <!-- Full Example YAML config files -->
+        &lt;!&ndash; Full Example YAML config files &ndash;&gt;
         <file>
             <source>${configs.from.jar}/hazelcast-jet-full-example.yaml</source>
             <destName>hazelcast-jet-full-example.yaml</destName>
@@ -80,7 +89,7 @@
             <outputDirectory>config/examples</outputDirectory>
         </file>
 
-        <!-- Simple XML config files -->
+        &lt;!&ndash; Simple XML config files &ndash;&gt;
         <file>
             <source>${configs.from.jar}/hazelcast-jet-default.xml</source>
             <destName>hazelcast-jet.xml</destName>
@@ -97,7 +106,7 @@
             <outputDirectory>config/examples</outputDirectory>
         </file>
 
-        <!-- Full Example XML config files -->
+        &lt;!&ndash; Full Example XML config files &ndash;&gt;
         <file>
             <source>${configs.from.jar}/hazelcast-jet-full-example.xml</source>
             <destName>hazelcast-jet-full-example.xml</destName>
@@ -114,6 +123,7 @@
             <outputDirectory>config/examples</outputDirectory>
         </file>
     </files>
+-->
     <fileSets>
         <fileSet>
             <directory>src/root</directory>

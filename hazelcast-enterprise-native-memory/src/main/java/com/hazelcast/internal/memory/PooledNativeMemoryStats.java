@@ -9,13 +9,15 @@ public class PooledNativeMemoryStats extends NativeMemoryStats implements Memory
     private final AtomicLong usedNative = new AtomicLong();
     private final AtomicLong usedMetadata = new AtomicLong();
 
-    private final long maxMetadata;
     private final int pageSize;
+    private final long maxData;
+    private final long maxMetadata;
 
     public PooledNativeMemoryStats(long maxNative, long maxMetadata, int pageSize) {
         super(maxNative);
         this.maxMetadata = maxMetadata;
         this.pageSize = pageSize;
+        this.maxData = maxNative - maxMetadata;
     }
 
     @Override
@@ -78,6 +80,17 @@ public class PooledNativeMemoryStats extends NativeMemoryStats implements Memory
 
     public int getPageSize() {
         return pageSize;
+    }
+
+    /**
+     * MaxData is the total amount of memory without metadata.
+     * Calculated based on the initial configurations, not affected
+     * from runtime changes. Useful to see max limit of data memory.
+     *
+     * @return max data
+     */
+    public long getMaxData() {
+        return maxData;
     }
 
     @Override

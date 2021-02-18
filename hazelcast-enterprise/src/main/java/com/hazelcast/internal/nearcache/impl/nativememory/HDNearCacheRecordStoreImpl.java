@@ -16,6 +16,8 @@ import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.MemoryBlock;
+import com.hazelcast.internal.memory.MemoryStats;
+import com.hazelcast.internal.memory.PooledNativeMemoryStats;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.monitor.impl.NearCacheStatsImpl;
 import com.hazelcast.internal.nearcache.HDNearCacheRecordStore;
@@ -115,8 +117,11 @@ public class HDNearCacheRecordStoreImpl<K, V>
         }
 
         int size = evictionConfig.getSize();
-        long maxNativeMemory = ((EnterpriseSerializationService) serializationService).getMemoryManager()
-                .getMemoryStats().getMaxNative();
+        MemoryStats memoryStats = ((EnterpriseSerializationService) serializationService).getMemoryManager()
+                .getMemoryStats();
+        long maxNativeMemory = memoryStats instanceof PooledNativeMemoryStats
+                ? ((PooledNativeMemoryStats) memoryStats).getMaxData() : memoryStats.getMaxNative();
+
         switch (maxSizePolicy) {
             case ENTRY_COUNT:
                 return new HiDensityEntryCountEvictionChecker(storageInfo, size);

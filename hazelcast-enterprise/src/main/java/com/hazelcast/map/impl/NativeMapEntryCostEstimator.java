@@ -3,7 +3,6 @@ package com.hazelcast.map.impl;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.memory.MemoryBlock;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.map.impl.record.HDRecordWithStats;
 import com.hazelcast.map.impl.record.HDRecord;
 
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
@@ -50,7 +49,7 @@ public class NativeMapEntryCostEstimator
 
     @Override
     public long calculateEntryCost(NativeMemoryData key, MemoryBlock record) {
-        if (record instanceof HDRecordWithStats) {
+        if (record instanceof HDRecord) {
             return getSize(record)
                     + getSize((MemoryBlock) ((HDRecord) record).getValue())
                     + getSize(key)

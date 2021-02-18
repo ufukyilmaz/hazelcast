@@ -19,6 +19,8 @@ import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.MemoryBlock;
+import com.hazelcast.internal.memory.MemoryStats;
+import com.hazelcast.internal.memory.PooledNativeMemoryStats;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.DataType;
@@ -109,8 +111,11 @@ public class HiDensityNativeMemoryCacheRecordStore
             }
         }
 
-        long maxNativeMemory = ((EnterpriseSerializationService) nodeEngine.getSerializationService())
-                .getMemoryManager().getMemoryStats().getMaxNative();
+        MemoryStats memoryStats = ((EnterpriseSerializationService) nodeEngine.getSerializationService())
+                .getMemoryManager().getMemoryStats();
+
+        long maxNativeMemory = memoryStats instanceof  PooledNativeMemoryStats
+                ? ((PooledNativeMemoryStats) memoryStats).getMaxData() : memoryStats.getMaxNative();
         switch (maxSizePolicy) {
             case USED_NATIVE_MEMORY_SIZE:
                 return new HiDensityUsedNativeMemorySizeEvictionChecker(cacheInfo, size);

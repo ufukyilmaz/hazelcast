@@ -20,9 +20,10 @@ public class HDLocalMapStatsTest extends LocalMapStatsTest {
 
     // NOTE: all sizes below are as expected from the POOLED memory allocator
 
-    // 60 bytes (HD record structure) + 1 byte (memory manager header)
-    // next available buddy block that fits, is 64 bytes
-    private static final int HD_RECORD_DEFAULT_COST = 64;
+    // 12 bytes (HD record structure) + 1 byte (memory manager header)
+    // next available buddy block that fits, is 16 bytes.
+    // (see default structure HDSimpleRecordWithVersion)
+    private static final int HD_RECORD_DEFAULT_COST = 16;
 
     // 4 bytes NativeMemoryData + 17 bytes actual data + 1 byte (memory manager header)
     // next available block that fits is 32 bytes

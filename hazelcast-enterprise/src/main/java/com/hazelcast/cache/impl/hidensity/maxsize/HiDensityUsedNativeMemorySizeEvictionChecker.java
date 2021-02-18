@@ -1,11 +1,13 @@
 package com.hazelcast.cache.impl.hidensity.maxsize;
 
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.internal.eviction.EvictionChecker;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.memory.MemoryUnit;
 
 /**
- * Max-size policy implementation for {@link com.hazelcast.config.EvictionConfig.MaxSizePolicy#USED_NATIVE_MEMORY_SIZE}.
+ * Max-size policy implementation for {@link
+ * MaxSizePolicy#USED_NATIVE_MEMORY_SIZE}.
  */
 public class HiDensityUsedNativeMemorySizeEvictionChecker
         implements EvictionChecker {

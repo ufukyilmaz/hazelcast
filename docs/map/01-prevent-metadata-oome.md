@@ -109,3 +109,16 @@ It is an improved version of Proposal-3 and Proposal-4.
 - **maxMetadata:** Max usable metadata HD space, this is used only for rising a warnings
 
 
+# Performance Test Results
+We can say no performance regression compared to 4.1. Below test settings and results can be seen:
+
+- 1Client, 2Server, set=0.3, get=0.7, 10 million keys, 10_001 partition-count
+  - **4.1:**  34,860.75 ops/s
+  - **4.2:**  36,405.51 ops/s
+
+- HR enabled + 1Client, 2Server, set=0.3, get=0.7, 1 million keys, 101 partition-count 
+  - **4.1:**  33,769.65 ops/s
+  - **4.2:**  33,111.89 ops/s
+
+
+

@@ -36,8 +36,8 @@ import static java.util.Arrays.asList;
 @Category(NightlyTest.class)
 public class HotRestartClientHDNearCacheInvalidationTest extends ClientCacheNearCacheInvalidationTest {
 
-    private static final MemorySize SERVER_NATIVE_MEMORY_SIZE = new MemorySize(16, MemoryUnit.MEGABYTES);
-    private static final MemorySize CLIENT_NATIVE_MEMORY_SIZE = new MemorySize(16, MemoryUnit.MEGABYTES);
+    private static final MemorySize SERVER_NATIVE_MEMORY_SIZE = new MemorySize(20, MemoryUnit.MEGABYTES);
+    private static final MemorySize CLIENT_NATIVE_MEMORY_SIZE = new MemorySize(20, MemoryUnit.MEGABYTES);
 
     @Parameters(name = "format:{0}, fromMember:{1}")
     public static Collection<Object[]> parameters() {

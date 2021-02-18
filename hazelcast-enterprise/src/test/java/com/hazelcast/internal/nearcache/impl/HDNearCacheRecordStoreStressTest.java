@@ -8,7 +8,7 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
-import com.hazelcast.internal.memory.MemoryStats;
+import com.hazelcast.internal.memory.PooledNativeMemoryStats;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.nearcache.NearCacheRecordStore;
 import com.hazelcast.internal.nearcache.impl.nativememory.HDNearCacheRecordStoreImpl;
@@ -220,22 +220,22 @@ public class HDNearCacheRecordStoreStressTest extends NearCacheRecordStoreTestSu
 
                 nearCacheRecordStore.doEviction(false);
 
-                MemoryStats memoryStats = memoryManager.getMemoryStats();
+                PooledNativeMemoryStats memoryStats = ((PooledNativeMemoryStats) memoryManager.getMemoryStats());
                 if (maxSizePolicy == MaxSizePolicy.USED_NATIVE_MEMORY_SIZE) {
-                    long usedNativeMemory = memoryStats.getUsedNative();
+                    long usedNativeMemory = memoryStats.getUsedNative() - memoryStats.getUsedMetadata();
                     long maxAllowedNativeMemory = MemoryUnit.MEGABYTES.toBytes(defaultSize);
                     assertTrue(maxAllowedNativeMemory >= usedNativeMemory);
                 } else if (maxSizePolicy == MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE) {
-                    long usedNativeMemory = memoryStats.getUsedNative();
+                    long usedNativeMemory = memoryStats.getUsedNative() - memoryStats.getUsedMetadata();
                     long maxAllowedNativeMemory = (memoryStats.getMaxNative() * defaultPercentage) / 100;
                     assertTrue(maxAllowedNativeMemory >= usedNativeMemory);
                 } else if (maxSizePolicy == MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE) {
-                    long freeNativeMemory = memoryStats.getFreeNative();
-                    long minAllowedFreeMemory = MemoryUnit.MEGABYTES.toBytes(defaultSize);
+                    long freeNativeMemory = MemoryUnit.MEGABYTES.toBytes(memoryStats.getFreeNative());
+                    long minAllowedFreeMemory = defaultSize;
                     assertTrue(freeNativeMemory >= minAllowedFreeMemory);
                 } else if (maxSizePolicy == MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE) {
                     long freeNativeMemory = memoryStats.getFreeNative();
-                    long minAllowedFreeMemory = (memoryStats.getMaxNative() * defaultPercentage) / 100;
+                    long minAllowedFreeMemory = (memoryStats.getMaxData() * defaultPercentage) / 100;
                     assertTrue(freeNativeMemory >= minAllowedFreeMemory);
                 }
             }

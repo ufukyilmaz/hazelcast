@@ -1,10 +1,11 @@
 package com.hazelcast.cache.impl.hidensity.maxsize;
 
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.internal.eviction.EvictionChecker;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 
 /**
- * Max-size policy implementation for {@link com.hazelcast.config.EvictionConfig.MaxSizePolicy#ENTRY_COUNT}.
+ * Max-size policy implementation for {@link MaxSizePolicy#ENTRY_COUNT}.
  */
 public class HiDensityEntryCountEvictionChecker
         implements EvictionChecker {

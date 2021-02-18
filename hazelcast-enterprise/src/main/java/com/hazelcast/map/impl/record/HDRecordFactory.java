@@ -37,7 +37,7 @@ public class HDRecordFactory implements RecordFactory<Data> {
         boolean hasHotRestart = mapConfig.getHotRestartConfig().isEnabled();
 
         // when stats are enabled, return full record
-        if (mapConfig.isPerEntryStatsEnabled() || isClusterV41()) {
+        if (mapConfig.isPerEntryStatsEnabled()) {
             return newHDRecordWithExtras(value, HDRecordWithStats.SIZE);
         }
 

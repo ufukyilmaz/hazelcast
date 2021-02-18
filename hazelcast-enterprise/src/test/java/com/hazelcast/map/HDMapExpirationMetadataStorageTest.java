@@ -59,7 +59,7 @@ public class HDMapExpirationMetadataStorageTest extends HazelcastTestSupport {
             mapHasExpirableKeys.set(i, i, 1, TimeUnit.SECONDS);
         }
 
-        sleepAtLeastSeconds(1);
+        sleepAtLeastSeconds(2);
 
         for (int i = 0; i < 1_000; i++) {
             // force expired entries to remove

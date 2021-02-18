@@ -47,7 +47,7 @@ import static org.junit.Assert.assertNotSame;
 @RunWith(Parameterized.class)
 @Category(ParallelJVMTest.class)
 @Parameterized.UseParametersRunnerFactory(HazelcastParallelParametersRunnerFactory.class)
-public class DataModelSerializerTest {
+public class DataModelSerializerHooksTest {
 
     @Parameter
     public Object instance;
@@ -73,7 +73,7 @@ public class DataModelSerializerTest {
     }
 
     @Test
-    public void testSerializable() {
+    public void testSerializerHook() {
         if (!(instance instanceof Map.Entry || instance instanceof Tag)) {
             assertFalse(instance.getClass() + " implements java.io.Serializable", instance instanceof Serializable);
         }

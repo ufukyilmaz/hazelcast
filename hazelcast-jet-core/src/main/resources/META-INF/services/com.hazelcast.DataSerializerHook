@@ -20,7 +20,4 @@ com.hazelcast.jet.impl.execution.init.JetInitDataSerializerHook
 com.hazelcast.jet.impl.metrics.JetMetricsDataSerializerHook
 com.hazelcast.jet.impl.observer.JetObserverDataSerializerHook
 com.hazelcast.jet.impl.aggregate.AggregateDataSerializerHook
-com.hazelcast.jet.impl.processor.JetProcessorDataSerializerHook
 com.hazelcast.jet.config.JetConfigDataSerializerHook
-com.hazelcast.jet.pipeline.JetPipelineDataSerializerHook
-com.hazelcast.jet.datamodel.JetDatamodelDataSerializerHook

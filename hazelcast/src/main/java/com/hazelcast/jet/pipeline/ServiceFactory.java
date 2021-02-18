@@ -19,18 +19,15 @@ package com.hazelcast.jet.pipeline;
 import com.hazelcast.function.BiFunctionEx;
 import com.hazelcast.function.ConsumerEx;
 import com.hazelcast.function.FunctionEx;
-import com.hazelcast.internal.serialization.impl.SerializationUtil;
+import com.hazelcast.internal.serialization.SerializableByConvention;
 import com.hazelcast.jet.JetException;
 import com.hazelcast.jet.core.Processor;
 import com.hazelcast.jet.core.ProcessorSupplier;
 import com.hazelcast.jet.core.ProcessorSupplier.Context;
-import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 
 import javax.annotation.Nonnull;
 import java.io.File;
-import java.io.IOException;
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -89,7 +86,8 @@ import static java.util.Collections.emptyMap;
  *
  * @since 4.0
  */
-public final class ServiceFactory<C, S> implements IdentifiedDataSerializable, Cloneable {
+@SerializableByConvention
+public final class ServiceFactory<C, S> implements Serializable, Cloneable {
 
     /**
      * Default value for {@link #isCooperative}.
@@ -99,7 +97,7 @@ public final class ServiceFactory<C, S> implements IdentifiedDataSerializable, C
     private boolean isCooperative = COOPERATIVE_DEFAULT;
 
     @Nonnull
-    private FunctionEx<? super Context, ? extends C> createContextFn;
+    private final FunctionEx<? super Context, ? extends C> createContextFn;
 
     @Nonnull
     private BiFunctionEx<? super Processor.Context, ? super C, ? extends S> createServiceFn = (ctx, svcContext) -> {
@@ -114,9 +112,6 @@ public final class ServiceFactory<C, S> implements IdentifiedDataSerializable, C
 
     @Nonnull
     private Map<String, File> attachedFiles = emptyMap();
-
-    ServiceFactory() {
-    }
 
     private ServiceFactory(@Nonnull FunctionEx<? super ProcessorSupplier.Context, ? extends C> createContextFn) {
         this.createContextFn = createContextFn;
@@ -384,35 +379,5 @@ public final class ServiceFactory<C, S> implements IdentifiedDataSerializable, C
         } catch (CloneNotSupportedException e) {
             throw new JetException(getClass() + " is not cloneable", e);
         }
-    }
-
-    @Override
-    public int getFactoryId() {
-        return JetPipelineDataSerializerHook.FACTORY_ID;
-    }
-
-    @Override
-    public int getClassId() {
-        return JetPipelineDataSerializerHook.SERVICE_FACTORY;
-    }
-
-    @Override
-    public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeBoolean(isCooperative);
-        out.writeObject(createContextFn);
-        out.writeObject(createServiceFn);
-        out.writeObject(destroyServiceFn);
-        out.writeObject(destroyContextFn);
-        SerializationUtil.writeMap(attachedFiles, out);
-    }
-
-    @Override
-    public void readData(ObjectDataInput in) throws IOException {
-        isCooperative = in.readBoolean();
-        createContextFn = in.readObject();
-        createServiceFn = in.readObject();
-        destroyServiceFn = in.readObject();
-        destroyContextFn = in.readObject();
-        attachedFiles = SerializationUtil.readMap(in);
     }
 }

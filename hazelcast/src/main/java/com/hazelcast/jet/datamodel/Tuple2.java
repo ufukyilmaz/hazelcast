@@ -16,12 +16,7 @@
 
 package com.hazelcast.jet.datamodel;
 
-import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 
@@ -34,13 +29,9 @@ import java.util.Objects;
  *
  * @since 3.0
  */
-public final class Tuple2<E0, E1> implements Map.Entry<E0, E1>, IdentifiedDataSerializable {
-
-    private E0 f0;
-    private E1 f1;
-
-    Tuple2() {
-    }
+public final class Tuple2<E0, E1> implements Map.Entry<E0, E1> {
+    private final E0 f0;
+    private final E1 f1;
 
     /**
      * Constructs a new 2-tuple with the supplied values.
@@ -114,27 +105,5 @@ public final class Tuple2<E0, E1> implements Map.Entry<E0, E1>, IdentifiedDataSe
     @Override
     public String toString() {
         return "(" + f0 + ", " + f1 + ')';
-    }
-
-    @Override
-    public int getFactoryId() {
-        return JetDatamodelDataSerializerHook.FACTORY_ID;
-    }
-
-    @Override
-    public int getClassId() {
-        return JetDatamodelDataSerializerHook.TUPLE2;
-    }
-
-    @Override
-    public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeObject(f0);
-        out.writeObject(f1);
-    }
-
-    @Override
-    public void readData(ObjectDataInput in) throws IOException {
-        f0 = in.readObject();
-        f1 = in.readObject();
     }
 }

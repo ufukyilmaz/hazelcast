@@ -16,11 +16,6 @@
 
 package com.hazelcast.jet.datamodel;
 
-import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-
-import java.io.IOException;
 import java.util.Objects;
 
 /**
@@ -29,13 +24,9 @@ import java.util.Objects;
  *
  * @param <T>
  */
-public class TimestampedItem<T> implements IdentifiedDataSerializable {
-
+public class TimestampedItem<T> {
     private long timestamp;
     private T item;
-
-    TimestampedItem() {
-    }
 
     /**
      * Creates a new timestamped item.
@@ -104,27 +95,5 @@ public class TimestampedItem<T> implements IdentifiedDataSerializable {
     @Override
     public String toString() {
         return "TimestampedItem{ts=" + timestamp + ", item=" + item + '}';
-    }
-
-    @Override
-    public int getFactoryId() {
-        return JetDatamodelDataSerializerHook.FACTORY_ID;
-    }
-
-    @Override
-    public int getClassId() {
-        return JetDatamodelDataSerializerHook.TIMESTAMPED_ITEM;
-    }
-
-    @Override
-    public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeLong(timestamp);
-        out.writeObject(item);
-    }
-
-    @Override
-    public void readData(ObjectDataInput in) throws IOException {
-        timestamp = in.readLong();
-        item = in.readObject();
     }
 }

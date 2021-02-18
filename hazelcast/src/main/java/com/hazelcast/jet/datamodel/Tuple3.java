@@ -16,12 +16,7 @@
 
 package com.hazelcast.jet.datamodel;
 
-import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.util.Objects;
 
 /**
@@ -33,14 +28,10 @@ import java.util.Objects;
  *
  * @since 3.0
  */
-public final class Tuple3<E0, E1, E2> implements IdentifiedDataSerializable {
-
-    private E0 f0;
-    private E1 f1;
-    private E2 f2;
-
-    Tuple3() {
-    }
+public final class Tuple3<E0, E1, E2> {
+    private final E0 f0;
+    private final E1 f1;
+    private final E2 f2;
 
     /**
      * Constructs a new 3-tuple with the supplied values.
@@ -111,29 +102,5 @@ public final class Tuple3<E0, E1, E2> implements IdentifiedDataSerializable {
     @Override
     public String toString() {
         return "(" + f0 + ", " + f1 + ", " + f2 + ')';
-    }
-
-    @Override
-    public int getFactoryId() {
-        return JetDatamodelDataSerializerHook.FACTORY_ID;
-    }
-
-    @Override
-    public int getClassId() {
-        return JetDatamodelDataSerializerHook.TUPLE3;
-    }
-
-    @Override
-    public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeObject(f0);
-        out.writeObject(f1);
-        out.writeObject(f2);
-    }
-
-    @Override
-    public void readData(ObjectDataInput in) throws IOException {
-        f0 = in.readObject();
-        f1 = in.readObject();
-        f2 = in.readObject();
     }
 }

@@ -16,11 +16,7 @@
 
 package com.hazelcast.jet.datamodel;
 
-import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.ObjectDataOutput;
-
 import javax.annotation.Nonnull;
-import java.io.IOException;
 import java.util.Map.Entry;
 import java.util.Objects;
 
@@ -36,11 +32,7 @@ import static com.hazelcast.jet.impl.util.DateUtil.toLocalTime;
  * @since 3.0
  */
 public final class KeyedWindowResult<K, R> extends WindowResult<R> implements Entry<K, R> {
-
-    private K key;
-
-    KeyedWindowResult() {
-    }
+    private final K key;
 
     /**
      * @param start   start time of the window
@@ -126,22 +118,5 @@ public final class KeyedWindowResult<K, R> extends WindowResult<R> implements En
         return String.format(
                 "KeyedWindowResult{start=%s, end=%s, key='%s', value='%s', isEarly=%s}",
                 toLocalTime(start()), toLocalTime(end()), key, result(), isEarly());
-    }
-
-    @Override
-    public int getClassId() {
-        return JetDatamodelDataSerializerHook.KEYED_WINDOW_RESULT;
-    }
-
-    @Override
-    public void writeData(ObjectDataOutput out) throws IOException {
-        super.writeData(out);
-        out.writeObject(key);
-    }
-
-    @Override
-    public void readData(ObjectDataInput in) throws IOException {
-        super.readData(in);
-        key = in.readObject();
     }
 }

@@ -23,21 +23,20 @@ import com.hazelcast.jet.core.ProcessorSupplier;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
-import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Function;
 
-public class MetaSupplierFromProcessorSupplier implements ProcessorMetaSupplier, IdentifiedDataSerializable {
-
+@SerializableByConvention
+public class MetaSupplierFromProcessorSupplier implements ProcessorMetaSupplier, DataSerializable {
     private int preferredLocalParallelism;
     private ProcessorSupplier processorSupplier;
 
     // for deserialization
     @SuppressWarnings("unused")
-    MetaSupplierFromProcessorSupplier() {
+    public MetaSupplierFromProcessorSupplier() {
     }
 
     public MetaSupplierFromProcessorSupplier(int preferredLocalParallelism, ProcessorSupplier processorSupplier) {
@@ -65,15 +64,5 @@ public class MetaSupplierFromProcessorSupplier implements ProcessorMetaSupplier,
     public void readData(ObjectDataInput in) throws IOException {
         preferredLocalParallelism = in.readInt();
         processorSupplier = in.readObject();
-    }
-
-    @Override
-    public int getFactoryId() {
-        return JetProcessorDataSerializerHook.FACTORY_ID;
-    }
-
-    @Override
-    public int getClassId() {
-        return JetProcessorDataSerializerHook.META_SUPPLIER_FROM_PROCESSOR_SUPPLIER;
     }
 }

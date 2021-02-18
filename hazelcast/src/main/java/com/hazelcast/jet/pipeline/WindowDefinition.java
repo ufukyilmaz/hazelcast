@@ -16,12 +16,8 @@
 
 package com.hazelcast.jet.pipeline;
 
-import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-
 import javax.annotation.Nonnull;
-import java.io.IOException;
+import java.io.Serializable;
 
 /**
  * The definition of the window for a windowed aggregation operation. To obtain
@@ -29,7 +25,7 @@ import java.io.IOException;
  *
  * @since 3.0
  */
-public abstract class WindowDefinition implements IdentifiedDataSerializable {
+public abstract class WindowDefinition implements Serializable {
 
     private long earlyResultPeriodMs;
 
@@ -146,20 +142,5 @@ public abstract class WindowDefinition implements IdentifiedDataSerializable {
     @Nonnull
     public static SessionWindowDefinition session(long sessionTimeout) {
         return new SessionWindowDefinition(sessionTimeout);
-    }
-
-    @Override
-    public int getFactoryId() {
-        return JetPipelineDataSerializerHook.FACTORY_ID;
-    }
-
-    @Override
-    public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeLong(earlyResultPeriodMs);
-    }
-
-    @Override
-    public void readData(ObjectDataInput in) throws IOException {
-        earlyResultPeriodMs = in.readLong();
     }
 }

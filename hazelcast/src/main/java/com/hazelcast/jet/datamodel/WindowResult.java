@@ -16,12 +16,7 @@
 
 package com.hazelcast.jet.datamodel;
 
-import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-
 import javax.annotation.Nonnull;
-import java.io.IOException;
 import java.util.Objects;
 
 import static com.hazelcast.jet.impl.util.DateUtil.toLocalTime;
@@ -34,15 +29,11 @@ import static com.hazelcast.jet.impl.util.DateUtil.toLocalTime;
  *
  * @since 3.0
  */
-public class WindowResult<R> implements IdentifiedDataSerializable {
-
-    private long start;
-    private long end;
-    private R result;
-    private boolean isEarly;
-
-    WindowResult() {
-    }
+public class WindowResult<R> {
+    private final long start;
+    private final long end;
+    private final R result;
+    private final boolean isEarly;
 
     /**
      * @param start  start time of the window
@@ -128,31 +119,5 @@ public class WindowResult<R> implements IdentifiedDataSerializable {
         return String.format(
                 "WindowResult{start=%s, end=%s, value='%s', isEarly=%s}",
                 toLocalTime(start), toLocalTime(end), result, isEarly);
-    }
-
-    @Override
-    public int getFactoryId() {
-        return JetDatamodelDataSerializerHook.FACTORY_ID;
-    }
-
-    @Override
-    public int getClassId() {
-        return JetDatamodelDataSerializerHook.WINDOW_RESULT;
-    }
-
-    @Override
-    public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeLong(start);
-        out.writeLong(end);
-        out.writeBoolean(isEarly);
-        out.writeObject(result);
-    }
-
-    @Override
-    public void readData(ObjectDataInput in) throws IOException {
-        start = in.readLong();
-        end = in.readLong();
-        isEarly = in.readBoolean();
-        result = in.readObject();
     }
 }

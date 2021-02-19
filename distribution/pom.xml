@@ -106,6 +106,13 @@
             <version>${log4j2.version}</version>
         </dependency>
 
+        <!-- Prometheus to expose JMX metrics as HTTP endpoint -->
+        <dependency>
+            <groupId>io.prometheus.jmx</groupId>
+            <artifactId>jmx_prometheus_javaagent</artifactId>
+            <version>${prometheus.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>com.hazelcast</groupId>
             <artifactId>hazelcast-aws</artifactId>

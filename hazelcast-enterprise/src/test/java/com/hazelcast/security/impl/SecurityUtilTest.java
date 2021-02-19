@@ -12,6 +12,7 @@ import com.hazelcast.security.permission.DurableExecutorServicePermission;
 import com.hazelcast.security.permission.ExecutorServicePermission;
 import com.hazelcast.security.permission.ListPermission;
 import com.hazelcast.security.permission.LockPermission;
+import com.hazelcast.security.permission.ManagementPermission;
 import com.hazelcast.security.permission.MapPermission;
 import com.hazelcast.security.permission.MultiMapPermission;
 import com.hazelcast.security.permission.PNCounterPermission;
@@ -27,10 +28,8 @@ import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertFalse;
@@ -39,9 +38,6 @@ import static org.junit.Assert.assertTrue;
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class SecurityUtilTest extends HazelcastTestSupport {
-
-    @Rule
-    public ExpectedException expected = ExpectedException.none();
 
     private PermissionConfig permissionConfig = new PermissionConfig(PermissionType.ALL, "myPermission", "myPrincipal");
 
@@ -72,6 +68,7 @@ public class SecurityUtilTest extends HazelcastTestSupport {
         testCreatePermission(PermissionType.CACHE, CachePermission.class);
         testCreatePermission(PermissionType.RING_BUFFER, RingBufferPermission.class);
         testCreatePermission(PermissionType.REPLICATEDMAP, ReplicatedMapPermission.class);
+        testCreatePermission(PermissionType.MANAGEMENT, ManagementPermission.class);
     }
 
     @Test
@@ -104,9 +101,7 @@ public class SecurityUtilTest extends HazelcastTestSupport {
     public void testSetSecureCall_whenSetTwice_thenThrowException() {
         try {
             SecurityUtil.setSecureCall();
-
-            expected.expect(SecurityException.class);
-            SecurityUtil.setSecureCall();
+            assertThrows(SecurityException.class, () -> SecurityUtil.setSecureCall());
         } finally {
             SecurityUtil.resetSecureCall();
         }
@@ -114,8 +109,7 @@ public class SecurityUtilTest extends HazelcastTestSupport {
 
     @Test
     public void testResetSecureCall_whenNotSet_thenThrowException() {
-        expected.expect(SecurityException.class);
-        SecurityUtil.resetSecureCall();
+        assertThrows(SecurityException.class, () -> SecurityUtil.resetSecureCall());
     }
 
     @Test

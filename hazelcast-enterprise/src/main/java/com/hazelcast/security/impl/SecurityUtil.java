@@ -24,6 +24,7 @@ import com.hazelcast.security.permission.ExecutorServicePermission;
 import com.hazelcast.security.permission.FlakeIdGeneratorPermission;
 import com.hazelcast.security.permission.ListPermission;
 import com.hazelcast.security.permission.LockPermission;
+import com.hazelcast.security.permission.ManagementPermission;
 import com.hazelcast.security.permission.MapPermission;
 import com.hazelcast.security.permission.MultiMapPermission;
 import com.hazelcast.security.permission.PNCounterPermission;
@@ -124,6 +125,8 @@ public final class SecurityUtil {
                 return new ReliableTopicPermission(permissionConfig.getName(), actions);
             case REPLICATEDMAP:
                 return new ReplicatedMapPermission(permissionConfig.getName(), actions);
+            case MANAGEMENT:
+                return new ManagementPermission(permissionConfig.getName());
             default:
                 throw new IllegalArgumentException(permissionConfig.getType().toString());
         }

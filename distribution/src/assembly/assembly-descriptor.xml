@@ -60,14 +60,6 @@
             <outputDirectory>lib</outputDirectory>
             <outputFileNameMapping>${artifact.artifactId}-${artifact.baseVersion}.${artifact.extension}</outputFileNameMapping>
         </dependencySet>
-        <dependencySet>
-            <useProjectArtifact>false</useProjectArtifact>
-            <includes>
-                <include>com.hazelcast.jet.examples:hazelcast-jet-examples-hello-world</include>
-            </includes>
-            <outputDirectory>examples</outputDirectory>
-            <outputFileNameMapping>hello-world.${artifact.extension}</outputFileNameMapping>
-        </dependencySet>
     </dependencySets>
 <!--
     <files>

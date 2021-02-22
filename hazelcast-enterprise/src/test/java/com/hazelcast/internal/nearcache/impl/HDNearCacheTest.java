@@ -156,7 +156,7 @@ public class HDNearCacheTest extends NearCacheTestSupport {
 
         try {
             NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
-            NearCache<Integer, byte[]> nearCache
+            NearCache<Data, byte[]> nearCache
                     = createHDNearCache(ess, executionService.getGlobalTaskScheduler(),
                     null, nearCacheConfig, properties);
             String valueSize = formatMegaBytes(2 * memorySize.bytes());
@@ -170,7 +170,8 @@ public class HDNearCacheTest extends NearCacheTestSupport {
             Data valueData = new HeapData(value);
             logger.info("Serialized size: " + formatMegaBytes(valueData.totalSize())
                     + " free memory after: " + getFreeMemoryStr());
-            nearCache.put(1, ess.toData(1), value, valueData);
+            Data keyData = ess.toData(1);
+            nearCache.put(keyData, keyData, value, valueData);
         } finally {
             logger.info("Free memory in finally: " + getFreeMemoryStr());
             mm.dispose();

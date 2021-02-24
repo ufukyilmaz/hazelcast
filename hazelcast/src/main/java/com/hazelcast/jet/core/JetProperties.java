@@ -20,7 +20,6 @@ import com.hazelcast.spi.properties.HazelcastProperty;
 
 import java.util.concurrent.locks.LockSupport;
 
-import static com.hazelcast.spi.properties.ClusterProperty.SHUTDOWNHOOK_ENABLED;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

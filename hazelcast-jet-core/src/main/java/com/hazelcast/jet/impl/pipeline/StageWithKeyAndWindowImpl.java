@@ -127,7 +127,8 @@ public class StageWithKeyAndWindowImpl<T, K>
 
     @Nonnull
     @Override
-    public <R0> WindowGroupAggregateBuilder<K, R0> aggregateBuilder(@Nonnull AggregateOperation1<? super T, ?, ? extends R0> aggrOp0) {
+    public <R0> WindowGroupAggregateBuilder<K, R0> aggregateBuilder(
+            @Nonnull AggregateOperation1<? super T, ?, ? extends R0> aggrOp0) {
         return new WindowGroupAggregateBuilderImpl<>(this, aggrOp0);
     }
 

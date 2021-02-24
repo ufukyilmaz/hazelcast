@@ -193,7 +193,8 @@ public class BatchStageWithKeyImpl<T, K> extends StageWithGroupingBase<T, K> imp
 
     @Nonnull
     @Override
-    public <R0> GroupAggregateBuilder<K, R0> aggregateBuilder(@Nonnull AggregateOperation1<? super T, ?, ? extends R0> aggrOp0) {
+    public <R0> GroupAggregateBuilder<K, R0> aggregateBuilder(
+            @Nonnull AggregateOperation1<? super T, ?, ? extends R0> aggrOp0) {
         return new GroupAggregateBuilderImpl<>(this, aggrOp0);
     }
 

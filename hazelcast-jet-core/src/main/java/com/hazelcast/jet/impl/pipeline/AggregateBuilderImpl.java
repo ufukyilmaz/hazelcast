@@ -23,9 +23,7 @@ import com.hazelcast.jet.aggregate.CoAggregateOperationBuilder;
 import com.hazelcast.jet.core.Processor;
 import com.hazelcast.jet.datamodel.ItemsByTag;
 import com.hazelcast.jet.datamodel.Tag;
-import com.hazelcast.jet.impl.pipeline.AggBuilder;
 import com.hazelcast.jet.impl.pipeline.AggBuilder.CreateOutStageFn;
-import com.hazelcast.jet.impl.pipeline.BatchStageImpl;
 import com.hazelcast.jet.pipeline.AggregateBuilder;
 import com.hazelcast.jet.pipeline.BatchStage;
 
@@ -52,7 +50,10 @@ public class AggregateBuilderImpl<R0> implements AggregateBuilder<R0> {
     private final AggBuilder aggBuilder;
     private final CoAggregateOperationBuilder aggrOpBuilder = coAggregateOperationBuilder();
 
-    <T0> AggregateBuilderImpl(@Nonnull BatchStage<T0> s, @Nonnull AggregateOperation1<? super T0, ?, ? extends R0> aggrOp) {
+    <T0> AggregateBuilderImpl(
+            @Nonnull BatchStage<T0> s,
+            @Nonnull AggregateOperation1<? super T0, ?, ? extends R0> aggrOp
+    ) {
         aggBuilder = new AggBuilder(s, null);
         aggrOpBuilder.add(Tag.tag0(), aggrOp);
     }

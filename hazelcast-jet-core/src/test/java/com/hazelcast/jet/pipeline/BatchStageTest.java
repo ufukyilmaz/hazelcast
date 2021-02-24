@@ -34,7 +34,6 @@ import com.hazelcast.jet.datamodel.Tuple2;
 import com.hazelcast.jet.datamodel.Tuple3;
 import com.hazelcast.jet.function.QuadFunction;
 import com.hazelcast.jet.function.TriFunction;
-import com.hazelcast.jet.impl.pipeline.HashJoinBuilderImpl;
 import com.hazelcast.jet.pipeline.test.TestSources;
 import com.hazelcast.map.IMap;
 import com.hazelcast.replicatedmap.ReplicatedMap;
@@ -85,18 +84,18 @@ public class BatchStageTest extends PipelineTestSupport {
 
     @Test(expected = IllegalArgumentException.class)
     public void when_emptyPipelineToDag_then_exceptionInIterator() {
-        ((DAG)Pipeline.create().toDag()).iterator();
+        ((DAG) Pipeline.create().toDag()).iterator();
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void when_missingSink_then_exceptionInDagIterator() {
-        ((DAG)p.toDag()).iterator();
+        ((DAG) p.toDag()).iterator();
     }
 
     @Test
     public void when_minimalPipeline_then_validDag() {
         batchStageFromList(emptyList()).writeTo(sink);
-        assertTrue(((DAG)p.toDag()).iterator().hasNext());
+        assertTrue(((DAG) p.toDag()).iterator().hasNext());
     }
 
     @Test
@@ -1323,7 +1322,7 @@ public class BatchStageTest extends PipelineTestSupport {
                 ProcessorMetaSupplier.of(lp, ProcessorSupplier.of(noopP()))))
                 .addTimestamps(o -> 0L, 0)
                 .writeTo(Sinks.noop());
-        DAG dag = (DAG)p.toDag();
+        DAG dag = (DAG) p.toDag();
 
         // Then
         Vertex tsVertex = dag.getVertex("add-timestamps");
@@ -1340,7 +1339,7 @@ public class BatchStageTest extends PipelineTestSupport {
                 .setLocalParallelism(lp)
                 .addTimestamps(t -> System.currentTimeMillis(), 1000)
                 .writeTo(Sinks.noop());
-        DAG dag = (DAG)p.toDag();
+        DAG dag = (DAG) p.toDag();
 
         // Then
         Vertex tsVertex = dag.getVertex("add-timestamps");
@@ -1357,7 +1356,7 @@ public class BatchStageTest extends PipelineTestSupport {
         p.readFrom(src)
                 .addTimestamps(o -> 0L, 0)
                 .writeTo(Sinks.noop());
-        DAG dag = (DAG)p.toDag();
+        DAG dag = (DAG) p.toDag();
 
         // Then
         Vertex tsVertex = dag.getVertex("add-timestamps");

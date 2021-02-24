@@ -19,7 +19,6 @@ package com.hazelcast.jet.elastic;
 import com.hazelcast.config.Config;
 import com.hazelcast.jet.JetInstance;
 import com.hazelcast.jet.JetTestInstanceFactory;
-import com.hazelcast.jet.config.JetConfig;
 import com.hazelcast.jet.impl.util.Util;
 import com.hazelcast.jet.test.IgnoredForCoverage;
 import org.junit.AfterClass;

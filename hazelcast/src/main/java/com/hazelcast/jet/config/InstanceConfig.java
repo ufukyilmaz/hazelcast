@@ -179,25 +179,25 @@ public class InstanceConfig {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o){
+        if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()){
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         InstanceConfig that = (InstanceConfig) o;
 
-        if (cooperativeThreadCount != that.cooperativeThreadCount){
+        if (cooperativeThreadCount != that.cooperativeThreadCount) {
             return false;
         }
-        if (flowControlPeriodMs != that.flowControlPeriodMs){
+        if (flowControlPeriodMs != that.flowControlPeriodMs) {
             return false;
         }
-        if (backupCount != that.backupCount){
+        if (backupCount != that.backupCount) {
             return false;
         }
-        if (scaleUpDelayMillis != that.scaleUpDelayMillis){
+        if (scaleUpDelayMillis != that.scaleUpDelayMillis) {
             return false;
         }
         return losslessRestartEnabled == that.losslessRestartEnabled;

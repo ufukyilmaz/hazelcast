@@ -19,8 +19,6 @@ package com.hazelcast.jet.impl;
 import com.hazelcast.jet.JetInstance;
 import com.hazelcast.jet.Job;
 import com.hazelcast.jet.JobStateSnapshot;
-import com.hazelcast.jet.impl.JobRepository;
-import com.hazelcast.jet.impl.SnapshotValidationRecord;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

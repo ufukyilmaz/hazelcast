@@ -33,7 +33,6 @@ import com.hazelcast.jet.datamodel.Tuple2;
 import com.hazelcast.jet.datamodel.Tuple3;
 import com.hazelcast.jet.function.TriFunction;
 import com.hazelcast.jet.impl.JetEvent;
-import com.hazelcast.jet.impl.pipeline.StreamHashJoinBuilderImpl;
 import com.hazelcast.jet.pipeline.test.SimpleEvent;
 import com.hazelcast.jet.pipeline.test.TestSources;
 import com.hazelcast.map.IMap;
@@ -312,7 +311,7 @@ public class StreamStageTest extends PipelineStreamTestSupport {
 
     private void assertVertexCount(DAGInterface dag, int expectedCount) {
         int[] count = {0};
-        ((DAG)dag).iterator().forEachRemaining(v -> count[0]++);
+        ((DAG) dag).iterator().forEachRemaining(v -> count[0]++);
         assertEquals("unexpected vertex count in DAG:\n" + dag.toDotString(), expectedCount, count[0]);
     }
 

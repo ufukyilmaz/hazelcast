@@ -16,7 +16,7 @@ import java.io.IOException;
 /**
  * WAN replication object for map update operations.
  */
-public class WanEnterpriseMapAddOrUpdateEvent extends WanEnterpriseMapEvent<EntryView<Object, Object>> {
+public class WanEnterpriseMapAddOrUpdateEvent extends FinalizableWanEnterpriseMapEvent<EntryView<Object, Object>> {
     /**
      * The policy how to merge the entry on the receiving cluster
      */

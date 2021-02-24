@@ -2,6 +2,7 @@ package com.hazelcast.wan.custom;
 
 import com.hazelcast.config.AbstractWanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
+import com.hazelcast.enterprise.wan.impl.FinalizableEnterpriseWanEvent;
 import com.hazelcast.enterprise.wan.impl.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
 import com.hazelcast.enterprise.wan.impl.replication.AbstractWanPublisher;
@@ -52,18 +53,16 @@ public class CustomWanPublisher extends AbstractWanPublisher implements Runnable
         while (running) {
             try {
                 int batchSize = configurationContext.getBatchSize();
-                ArrayList<InternalWanEvent> batchList = new ArrayList<>(batchSize);
-
                 for (IPartition partition : node.getPartitionService().getPartitions()) {
                     if (partition.isLocal()) {
-                        batchList.clear();
-                        eventQueueContainer.drainRandomWanQueue(partition.getPartitionId(), batchList, batchSize);
-                        for (InternalWanEvent event : batchList) {
+                        ArrayList<FinalizableEnterpriseWanEvent> entries = new ArrayList<>(batchSize);
+                        eventQueueContainer.drainRandomWanQueue(partition.getPartitionId(), entries, batchSize);
+                        for (FinalizableEnterpriseWanEvent event : entries) {
                             if (event != null) {
                                 EVENT_QUEUE.put(event);
                             }
                         }
-                        finalizeWanEventReplication(batchList);
+                        finalizeWanEventReplication(new ArrayList<>(entries));
                     }
                 }
                 TimeUnit.MILLISECONDS.sleep(100);

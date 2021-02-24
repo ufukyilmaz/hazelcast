@@ -1,4 +1,4 @@
-package com.hazelcast.enterprise.wan.impl.replication;
+package com.hazelcast.enterprise.wan.impl;
 
 import com.hazelcast.internal.serialization.Data;
 
@@ -9,12 +9,12 @@ import static com.hazelcast.internal.util.Preconditions.checkNotNull;
  * map or cache). This can be used as a composite key to identify a single
  * entry in the cluster.
  */
-class DistributedObjectEntryIdentifier {
+public class DistributedObjectEntryIdentifier {
     private final String serviceName;
     private final String objectName;
     private final Data key;
 
-    DistributedObjectEntryIdentifier(String serviceName, String objectName, Data key) {
+    public DistributedObjectEntryIdentifier(String serviceName, String objectName, Data key) {
         this.serviceName = checkNotNull(serviceName, "Service name must not be null");
         this.objectName = checkNotNull(objectName, "Object name must not be null");
         this.key = checkNotNull(key, "Entry key must not be null");

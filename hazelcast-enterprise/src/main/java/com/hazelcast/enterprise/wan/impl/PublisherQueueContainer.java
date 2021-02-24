@@ -55,7 +55,7 @@ public class PublisherQueueContainer {
      */
     public boolean publishCacheWanEvent(String nameWithPrefix,
                                         int partitionId,
-                                        InternalWanEvent replicationEvent) {
+                                        FinalizableEnterpriseWanEvent replicationEvent) {
         return getEventQueue(partitionId)
                 .publishCacheWanEvent(nameWithPrefix, replicationEvent);
     }
@@ -85,7 +85,7 @@ public class PublisherQueueContainer {
      */
     public boolean publishMapWanEvent(String mapName,
                                       int partitionId,
-                                      InternalWanEvent replicationEvent) {
+                                      FinalizableEnterpriseWanEvent replicationEvent) {
         return getEventQueue(partitionId)
                 .publishMapWanEvent(mapName, replicationEvent);
     }
@@ -99,7 +99,7 @@ public class PublisherQueueContainer {
      * @param elementsToDrain the maximum number of events to drain
      */
     public void drainRandomWanQueue(int partitionId,
-                                    Collection<InternalWanEvent> drainTo,
+                                    Collection<FinalizableEnterpriseWanEvent> drainTo,
                                     int elementsToDrain) {
         getEventQueue(partitionId)
                 .drainRandomWanQueue(drainTo, elementsToDrain);

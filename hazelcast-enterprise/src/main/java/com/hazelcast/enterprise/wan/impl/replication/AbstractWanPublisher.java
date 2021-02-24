@@ -5,32 +5,33 @@ import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cache.impl.wan.WanEnterpriseCacheEvent;
 import com.hazelcast.config.AbstractWanPublisherConfig;
 import com.hazelcast.config.WanBatchPublisherConfig;
-import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanQueueFullBehavior;
+import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.enterprise.wan.impl.DistributedObjectIdentifier;
 import com.hazelcast.enterprise.wan.impl.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.impl.FinalizableEnterpriseWanEvent;
 import com.hazelcast.enterprise.wan.impl.PartitionWanEventQueueMap;
 import com.hazelcast.enterprise.wan.impl.WanEventMigrationContainer;
 import com.hazelcast.enterprise.wan.impl.WanEventQueue;
-import com.hazelcast.enterprise.wan.impl.operation.WanPutOperation;
 import com.hazelcast.enterprise.wan.impl.operation.RemoveWanEventBackupsOperation;
+import com.hazelcast.enterprise.wan.impl.operation.WanPutOperation;
 import com.hazelcast.instance.impl.HazelcastInstanceImpl;
 import com.hazelcast.instance.impl.Node;
+import com.hazelcast.internal.monitor.LocalWanPublisherStats;
+import com.hazelcast.internal.monitor.impl.LocalWanPublisherStatsImpl;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.PartitionMigrationEvent;
 import com.hazelcast.internal.partition.PartitionReplicationEvent;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.services.ServiceNamespace;
 import com.hazelcast.internal.util.Clock;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapService;
-import com.hazelcast.map.impl.wan.WanEnterpriseMapMerkleTreeNode;
 import com.hazelcast.map.impl.wan.WanEnterpriseMapEvent;
+import com.hazelcast.map.impl.wan.WanEnterpriseMapMerkleTreeNode;
 import com.hazelcast.map.impl.wan.WanEnterpriseMapSyncEvent;
-import com.hazelcast.internal.monitor.LocalWanPublisherStats;
-import com.hazelcast.internal.monitor.impl.LocalWanPublisherStatsImpl;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.spi.impl.InternalCompletableFuture;
 import com.hazelcast.spi.impl.operationservice.Operation;
 import com.hazelcast.wan.WanEvent;
@@ -133,7 +134,7 @@ public abstract class AbstractWanPublisher implements
      */
     @Override
     public void publishReplicationEvent(WanEvent eventObject) {
-        publishReplicationEventInternal((InternalWanEvent) eventObject, false);
+        publishReplicationEventInternal((FinalizableEnterpriseWanEvent) eventObject, false);
     }
 
     /**
@@ -144,7 +145,7 @@ public abstract class AbstractWanPublisher implements
      */
     @Override
     public void publishReplicationEventBackup(WanEvent eventObject) {
-        publishReplicationEventInternal((InternalWanEvent) eventObject, true);
+        publishReplicationEventInternal((FinalizableEnterpriseWanEvent) eventObject, true);
     }
 
     /**
@@ -156,7 +157,7 @@ public abstract class AbstractWanPublisher implements
      * @param eventObject the replication backup event
      * @param backupEvent if this is an event of a backup entry
      */
-    private void publishReplicationEventInternal(InternalWanEvent eventObject,
+    private void publishReplicationEventInternal(FinalizableEnterpriseWanEvent eventObject,
                                                  boolean backupEvent) {
         if (!state.isEnqueueNewEvents()) {
             return;
@@ -165,7 +166,7 @@ public abstract class AbstractWanPublisher implements
         if (isEventDroppingNeeded(backupEvent)) {
             if (!backupEvent) {
                 wanService.getSentEventCounters(wanReplicationName, wanPublisherId, eventObject.getServiceName())
-                          .incrementDropped(eventObject.getObjectName());
+                        .incrementDropped(eventObject.getObjectName());
             }
             return;
         }
@@ -190,7 +191,7 @@ public abstract class AbstractWanPublisher implements
      * @param eventObject the WAN event
      * @return {@code true} if the event has been published, otherwise returns {@code false}
      */
-    private boolean publishEventInternal(InternalWanEvent eventObject) {
+    private boolean publishEventInternal(FinalizableEnterpriseWanEvent eventObject) {
         assert !(eventObject instanceof WanEnterpriseMapMerkleTreeNode)
                 : "Merkle tree sync objects should not be published";
         assert !(eventObject instanceof WanEnterpriseMapSyncEvent)
@@ -266,6 +267,16 @@ public abstract class AbstractWanPublisher implements
             return;
         }
 
+        for (Collection<InternalWanEvent> entryCollection : eventCollections) {
+            for (InternalWanEvent event : entryCollection) {
+                if (event instanceof FinalizableEnterpriseWanEvent) {
+                    ((FinalizableEnterpriseWanEvent) event).doFinalize();
+                }
+            }
+
+        }
+
+
         List<InternalCompletableFuture> futures = invokeBackupRemovalOperations(eventCounts);
         try {
             for (InternalCompletableFuture future : futures) {
@@ -318,8 +329,8 @@ public abstract class AbstractWanPublisher implements
         Map<Integer, Map<DistributedObjectIdentifier, Integer>> eventCounts
                 = new HashMap<>();
 
-        for (Collection<InternalWanEvent> events : eventCollections) {
-            for (InternalWanEvent event : events) {
+        for (Collection<InternalWanEvent> eventsCollection : eventCollections) {
+            for (InternalWanEvent event : eventsCollection) {
                 if (event instanceof WanEnterpriseMapSyncEvent
                         || event instanceof WanEnterpriseMapMerkleTreeNode) {
                     syncSupport.removeReplicationEvent((WanEnterpriseMapEvent) event);

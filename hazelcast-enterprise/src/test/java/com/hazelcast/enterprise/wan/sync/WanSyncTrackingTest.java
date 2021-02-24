@@ -85,7 +85,7 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
 
     private Cluster sourceCluster;
     private Cluster targetCluster;
-    private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
+    private final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
     private WanReplication wanReplication;
 
     @Parameter(0)
@@ -671,7 +671,7 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
         private final String[] mapNames;
         private final int totalPartitions = getNode(sourceCluster.getAMember()).getPartitionService().getPartitionCount();
         private final int nonEmptyPartitions;
-        private Map<SyncKey, WanSyncStats> syncStatsMap = new HashMap<>();
+        private final Map<SyncKey, WanSyncStats> syncStatsMap = new HashMap<>();
 
         private TestContext(String[] mapNames, int nonEmptyPartitions) {
             this.mapNames = mapNames;
@@ -695,10 +695,10 @@ public class WanSyncTrackingTest extends HazelcastTestSupport {
         @Override
         protected void finalizeWanEventReplication(Collection<InternalWanEvent>... eventCollections) {
             for (Collection<InternalWanEvent> wanEvents : eventCollections) {
-                wanEvents.forEach(e -> {
-                    if (e instanceof WanEnterpriseMapMerkleTreeNode) {
-                        testContext.sentCount.addAndGet(((WanEnterpriseMapMerkleTreeNode) e).getEntryCount());
-                    }  else if (e instanceof WanEnterpriseMapSyncEvent) {
+                wanEvents.forEach(wanEvent -> {
+                    if (wanEvent instanceof WanEnterpriseMapMerkleTreeNode) {
+                        testContext.sentCount.addAndGet(((WanEnterpriseMapMerkleTreeNode) wanEvent).getEntryCount());
+                    } else if (wanEvent instanceof WanEnterpriseMapSyncEvent) {
                         testContext.sentCount.incrementAndGet();
                     }
                 });

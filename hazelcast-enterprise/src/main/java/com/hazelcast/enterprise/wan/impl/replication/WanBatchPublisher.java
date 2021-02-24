@@ -7,6 +7,7 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanSyncConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.enterprise.wan.impl.AbstractWanAntiEntropyEvent;
+import com.hazelcast.enterprise.wan.impl.FinalizableEnterpriseWanEvent;
 import com.hazelcast.enterprise.wan.impl.WanConsistencyCheckEvent;
 import com.hazelcast.enterprise.wan.impl.WanSyncEvent;
 import com.hazelcast.enterprise.wan.impl.sync.WanAntiEntropyEventResult;
@@ -57,7 +58,7 @@ import static java.util.Collections.newSetFromMap;
  * The WAN batch collection mechanism needs to be run by one thread only
  * for a single publisher.
  */
-@SuppressWarnings("checkstyle:classdataabstractioncoupling")
+@SuppressWarnings({"checkstyle:classdataabstractioncoupling", "checkstyle:classfanoutcomplexity"})
 public class WanBatchPublisher extends AbstractWanReplication implements Runnable, LiveOperationsTracker {
     /**
      * JVM argument for changing the implementation of the base implementation
@@ -102,7 +103,7 @@ public class WanBatchPublisher extends AbstractWanReplication implements Runnabl
     private Executor wanExecutor;
     private BlockingQueue<InternalWanEvent> syncEvents;
     private IdleStrategy idlingStrategy;
-    private ArrayList<InternalWanEvent> eventBatchHolder;
+    private ArrayList<FinalizableEnterpriseWanEvent> eventBatchHolder;
 
     private BatchReplicationStrategy replicationStrategy;
 

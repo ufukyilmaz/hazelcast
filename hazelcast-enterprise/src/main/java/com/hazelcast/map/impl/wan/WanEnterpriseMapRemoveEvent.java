@@ -2,11 +2,11 @@ package com.hazelcast.map.impl.wan;
 
 import com.hazelcast.enterprise.wan.impl.operation.WanDataSerializerHook;
 import com.hazelcast.internal.nio.IOUtil;
+import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.SerializationServiceAware;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.internal.serialization.Data;
 import com.hazelcast.wan.WanEventCounters;
 import com.hazelcast.wan.WanEventType;
 
@@ -17,7 +17,7 @@ import java.io.IOException;
 /**
  * WAN replication object for map remove operations.
  */
-public class WanEnterpriseMapRemoveEvent extends WanEnterpriseMapEvent<Object> implements SerializationServiceAware {
+public class WanEnterpriseMapRemoveEvent extends FinalizableWanEnterpriseMapEvent<Object> implements SerializationServiceAware {
     private SerializationService serializationService;
     private Data dataKey;
     private transient Object key;

@@ -34,7 +34,7 @@ public class PartitionWanEventQueueMap extends ConcurrentHashMap<String, WanEven
      * @return {@code true} if the element was added to this queue, else
      * {@code false}
      */
-    public boolean offerEvent(InternalWanEvent wanReplicationEvent,
+    public boolean offerEvent(FinalizableEnterpriseWanEvent wanReplicationEvent,
                               String distributedObjectName,
                               int backupCount) {
         return getOrCreateEventQueue(distributedObjectName, backupCount).offer(wanReplicationEvent);

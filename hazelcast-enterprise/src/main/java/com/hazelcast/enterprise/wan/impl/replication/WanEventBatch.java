@@ -1,6 +1,7 @@
 package com.hazelcast.enterprise.wan.impl.replication;
 
 import com.hazelcast.config.WanBatchPublisherConfig;
+import com.hazelcast.enterprise.wan.impl.DistributedObjectEntryIdentifier;
 import com.hazelcast.enterprise.wan.impl.operation.WanDataSerializerHook;
 import com.hazelcast.map.impl.wan.WanEnterpriseMapMerkleTreeNode;
 import com.hazelcast.map.impl.wan.WanEnterpriseMapSyncEvent;
@@ -131,7 +132,9 @@ public class WanEventBatch implements IdentifiedDataSerializable {
         return coalescedEvents;
     }
 
-    /** Returns the WAN events in this batch */
+    /**
+     * Returns the WAN events in this batch
+     */
     public Collection<InternalWanEvent> getEvents() {
         if (snapshotEnabled) {
             return eventMap == null

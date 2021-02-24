@@ -15,7 +15,8 @@ import java.io.IOException;
 /**
  * WAN replication object for cache update operations.
  */
-public class WanEnterpriseCacheAddOrUpdateEvent extends WanEnterpriseCacheEvent<CacheEntryView<Object, Object>> {
+public class WanEnterpriseCacheAddOrUpdateEvent
+        extends FinalizableWanEnterpriseCacheEvent<CacheEntryView<Object, Object>> {
     private String mergePolicy;
     private WanCacheEntryView<Object, Object> entryView;
 

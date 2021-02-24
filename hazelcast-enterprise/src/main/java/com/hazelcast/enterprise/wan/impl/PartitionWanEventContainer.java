@@ -1,6 +1,5 @@
 package com.hazelcast.enterprise.wan.impl;
 
-import com.hazelcast.internal.util.QueueUtil;
 import com.hazelcast.wan.impl.InternalWanEvent;
 
 import java.util.Collection;
@@ -29,7 +28,7 @@ public class PartitionWanEventContainer {
      * @return {@code true} if the element was added to this queue, else
      * {@code false}
      */
-    public boolean publishMapWanEvent(String mapName, InternalWanEvent event) {
+    public boolean publishMapWanEvent(String mapName, FinalizableEnterpriseWanEvent event) {
         return mapWanEventQueueMap.offerEvent(event, mapName, event.getBackupCount());
     }
 
@@ -60,7 +59,7 @@ public class PartitionWanEventContainer {
      * @param drainTo         the collection to which to drain events to
      * @param elementsToDrain the maximum number of events to drain
      */
-    public void drainRandomWanQueue(Collection<InternalWanEvent> drainTo,
+    public void drainRandomWanQueue(Collection<FinalizableEnterpriseWanEvent> drainTo,
                                     int elementsToDrain) {
         int drained = drainRandomWanQueue(current, drainTo, elementsToDrain);
 
@@ -102,7 +101,7 @@ public class PartitionWanEventContainer {
      * @return the number of elements transferred
      */
     private int drainRandomWanQueue(PartitionWanEventQueueMap eventQueueMap,
-                                    Collection<InternalWanEvent> drainTo,
+                                    Collection<FinalizableEnterpriseWanEvent> drainTo,
                                     int elementsToDrain) {
         for (WanEventQueue eventQueue : eventQueueMap.values()) {
             if (eventQueue != null) {
@@ -147,7 +146,7 @@ public class PartitionWanEventContainer {
      * {@code false}
      */
     public boolean publishCacheWanEvent(String cacheName,
-                                        InternalWanEvent event) {
+                                        FinalizableEnterpriseWanEvent event) {
         return cacheWanEventQueueMap.offerEvent(event, cacheName, event.getBackupCount());
     }
 
@@ -192,7 +191,7 @@ public class PartitionWanEventContainer {
         for (Map.Entry<String, WanEventQueue> eventQueueMapEntry : queueMap.entrySet()) {
             WanEventQueue eventQueue = eventQueueMapEntry.getValue();
             if (eventQueue != null && predicate.test(eventQueue)) {
-                size += QueueUtil.drainQueue(eventQueue);
+                size += eventQueue.clear();
             }
         }
         return size;

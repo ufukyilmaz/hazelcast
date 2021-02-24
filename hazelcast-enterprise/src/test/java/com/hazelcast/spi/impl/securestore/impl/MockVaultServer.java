@@ -23,6 +23,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
+import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -405,10 +406,20 @@ public class MockVaultServer {
             sslConfig.setProperty("trustStoreType", "PKCS12");
             sslConfig.setEnabled(true);
         }
-        InetSocketAddress address = new InetSocketAddress(LOOPBACK_ADDRESS, 4999);
-        vaultConfig.setAddress(getUrl(address, httpsKeyStoreFile != null)).setSSLConfig(sslConfig);
-        MockVaultServer vault = new MockVaultServer(address, httpsKeyStoreFile);
-        vault.start();
+        MockVaultServer vault = null;
+        int port = 4999;
+        boolean started = false;
+        do {
+            try {
+                InetSocketAddress address = new InetSocketAddress(LOOPBACK_ADDRESS, port);
+                vaultConfig.setAddress(getUrl(address, httpsKeyStoreFile != null)).setSSLConfig(sslConfig);
+                vault = new MockVaultServer(address, httpsKeyStoreFile);
+                vault.start();
+                started = true;
+            } catch (BindException ignore) {
+                port += 1;
+            }
+        } while (!started);
         return vault;
     }
 

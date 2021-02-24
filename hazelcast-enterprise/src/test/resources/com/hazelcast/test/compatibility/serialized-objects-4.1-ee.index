@@ -266,7 +266,6 @@ javax.cache.configuration.MutableCacheEntryListenerConfiguration,1705932,303,170
 com.hazelcast.cache.impl.operation.CacheReplaceOperation,1707447,178,1707625,178,1707803,178,1707981,178,1708159,183
 com.hazelcast.internal.partition.operation.ShutdownRequestOperation,1710302,45,1710347,45,1710392,45,1710437,45,1710482,45
 com.hazelcast.cp.internal.operation.ResetCPMemberOp,1712692,49,1712741,49,1712790,49,1712839,49,1712888,49
-com.hazelcast.map.impl.operation.MapFetchWithQueryOperation,1712937,287,1713224,286,1713510,286,1713796,286,1714082,286
 com.hazelcast.internal.hotrestart.cluster.AskForClusterStartResultOperation,1714368,45,1714413,45,1714458,45,1714503,45,1714548,45
 com.hazelcast.aggregation.impl.BigIntegerSumAggregator,1718609,45,1718654,45,1718699,45,1718744,45,1718789,45
 com.hazelcast.internal.partition.operation.MigrationRequestOperation,1720749,276,1721025,276,1721301,219,1721520,219,1721739,219

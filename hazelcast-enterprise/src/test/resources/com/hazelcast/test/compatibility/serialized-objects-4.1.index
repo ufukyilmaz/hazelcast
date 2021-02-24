@@ -385,7 +385,6 @@ com.hazelcast.replicatedmap.impl.operation.ReplicateUpdateToCallerOperation,9711
 com.hazelcast.cp.internal.operation.ChangeRaftGroupMembershipOp,972249,144,972393,127,972520,127,972647,130,972777,144
 com.hazelcast.replicatedmap.impl.operation.VersionResponsePair,972921,54,972975,54,973029,54,973083,54,973137,54
 com.hazelcast.cp.internal.operation.ResetCPMemberOp,973191,49,973240,49,973289,49,973338,49,973387,49
-com.hazelcast.map.impl.operation.MapFetchWithQueryOperation,973436,287,973723,291,974014,287,974301,286,974587,286
 com.hazelcast.aggregation.impl.BigIntegerSumAggregator,974873,45,974918,45,974963,45,975008,45,975053,45
 com.hazelcast.internal.partition.operation.MigrationRequestOperation,975098,274,975372,274,975646,274,975920,274,976194,274
 com.hazelcast.cache.impl.CacheEntriesWithCursor,976468,57,976525,57

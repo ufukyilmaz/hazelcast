@@ -3,6 +3,7 @@ package com.hazelcast.map.impl.recordstore;
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hotrestart.RamStore;
 import com.hazelcast.internal.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
@@ -11,6 +12,7 @@ import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.util.Clock;
 import com.hazelcast.internal.util.ExceptionUtil;
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.map.impl.EnterpriseMapContainer;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.EnterprisePartitionContainer;
 import com.hazelcast.map.impl.MapContainer;
@@ -59,13 +61,31 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
     }
 
     @Override
+    protected void initJsonMetadataStore() {
+        // Don't initialize Json metadata store in constructor!
+        // Do lazy initialization only if the store is needed.
+        // The store is always accessed from the partition thread
+        // and there is no race condition on store initialization
+    }
+
+    @Override
+    protected JsonMetadataStore createMetadataStore() {
+        if (inMemoryFormat == NATIVE) {
+            HiDensityStorageInfo hdStorageInfo = ((EnterpriseMapContainer) mapContainer).getHDStorageInfo();
+            return new HDJsonMetadataStorageImpl((EnterpriseSerializationService) serializationService, hdStorageInfo);
+        } else {
+            return super.createMetadataStore();
+        }
+    }
+
+    @Override
     public void init() {
         super.init();
 
         if (prefix != -1) {
             this.ramStore = inMemoryFormat == NATIVE
-                    ? new HDMapRamStoreImpl(this, memoryManager)
-                    : new OnHeapMapRamStoreImpl(this);
+                ? new HDMapRamStoreImpl(this, memoryManager)
+                : new OnHeapMapRamStoreImpl(this);
         }
     }
 
@@ -75,7 +95,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
 
         // Add observer for merkle tree
         EnterprisePartitionContainer partitionContainer
-                = (EnterprisePartitionContainer) mapServiceContext.getPartitionContainer(partitionId);
+            = (EnterprisePartitionContainer) mapServiceContext.getPartitionContainer(partitionId);
         MerkleTree merkleTree = partitionContainer.getOrCreateMerkleTree(name);
         if (merkleTree != null) {
             mutationObserver.add(new MerkleTreeUpdaterMutationObserver<>(merkleTree, serializationService));
@@ -99,18 +119,18 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
     @Override
     public Storage createStorage(RecordFactory recordFactory, InMemoryFormat memoryFormat) {
         EnterpriseMapServiceContext mapServiceContext
-                = (EnterpriseMapServiceContext) mapContainer.getMapServiceContext();
+            = (EnterpriseMapServiceContext) mapContainer.getMapServiceContext();
         if (NATIVE == inMemoryFormat) {
             EnterpriseSerializationService serializationService
-                    = (EnterpriseSerializationService) this.serializationService;
+                = (EnterpriseSerializationService) this.serializationService;
 
             assert serializationService != null : "serializationService is null";
             assert serializationService.getMemoryManager() != null : "MemoryManager is null";
 
             if (hotRestartConfig.isEnabled()) {
                 return new HotRestartHDStorageImpl(mapServiceContext, recordFactory,
-                        inMemoryFormat, statsEnabled, getExpirySystem(),
-                        hotRestartConfig.isFsync(), prefix, partitionId);
+                    inMemoryFormat, statsEnabled, getExpirySystem(),
+                    hotRestartConfig.isFsync(), prefix, partitionId);
             }
 
             HiDensityRecordProcessor<HDRecord> recordProcessor = ((HDRecordFactory) recordFactory).getRecordProcessor();
@@ -119,15 +139,15 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
 
         if (hotRestartConfig.isEnabled()) {
             return new HotRestartStorageImpl(mapServiceContext, recordFactory,
-                    memoryFormat, statsEnabled, getExpirySystem(),
-                    hotRestartConfig.isFsync(), prefix, partitionId);
+                memoryFormat, statsEnabled, getExpirySystem(),
+                hotRestartConfig.isFsync(), prefix, partitionId);
         }
         return super.createStorage(recordFactory, memoryFormat);
     }
 
     public HDRecord createRecord(Object value, long sequence) {
         return (HDRecord) createRecordInternal(value, UNSET, UNSET,
-                Clock.currentTimeMillis(), sequence);
+            Clock.currentTimeMillis(), sequence);
     }
 
     @Override
@@ -167,10 +187,6 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
         } catch (Exception e) {
             throw ExceptionUtil.rethrow(e);
         }
-    }
-
-    public MetadataStore getMetadataStore() {
-        return metadataStore;
     }
 
     public long getPrefix() {

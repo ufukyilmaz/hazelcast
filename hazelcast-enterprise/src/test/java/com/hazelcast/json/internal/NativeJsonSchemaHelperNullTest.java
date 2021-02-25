@@ -2,13 +2,13 @@ package com.hazelcast.json.internal;
 
 import com.hazelcast.core.HazelcastJsonValue;
 import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.StandardMemoryManager;
+import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.DataInputNavigableJsonAdapter;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.NavigableJsonInputAdapter;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.internal.memory.StandardMemoryManager;
-import com.hazelcast.internal.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;

@@ -10,7 +10,7 @@ import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.IMap;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.recordstore.EnterpriseRecordStore;
-import com.hazelcast.query.impl.Metadata;
+import com.hazelcast.query.impl.JsonMetadata;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelJVMTest;
@@ -42,7 +42,7 @@ public class NativeJsonMetadataCreationTest extends JsonMetadataCreationTest {
     }
 
     @Override
-    protected Metadata getMetadata(String mapName, Object key, int replicaIndex) {
+    protected JsonMetadata getMetadata(String mapName, Object key, int replicaIndex) {
         HazelcastInstance[] instances = factory.getAllHazelcastInstances().toArray(new HazelcastInstance[] { null });
         HazelcastInstance instance = factory.getAllHazelcastInstances().iterator().next();
         InternalSerializationService serializationService = getSerializationService(instance);
@@ -52,7 +52,7 @@ public class NativeJsonMetadataCreationTest extends JsonMetadataCreationTest {
         MapService mapService = nodeEngine.getService(MapService.SERVICE_NAME);
         EnterpriseRecordStore enterpriseRecordStore
                 = (EnterpriseRecordStore) mapService.getMapServiceContext().getPartitionContainer(partitionId).getRecordStore(mapName);
-        return enterpriseRecordStore.getMetadataStore().get(keyData);
+        return enterpriseRecordStore.getOrCreateMetadataStore().get(keyData);
     }
 
     @Test

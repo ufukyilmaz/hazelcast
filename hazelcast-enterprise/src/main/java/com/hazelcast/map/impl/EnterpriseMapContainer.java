@@ -57,7 +57,7 @@ public class EnterpriseMapContainer extends MapContainer {
     @Override
     ConstructorFunction<Void, RecordFactory> createRecordFactoryConstructor(final SerializationService serializationService) {
         if (NATIVE == mapConfig.getInMemoryFormat()) {
-            return anyArg -> new HDRecordFactory(createHiDensityRecordProcessor(), this);
+            return anyArg -> new HDRecordFactory(this, createHiDensityRecordProcessor());
         } else {
             return super.createRecordFactoryConstructor(serializationService);
         }

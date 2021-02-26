@@ -31,9 +31,9 @@ import static com.hazelcast.map.impl.record.RecordReaderWriter.SIMPLE_DATA_RECOR
  * @see HDSimpleRecordWithLFUEviction
  */
 @SuppressWarnings("checkstyle:methodcount")
-public class HDRecordWithLRUEvictionAndHotRestart extends HDRecord implements Record<Data> {
+public class HDSimpleRecordWithLRUEvictionAndHotRestart extends HDRecord implements Record<Data> {
     /**
-     * Gives the size of an {@link HDRecordWithLRUEvictionAndHotRestart}.
+     * Gives the size of an {@link HDSimpleRecordWithLRUEvictionAndHotRestart}.
      */
     public static final int SIZE;
 
@@ -46,7 +46,7 @@ public class HDRecordWithLRUEvictionAndHotRestart extends HDRecord implements Re
         SIZE = SEQUENCE_OFFSET + INT_SIZE_IN_BYTES;
     }
 
-    public HDRecordWithLRUEvictionAndHotRestart() {
+    public HDSimpleRecordWithLRUEvictionAndHotRestart() {
         super(AMEM);
         setSize(getSize());
     }

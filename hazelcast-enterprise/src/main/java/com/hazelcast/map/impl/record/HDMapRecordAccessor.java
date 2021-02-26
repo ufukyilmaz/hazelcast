@@ -71,7 +71,7 @@ public class HDMapRecordAccessor
         // return record both eviction and hot-restart related fields
         if (hasEviction && hasHotRestart) {
             if (mapConfig.getEvictionConfig().getEvictionPolicy() == EvictionPolicy.LRU) {
-                return new HDRecordWithLRUEvictionAndHotRestart();
+                return new HDSimpleRecordWithLRUEvictionAndHotRestart();
             }
 
             if (mapConfig.getEvictionConfig().getEvictionPolicy() == EvictionPolicy.LFU) {

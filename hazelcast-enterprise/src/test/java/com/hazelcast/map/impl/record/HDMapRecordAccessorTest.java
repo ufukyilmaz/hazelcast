@@ -1,6 +1,7 @@
 package com.hazelcast.map.impl.record;
 
 import com.hazelcast.config.CacheDeserializedValues;
+import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.memory.PoolingMemoryManager;
 import com.hazelcast.internal.serialization.DataType;
@@ -19,28 +20,28 @@ import org.junit.runner.RunWith;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.internal.util.QuickMath.modPowerOfTwo;
-import static com.hazelcast.map.impl.record.HDRecordFactoryTest.newMapContainer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class HDMapRecordAccessorTest {
+public class HDMapRecordAccessorTest extends AbstractRecordFactoryTest {
 
+    private HDMapRecordAccessor accessor;
     private PoolingMemoryManager memoryManager;
     private EnterpriseSerializationService serializationService;
-    private HDMapRecordAccessor accessor;
 
     @Before
     public void setup() {
         MemorySize memorySize = new MemorySize(5, MemoryUnit.MEGABYTES);
         memoryManager = new PoolingMemoryManager(memorySize);
         memoryManager.registerThread(Thread.currentThread());
-        serializationService = new EnterpriseSerializationServiceBuilder().setMemoryManager(memoryManager).build();
+        serializationService = new EnterpriseSerializationServiceBuilder()
+                .setMemoryManager(memoryManager).build();
 
         accessor = new HDMapRecordAccessor(serializationService,
-                newMapContainer(true, CacheDeserializedValues.ALWAYS));
+                createMapContainer(true, EvictionPolicy.NONE, CacheDeserializedValues.ALWAYS));
     }
 
     @After
@@ -140,4 +141,14 @@ public class HDMapRecordAccessorTest {
         assertEquals(0, modPowerOfTwo(address + offset, mod));
     }
 
+    @Override
+    protected RecordFactory newRecordFactory() {
+        // not implemented for this test class
+        return null;
+    }
+
+    @Override
+    public void test_expected_record_per_config_is_created() {
+        // not implemented for this test class
+    }
 }

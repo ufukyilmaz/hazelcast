@@ -22,8 +22,8 @@ public class HDRecordFactory implements RecordFactory<Data> {
     private final HiDensityRecordProcessor<HDRecord> recordProcessor;
     private final MapContainer mapContainer;
 
-    public HDRecordFactory(HiDensityRecordProcessor<HDRecord> recordProcessor,
-                           MapContainer mapContainer) {
+    public HDRecordFactory(MapContainer mapContainer,
+                           HiDensityRecordProcessor<HDRecord> recordProcessor) {
         this.recordProcessor = recordProcessor;
         this.mapContainer = mapContainer;
     }
@@ -72,7 +72,7 @@ public class HDRecordFactory implements RecordFactory<Data> {
         // return record both eviction and hot-restart related fields
         if (hasEviction && hasHotRestart) {
             if (mapConfig.getEvictionConfig().getEvictionPolicy() == EvictionPolicy.LRU) {
-                return newHDRecordWithExtras(value, HDRecordWithLRUEvictionAndHotRestart.SIZE);
+                return newHDRecordWithExtras(value, HDSimpleRecordWithLRUEvictionAndHotRestart.SIZE);
             }
 
             if (mapConfig.getEvictionConfig().getEvictionPolicy() == EvictionPolicy.LFU) {

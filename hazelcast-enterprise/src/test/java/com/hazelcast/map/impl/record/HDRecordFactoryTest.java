@@ -1,13 +1,10 @@
 package com.hazelcast.map.impl.record;
 
 import com.hazelcast.config.CacheDeserializedValues;
-import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.internal.cluster.ClusterService;
-import com.hazelcast.internal.cluster.Versions;
+import com.hazelcast.enterprise.EnterpriseParallelParametersRunnerFactory;
 import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
@@ -21,28 +18,57 @@ import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceB
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.EnterpriseMapContainer;
 import com.hazelcast.map.impl.MapContainer;
-import com.hazelcast.map.impl.MapServiceContext;
-import com.hazelcast.map.impl.eviction.Evictor;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.spi.impl.NodeEngine;
 import com.hazelcast.test.annotation.ParallelJVMTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import java.util.Collection;
 
 import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParallelParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelJVMTest.class})
 public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
+
+    @Parameterized.Parameter(4)
+    public boolean hotRestartEnabled;
+
+    @Parameterized.Parameters(name = "perEntryStatsEnabled:{0}, evictionPolicy:{1}, "
+            + "cacheDeserializedValues:{2}, hotRestartEnabled: {4}")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{
+                {true, EvictionPolicy.NONE, CacheDeserializedValues.NEVER, HDRecordWithStats.class, false},
+                {true, EvictionPolicy.LFU, CacheDeserializedValues.ALWAYS, HDRecordWithStats.class, true},
+                {false, EvictionPolicy.NONE, CacheDeserializedValues.NEVER, HDSimpleRecordWithVersion.class, false},
+                {false, EvictionPolicy.NONE, CacheDeserializedValues.ALWAYS, HDSimpleRecordWithVersion.class, false},
+                {false, EvictionPolicy.LFU, CacheDeserializedValues.NEVER, HDSimpleRecordWithLFUEviction.class, false},
+                {false, EvictionPolicy.LFU, CacheDeserializedValues.ALWAYS, HDSimpleRecordWithLFUEviction.class, false},
+                {false, EvictionPolicy.LRU, CacheDeserializedValues.NEVER, HDSimpleRecordWithLRUEviction.class, false},
+                {false, EvictionPolicy.LRU, CacheDeserializedValues.ALWAYS, HDSimpleRecordWithLRUEviction.class, false},
+                {false, EvictionPolicy.RANDOM, CacheDeserializedValues.NEVER, HDSimpleRecordWithVersion.class, false},
+                {false, EvictionPolicy.RANDOM, CacheDeserializedValues.ALWAYS, HDSimpleRecordWithVersion.class, false},
+                {false, EvictionPolicy.NONE, CacheDeserializedValues.NEVER, HDSimpleRecordWithHotRestart.class, true},
+                {false, EvictionPolicy.NONE, CacheDeserializedValues.ALWAYS, HDSimpleRecordWithHotRestart.class, true},
+                {false, EvictionPolicy.LFU, CacheDeserializedValues.NEVER, HDSimpleRecordWithLFUEvictionAndHotRestart.class, true},
+                {false, EvictionPolicy.LFU, CacheDeserializedValues.ALWAYS, HDSimpleRecordWithLFUEvictionAndHotRestart.class, true},
+                {false, EvictionPolicy.LRU, CacheDeserializedValues.NEVER, HDSimpleRecordWithLRUEvictionAndHotRestart.class, true},
+                {false, EvictionPolicy.LRU, CacheDeserializedValues.ALWAYS, HDSimpleRecordWithLRUEvictionAndHotRestart.class, true},
+                {false, EvictionPolicy.RANDOM, CacheDeserializedValues.NEVER, HDSimpleRecordWithHotRestart.class, true},
+                {false, EvictionPolicy.RANDOM, CacheDeserializedValues.ALWAYS, HDSimpleRecordWithHotRestart.class, true},
+        });
+    }
 
     private HazelcastMemoryManager memoryManager;
 
@@ -54,42 +80,39 @@ public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
     }
 
     @Override
-    void newRecordFactory(boolean isStatisticsEnabled, CacheDeserializedValues cacheDeserializedValues) {
-        MapContainer mapContainer = newMapContainer(isStatisticsEnabled, cacheDeserializedValues);
-        factory = new HDRecordFactory(createHiDensityRecordProcessor(mapContainer), mapContainer);
+    protected MapConfig newMapConfig(boolean perEntryStatsEnabled,
+                                     EvictionPolicy evictionPolicy,
+                                     CacheDeserializedValues cacheDeserializedValues) {
+        MapConfig mapConfig = super.newMapConfig(perEntryStatsEnabled, evictionPolicy, cacheDeserializedValues);
+        mapConfig.setHotRestartConfig(new HotRestartConfig().setEnabled(hotRestartEnabled));
+        return mapConfig;
     }
 
-    static MapContainer newMapContainer(boolean isPerEntryStatsEnabled,
-                                                CacheDeserializedValues cacheDeserializedValues) {
-        NodeEngine nodeEngine = mock(NodeEngine.class);
-        ClusterService clusterService = mock(ClusterService.class);
-        MapServiceContext mapServiceContext = mock(MapServiceContext.class);
+    @Override
+    protected RecordFactory newRecordFactory() {
+        MapContainer mapContainer = createMapContainer(perEntryStatsEnabled,
+                evictionPolicy, cacheDeserializedValues);
+        return new HDRecordFactory(mapContainer, createHiDensityRecordProcessor(mapContainer));
+    }
 
-        when(mapServiceContext.getNodeEngine()).thenReturn(nodeEngine);
-        when(nodeEngine.getClusterService()).thenReturn(clusterService);
-        when(clusterService.getClusterVersion()).thenReturn(Versions.CURRENT_CLUSTER_VERSION);
-
-        MapContainer mapContainer = mock(MapContainer.class);
-        MapConfig mapConfig = mock(MapConfig.class);
-        when(mapConfig.getCacheDeserializedValues()).thenReturn(cacheDeserializedValues);
-        when(mapConfig.isPerEntryStatsEnabled()).thenReturn(isPerEntryStatsEnabled);
-        EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setEvictionPolicy(EvictionPolicy.NONE);
-        when(mapConfig.getEvictionConfig()).thenReturn(evictionConfig);
-        HotRestartConfig hotRestartConfig = new HotRestartConfig().setEnabled(false);
-        when(mapConfig.getHotRestartConfig()).thenReturn(hotRestartConfig);
-        when(mapContainer.getMapConfig()).thenReturn(mapConfig);
-        when(mapContainer.getEvictor()).thenReturn(Evictor.NULL_EVICTOR);
-        when(mapContainer.getMapServiceContext()).thenReturn(mapServiceContext);
-        return mapContainer;
+    @Test
+    public void test_map_record_accessor_created_expected_record_per_config() {
+        MapContainer mapContainer = createMapContainer(perEntryStatsEnabled,
+                evictionPolicy, cacheDeserializedValues);
+        EnterpriseSerializationService ess = (EnterpriseSerializationService) serializationService;
+        HiDensityRecordAccessor<HDRecord> recordAccessor = new HDMapRecordAccessor(ess, mapContainer);
+        assertEquals(expectedRecordClass.getCanonicalName(), recordAccessor.newRecord().getClass().getCanonicalName());
     }
 
     @Test
     public void testGetRecordProcessor() {
-        HiDensityRecordProcessor<HDRecord> recordProcessor = createHiDensityRecordProcessor(
-                newMapContainer(true, CacheDeserializedValues.ALWAYS));
+        MapContainer mapContainer = createMapContainer(perEntryStatsEnabled,
+                evictionPolicy, cacheDeserializedValues);
+        HiDensityRecordProcessor<HDRecord> recordProcessor
+                = createHiDensityRecordProcessor(mapContainer);
 
-        assertEquals(recordProcessor, new HDRecordFactory(recordProcessor, mock(EnterpriseMapContainer.class)).getRecordProcessor());
+        assertEquals(recordProcessor, new HDRecordFactory(mock(EnterpriseMapContainer.class),
+                recordProcessor).getRecordProcessor());
     }
 
     @Test
@@ -110,26 +133,6 @@ public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
     }
 
     @Override
-    Class<?> getRecordClass() {
-        return HDSimpleRecordWithVersion.class;
-    }
-
-    @Override
-    Class<?> getRecordWithStatsClass() {
-        return HDRecordWithStats.class;
-    }
-
-    @Override
-    Class<?> getCachedRecordClass() {
-        return HDSimpleRecordWithVersion.class;
-    }
-
-    @Override
-    Class<?> getCachedRecordWithStatsClass() {
-        return HDRecordWithStats.class;
-    }
-
-    @Override
     InternalSerializationService createSerializationService() {
         MemorySize memorySize = new MemorySize(5, MemoryUnit.MEGABYTES);
         memoryManager = new PoolingMemoryManager(memorySize);
@@ -137,11 +140,6 @@ public class HDRecordFactoryTest extends AbstractRecordFactoryTest<Data> {
         return new EnterpriseSerializationServiceBuilder()
                 .setMemoryManager(memoryManager)
                 .build();
-    }
-
-    @Override
-    Record<Data> newRecord(RecordFactory<Data> factory, Object value) {
-        return factory.newRecord(value);
     }
 
     private HiDensityRecordProcessor<HDRecord> createHiDensityRecordProcessor(MapContainer mapContainer) {

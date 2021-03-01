@@ -68,7 +68,6 @@ public class PermissionMappingTest extends HazelcastTestSupport {
 
     static {
         INHERITED_METHOD_SKIP_LIST.add(Object.class);
-        INHERITED_METHOD_SKIP_LIST.add(Iterable.class);
     }
 
     /**
@@ -120,65 +119,66 @@ public class PermissionMappingTest extends HazelcastTestSupport {
     private static final Map<Class, String[]> PER_SERVICE_SKIP_LIST = new HashMap<Class, String[]>();
 
     static {
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.multimap.impl.MultiMapService.class, new String[]{"initialize"});
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.collection.impl.list.ListService.class, new String[]{
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.multimap.impl.MultiMapService.class, new String[] {"initialize"});
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.collection.impl.list.ListService.class, new String[] {
                 "initialize", "removeIf", "stream", "parallelStream", "replaceAll", "sort",
-                "dataIterator", "dataSubList", "getLocalListStats"
+                "dataIterator", "dataSubList", "getLocalListStats", "spliterator", "forEach"
         });
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.collection.impl.queue.QueueService.class, new String[]{
-                "initialize", "removeIf", "stream", "parallelStream",
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.collection.impl.queue.QueueService.class, new String[] {
+                "initialize", "removeIf", "stream", "parallelStream", "spliterator", "forEach"
         });
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.collection.impl.set.SetService.class, new String[]{
-                "initialize", "removeIf", "stream", "parallelStream", "getLocalSetStats"
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.collection.impl.set.SetService.class, new String[] {
+                "initialize", "removeIf", "stream", "parallelStream", "getLocalSetStats", "spliterator",
+                "forEach"
         });
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.scheduledexecutor.impl.DistributedScheduledExecutorService.class,
-                new String[]{
+                new String[] {
                         "scheduleOnMemberAtFixedRate", "scheduleAtFixedRate", "scheduleOnKeyOwner",
                         "scheduleOnAllMembers", "scheduleOnKeyOwnerAtFixedRate", "schedule", "scheduleOnMember",
                         "scheduleOnAllMembersAtFixedRate", "getScheduledFuture", "scheduleOnMembers",
                         "scheduleOnMembersAtFixedRate", "getAllScheduledFutures", "shutdown", "destroy",
                 });
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.durableexecutor.impl.DistributedDurableExecutorService.class,
-                new String[]{
+                new String[] {
                         "retrieveResult", "submit", "isTerminated", "invokeAll", "executeOnKeyOwner",
                         "retrieveAndDisposeResult", "execute", "disposeResult", "awaitTermination",
                         "shutdownNow", "invokeAny", "submitToKeyOwner", "shutdown", "isShutdown", "destroy",
                 });
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.executor.impl.DistributedExecutorService.class, new String[]{
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.executor.impl.DistributedExecutorService.class, new String[] {
                 "getLocalExecutorStats", "executeOnMembers", "executeOnMember", "submit", "isTerminated",
                 "invokeAll", "submitToAllMembers", "executeOnKeyOwner", "submitToMember",
                 "submitToMembers", "execute", "executeOnAllMembers", "awaitTermination", "shutdownNow",
                 "invokeAny", "submitToKeyOwner", "shutdown", "isShutdown", "destroy",
         });
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.internal.crdt.pncounter.PNCounterService.class, new String[]{
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.internal.crdt.pncounter.PNCounterService.class, new String[] {
                 "getCurrentTargetReplicaAddress", "setOperationTryCount", "reset",
         });
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.replicatedmap.impl.ReplicatedMapService.class, new String[]{
-                "getOrDefault", "computeIfAbsent", "compute", "computeIfPresent",
-                "initialize", "putIfAbsent", "merge", "replace", "replaceAll",
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.replicatedmap.impl.ReplicatedMapService.class, new String[] {
+                "getOrDefault", "computeIfAbsent", "compute", "computeIfPresent", "initialize",
+                "putIfAbsent", "merge", "replace", "replaceAll", "forEach"
         });
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.topic.impl.TopicService.class, new String[]{
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.topic.impl.TopicService.class, new String[] {
                 "initialize", "addMessageListenerInternal", "publishInternal", "removeMessageListenerInternal",
                 "getLocalTopicStatsInternal",
         });
-        PER_SERVICE_SKIP_LIST.put(com.hazelcast.map.impl.MapService.class, new String[]{
+        PER_SERVICE_SKIP_LIST.put(com.hazelcast.map.impl.MapService.class, new String[] {
                 "getOrDefault", "compute", "merge", "computeIfAbsent", "setOperationProvider",
                 "getOperationProvider", "computeIfPresent", "getPartitionStrategy", "waitUntilLoaded",
                 "initialize", "getQueryCache", "getTotalBackupCount", "subscribeToEventJournal",
                 "replace", "replaceAll", "getMapConfig", "executeOnKeyInternal", "containsValueInternal",
                 "addMapInterceptorInternal", "submitToKeysInternal", "clearInternal",
-                "addLocalEntryListenerInternal", "executeOnEntriesInternal",
+                "addLocalEntryListenerInternal", "executeOnEntriesInternal", "spliterator", "forEach"
         });
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.lock.LockService.class,
-                new String[]{"getGroupId", "getObjectName"});
+                new String[] {"getGroupId", "getObjectName"});
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.countdownlatch.CountDownLatchService.class,
-                new String[]{"getGroupId"});
+                new String[] {"getGroupId"});
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.semaphore.SemaphoreService.class,
-                new String[]{"getGroupId"});
+                new String[] {"getGroupId"});
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.atomiclong.AtomicLongService.class,
-                new String[]{"getGroupId"});
+                new String[] {"getGroupId"});
         PER_SERVICE_SKIP_LIST.put(com.hazelcast.cp.internal.datastructures.atomicref.AtomicRefService.class,
-                new String[]{"getGroupId"});
+                new String[] {"getGroupId"});
     }
 
     @Test

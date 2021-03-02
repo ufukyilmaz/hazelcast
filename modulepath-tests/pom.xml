@@ -61,6 +61,7 @@
                     <release>9</release>
                 </configuration>
             </plugin>
+        </plugins>
     </build>
 
     <dependencies>

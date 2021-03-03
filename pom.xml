@@ -853,6 +853,7 @@
                         <configuration>
                             <maxmemory>1024</maxmemory>
                             <excludePackageNames>${maven.javadoc.plugin.excludePackageNames}</excludePackageNames>
+                            <detectLinks/>
                             <doclint>none</doclint>
                         </configuration>
                         <executions>
@@ -900,6 +901,7 @@
                         <version>${maven.javadoc.plugin.version}</version>
                         <configuration>
                             <excludePackageNames>${maven.javadoc.plugin.excludePackageNames}</excludePackageNames>
+                            <detectLinks/>
                             <doclint>none</doclint>
                         </configuration>
                         <executions>

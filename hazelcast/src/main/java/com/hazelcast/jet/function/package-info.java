@@ -15,7 +15,8 @@
  */
 
 /**
- * Functional interfaces used by Jet Core API
+ * Serializable and exception-declaring variants of functional interfaces from
+ * {@code java.util.function}.
  *
  * @since 3.0
  */

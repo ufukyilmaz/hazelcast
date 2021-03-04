@@ -2579,7 +2579,7 @@ public interface IMap<K, V> extends ConcurrentMap<K, V>, BaseMap<K, V> {
 
     /**
      * Applies the user defined {@code EntryProcessor} to the entry mapped by the {@code key}.
-     * Returns the object which is the result of the {@link EntryProcessor#process(Entry)} method.
+     * Returns the object which is the result of the {@link EntryProcessor#process(Map.Entry)} method.
      * <p>
      * The {@code EntryProcessor} may implement the {@link Offloadable} and {@link ReadOnly} interfaces.
      * <p>
@@ -2645,7 +2645,7 @@ public interface IMap<K, V> extends ConcurrentMap<K, V>, BaseMap<K, V> {
      * capacity.
      *
      * @param <R> the entry processor return type
-     * @return result of {@link EntryProcessor#process(Entry)}
+     * @return result of {@link EntryProcessor#process(Map.Entry)}
      * @throws NullPointerException if the specified key is {@code null}
      * @see Offloadable
      * @see ReadOnly
@@ -2704,7 +2704,7 @@ public interface IMap<K, V> extends ConcurrentMap<K, V>, BaseMap<K, V> {
      * @param keys The keys to execute the entry processor on. Can be empty, in
      *             that case it's a local no-op
      * @param <R>  the entry processor return type
-     * @return results of {@link EntryProcessor#process(Entry)}
+     * @return results of {@link EntryProcessor#process(Map.Entry)}
      * @throws NullPointerException if there's null element in {@code keys}
      */
     <R> Map<K, R> executeOnKeys(@Nonnull Set<K> keys,

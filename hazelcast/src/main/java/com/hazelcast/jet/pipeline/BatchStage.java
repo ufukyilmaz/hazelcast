@@ -475,7 +475,9 @@ public interface BatchStage<T> extends GeneralStage<T> {
      *}</pre>
      */
     @Nonnull
-    <R0> AggregateBuilder<R0> aggregateBuilder(AggregateOperation1<? super T, ?, ? extends R0> aggrOp0);
+    default <R0> AggregateBuilder<R0> aggregateBuilder(AggregateOperation1<? super T, ?, ? extends R0> aggrOp0) {
+        return new AggregateBuilder<>(this, aggrOp0);
+    }
 
     /**
      * Offers a step-by-step API to build a pipeline stage that co-aggregates
@@ -525,7 +527,9 @@ public interface BatchStage<T> extends GeneralStage<T> {
      * }</pre>
      */
     @Nonnull
-    AggregateBuilder1<T> aggregateBuilder();
+    default AggregateBuilder1<T> aggregateBuilder() {
+        return new AggregateBuilder1<>(this);
+    }
 
     @Nonnull @Override
     default BatchStage<T> peek() {

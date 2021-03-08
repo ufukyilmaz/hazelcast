@@ -17,14 +17,48 @@
 package com.hazelcast.jet.pipeline;
 
 import com.hazelcast.function.FunctionEx;
+import com.hazelcast.jet.aggregate.AggregateOperation;
 import com.hazelcast.jet.aggregate.AggregateOperation1;
+import com.hazelcast.jet.aggregate.CoAggregateOperationBuilder;
 import com.hazelcast.jet.core.Processor;
 import com.hazelcast.jet.datamodel.ItemsByTag;
 import com.hazelcast.jet.datamodel.Tag;
+import com.hazelcast.jet.impl.pipeline.AggBuilder;
+import com.hazelcast.jet.impl.pipeline.AggBuilder.CreateOutStageFn;
+import com.hazelcast.jet.impl.pipeline.BatchStageImpl;
+import com.hazelcast.jet.pipeline.AggregateBuilder;
+import com.hazelcast.jet.pipeline.BatchStage;
 
 import javax.annotation.Nonnull;
 
-public interface AggregateBuilder<R0> {
+import static com.hazelcast.jet.aggregate.AggregateOperations.coAggregateOperationBuilder;
+
+/**
+ * Offers a step-by-step API to build a pipeline stage that co-aggregates
+ * the data from several input stages. To obtain it, call {@link
+ * BatchStage#aggregateBuilder()} on the first stage you are co-aggregating
+ * and refer to that method's Javadoc for further details.
+ * <p>
+ * <strong>Note:</strong> this is not a builder of {@code
+ * AggregateOperation}. If that's what you are looking for, go {@link
+ * AggregateOperation#withCreate here}.
+ *
+ * @param <R0> type of the result of the aggregate operation applied to stage-0
+ *            (the one you obtained this builder from)
+ *
+ * @since 3.0
+ */
+public class AggregateBuilder<R0> {
+    private final AggBuilder aggBuilder;
+    private final CoAggregateOperationBuilder aggrOpBuilder = coAggregateOperationBuilder();
+
+    <T0> AggregateBuilder(
+            @Nonnull BatchStage<T0> s,
+            @Nonnull AggregateOperation1<? super T0, ?, ? extends R0> aggrOp
+    ) {
+        aggBuilder = new AggBuilder(s, null);
+        aggrOpBuilder.add(Tag.tag0(), aggrOp);
+    }
 
     /**
      * Returns the tag corresponding to the pipeline stage this builder was
@@ -32,7 +66,9 @@ public interface AggregateBuilder<R0> {
      * {@code ItemsByTag} appearing in the output of the stage you are building.
      */
     @Nonnull
-    Tag<R0> tag0();
+    public Tag<R0> tag0() {
+        return Tag.tag0();
+    }
 
     /**
      * Adds another stage that will contribute its data to the aggregate
@@ -41,10 +77,13 @@ public interface AggregateBuilder<R0> {
      * the stage you are building.
      */
     @Nonnull
-    <T, R> Tag<R> add(
+    public <T, R> Tag<R> add(
             @Nonnull BatchStage<T> stage,
             @Nonnull AggregateOperation1<? super T, ?, ? extends R> aggrOp
-    );
+    ) {
+        Tag<T> tag = aggBuilder.add(stage);
+        return aggrOpBuilder.add(tag, aggrOp);
+    }
 
     /**
      * Creates and returns a pipeline stage that performs the co-aggregation
@@ -63,9 +102,13 @@ public interface AggregateBuilder<R0> {
      * @return a new stage representing the co-aggregation
      */
     @Nonnull
-    <R> BatchStage<R> build(
+    public <R> BatchStage<R> build(
             @Nonnull FunctionEx<? super ItemsByTag, ? extends R> finishFn
-    );
+    ) {
+        AggregateOperation<Object[], R> aggrOp = aggrOpBuilder.build(finishFn);
+        CreateOutStageFn<R, BatchStage<R>> createOutStageFn = BatchStageImpl::new;
+        return aggBuilder.build(aggrOp, createOutStageFn);
+    }
 
     /**
      * Creates and returns a pipeline stage that performs the co-aggregation
@@ -77,6 +120,9 @@ public interface AggregateBuilder<R0> {
      * @return a new stage representing the co-aggregation
      */
     @Nonnull
-    BatchStage<ItemsByTag> build();
-
+    public BatchStage<ItemsByTag> build() {
+        AggregateOperation<Object[], ItemsByTag> aggrOp = aggrOpBuilder.build();
+        CreateOutStageFn<ItemsByTag, BatchStage<ItemsByTag>> createOutStageFn = BatchStageImpl::new;
+        return aggBuilder.build(aggrOp, createOutStageFn);
+    }
 }

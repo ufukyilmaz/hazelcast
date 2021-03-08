@@ -16,9 +16,10 @@
 
 package com.hazelcast.jet;
 
+import com.hazelcast.jet.core.Vertex;
+
 import javax.annotation.Nonnull;
 
-import static com.hazelcast.jet.core.ProcessorMetaSupplier.LOCAL_PARALLELISM_USE_DEFAULT;
 
 public interface DAGInterface {
 
@@ -27,7 +28,7 @@ public interface DAGInterface {
      */
     @Nonnull
     default String toDotString() {
-        return toDotString(LOCAL_PARALLELISM_USE_DEFAULT);
+        return toDotString(Vertex.LOCAL_PARALLELISM_USE_DEFAULT);
     }
 
     /**

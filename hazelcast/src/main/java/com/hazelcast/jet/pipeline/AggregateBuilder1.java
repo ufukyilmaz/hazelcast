@@ -18,10 +18,34 @@ package com.hazelcast.jet.pipeline;
 
 import com.hazelcast.jet.aggregate.AggregateOperation;
 import com.hazelcast.jet.datamodel.Tag;
+import com.hazelcast.jet.impl.pipeline.AggBuilder;
+import com.hazelcast.jet.impl.pipeline.AggBuilder.CreateOutStageFn;
+import com.hazelcast.jet.impl.pipeline.BatchStageImpl;
+import com.hazelcast.jet.pipeline.AggregateBuilder1;
+import com.hazelcast.jet.pipeline.BatchStage;
 
 import javax.annotation.Nonnull;
 
-public interface AggregateBuilder1<T0> {
+/**
+ * Offers a step-by-step API to build a pipeline stage that co-aggregates
+ * the data from several input stages. To obtain it, call {@link
+ * BatchStage#aggregateBuilder()} on the first stage you are co-aggregating
+ * and refer to that method's Javadoc for further details.
+ * <p>
+ * <strong>Note:</strong> this is not a builder of {@code
+ * AggregateOperation}. If that's what you are looking for, go {@link
+ * AggregateOperation#withCreate here}.
+ *
+ * @param <T0> type of items in stage-0 (the one you obtained this builder from)
+ *
+ * @since 3.0
+ */
+public class AggregateBuilder1<T0> {
+    private final AggBuilder aggBuilder;
+
+    AggregateBuilder1(@Nonnull BatchStage<T0> stage) {
+        this.aggBuilder = new AggBuilder(stage, null);
+    }
 
     /**
      * Returns the tag corresponding to the pipeline stage this builder
@@ -30,7 +54,9 @@ public interface AggregateBuilder1<T0> {
      * build(aggrOp)}.
      */
     @Nonnull
-    Tag<T0> tag0();
+    public Tag<T0> tag0() {
+        return Tag.tag0();
+    }
 
     /**
      * Adds another stage that will contribute its data to the aggregate
@@ -39,7 +65,9 @@ public interface AggregateBuilder1<T0> {
      * {@link #build build()}.
      */
     @Nonnull
-    <T> Tag<T> add(@Nonnull BatchStage<T> stage);
+    public <T> Tag<T> add(@Nonnull BatchStage<T> stage) {
+        return aggBuilder.add(stage);
+    }
 
     /**
      * Creates and returns a pipeline stage that performs the co-aggregation
@@ -53,5 +81,8 @@ public interface AggregateBuilder1<T0> {
      * @return a new stage representing the co-aggregation
      */
     @Nonnull
-    <R> BatchStage<R> build(@Nonnull AggregateOperation<?, R> aggrOp);
+    public <R> BatchStage<R> build(@Nonnull AggregateOperation<?, R> aggrOp) {
+        CreateOutStageFn<R, BatchStage<R>> createOutStageFn = BatchStageImpl::new;
+        return aggBuilder.build(aggrOp, createOutStageFn);
+    }
 }

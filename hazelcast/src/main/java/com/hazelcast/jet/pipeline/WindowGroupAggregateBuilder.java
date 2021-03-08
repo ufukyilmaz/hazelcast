@@ -16,14 +16,48 @@
 
 package com.hazelcast.jet.pipeline;
 
+import com.hazelcast.jet.aggregate.AggregateOperation;
 import com.hazelcast.jet.aggregate.AggregateOperation1;
+import com.hazelcast.jet.aggregate.CoAggregateOperationBuilder;
 import com.hazelcast.jet.datamodel.ItemsByTag;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.datamodel.Tag;
+import com.hazelcast.jet.impl.pipeline.GrAggBuilder;
+import com.hazelcast.jet.pipeline.StageWithKeyAndWindow;
+import com.hazelcast.jet.pipeline.StreamStage;
+import com.hazelcast.jet.pipeline.StreamStageWithKey;
 
 import javax.annotation.Nonnull;
 
-public interface WindowGroupAggregateBuilder<K, R0> {
+import static com.hazelcast.jet.aggregate.AggregateOperations.coAggregateOperationBuilder;
+
+/**
+ * Offers a step-by-step API to build a pipeline stage that performs a
+ * windowed co-grouping and aggregation of the data from several input
+ * stages. To obtain it, call {@link
+ * StageWithKeyAndWindow#aggregateBuilder()} on one of the stages to
+ * co-aggregate and refer to that method's Javadoc for further details.
+ * <p>
+ * <strong>Note:</strong> this is not a builder of {@code
+ * AggregateOperation}. If that' s what you are looking for, go {@link
+ * AggregateOperation#withCreate here}.
+ *
+ * @param <K> type of the key
+ * @param <R0> type of the aggregation result for stream-0
+ *
+ * @since 3.0
+ */
+public class WindowGroupAggregateBuilder<K, R0> {
+    private final GrAggBuilder<K> grAggBuilder;
+    private final CoAggregateOperationBuilder aggrOpBuilder = coAggregateOperationBuilder();
+
+    <T0> WindowGroupAggregateBuilder(
+            @Nonnull StageWithKeyAndWindow<T0, K> stage0,
+            @Nonnull AggregateOperation1<? super T0, ?, ? extends R0> aggrOp0
+    ) {
+        grAggBuilder = new GrAggBuilder<>(stage0);
+        aggrOpBuilder.add(Tag.tag0(), aggrOp0);
+    }
 
     /**
      * Returns the tag corresponding to the pipeline stage this builder was
@@ -31,7 +65,9 @@ public interface WindowGroupAggregateBuilder<K, R0> {
      * results from the aggregated stage.
      */
     @Nonnull
-    Tag<R0> tag0();
+    public Tag<R0> tag0() {
+        return Tag.tag0();
+    }
 
     /**
      * Adds another stage that will contribute its data to the windowed
@@ -40,10 +76,13 @@ public interface WindowGroupAggregateBuilder<K, R0> {
      * you'll pass to {@link #build build()}.
      */
     @Nonnull
-    <T, R> Tag<R> add(
+    public <T, R> Tag<R> add(
             @Nonnull StreamStageWithKey<T, K> stage,
             @Nonnull AggregateOperation1<? super T, ?, ? extends R> aggrOp
-    );
+    ) {
+        Tag<T> tag = grAggBuilder.add(stage);
+        return aggrOpBuilder.add(tag, aggrOp);
+    }
 
     /**
      * Creates and returns a pipeline stage that performs a windowed
@@ -53,5 +92,8 @@ public interface WindowGroupAggregateBuilder<K, R0> {
      * tags you got from this builder to access the results.
      */
     @Nonnull
-    StreamStage<KeyedWindowResult<K, ItemsByTag>> build();
+    public StreamStage<KeyedWindowResult<K, ItemsByTag>> build() {
+        AggregateOperation<Object[], ItemsByTag> aggrOp = aggrOpBuilder.build();
+        return grAggBuilder.buildStream(aggrOp);
+    }
 }

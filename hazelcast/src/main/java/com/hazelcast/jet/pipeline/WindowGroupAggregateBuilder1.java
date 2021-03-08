@@ -19,10 +19,39 @@ package com.hazelcast.jet.pipeline;
 import com.hazelcast.jet.aggregate.AggregateOperation;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.datamodel.Tag;
+import com.hazelcast.jet.impl.pipeline.GrAggBuilder;
+import com.hazelcast.jet.pipeline.StageWithKeyAndWindow;
+import com.hazelcast.jet.pipeline.StreamStage;
+import com.hazelcast.jet.pipeline.StreamStageWithKey;
 
 import javax.annotation.Nonnull;
 
-public interface WindowGroupAggregateBuilder1<T0, K> {
+/**
+ * Offers a step-by-step API to build a pipeline stage that performs a
+ * windowed co-grouping and aggregation of the data from several input
+ * stages. To obtain it, call {@link StageWithKeyAndWindow#aggregateBuilder()}
+ * on one of the stages to co-aggregate and refer to that method's Javadoc
+ * for further details.
+ * <p>
+ * This object is mainly intended to build a co-aggregation of four or more
+ * contributing stages. For up to three stages, prefer the direct {@code
+ * stage.aggregateN(...)} calls because they offer more static type safety.
+ * <p>
+ * <strong>Note:</strong> this is not a builder of {@code
+ * AggregateOperation}. If that' s what you are looking for, go {@link
+ * AggregateOperation#withCreate here}.
+ *
+ * @param <T0> the type of the stream-0 item
+ * @param <K> type of the key
+ *
+ * @since 3.0
+ */
+public class WindowGroupAggregateBuilder1<T0, K> {
+    private final GrAggBuilder<K> grAggBuilder;
+
+    WindowGroupAggregateBuilder1(@Nonnull StageWithKeyAndWindow<T0, K> s) {
+        grAggBuilder = new GrAggBuilder<>(s);
+    }
 
     /**
      * Returns the tag corresponding to the pipeline stage this builder
@@ -31,7 +60,9 @@ public interface WindowGroupAggregateBuilder1<T0, K> {
      * build(aggrOp)}.
      */
     @Nonnull
-    Tag<T0> tag0();
+    public Tag<T0> tag0() {
+        return Tag.tag0();
+    }
 
     /**
      * Adds another stage that will contribute its data to the windowed
@@ -40,7 +71,9 @@ public interface WindowGroupAggregateBuilder1<T0, K> {
      * you'll pass to {@link #build build()}.
      */
     @Nonnull
-    <T> Tag<T> add(@Nonnull StreamStageWithKey<T, K> stage);
+    public <T> Tag<T> add(@Nonnull StreamStageWithKey<T, K> stage) {
+        return grAggBuilder.add(stage);
+    }
 
     /**
      * Creates and returns a pipeline stage that performs a windowed
@@ -54,5 +87,7 @@ public interface WindowGroupAggregateBuilder1<T0, K> {
      * @return a new stage representing the co-aggregation
      */
     @Nonnull
-    <R> StreamStage<KeyedWindowResult<K, R>> build(@Nonnull AggregateOperation<?, ? extends R> aggrOp);
+    public <R> StreamStage<KeyedWindowResult<K, R>> build(@Nonnull AggregateOperation<?, ? extends R> aggrOp) {
+        return grAggBuilder.buildStream(aggrOp);
+    }
 }

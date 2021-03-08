@@ -27,10 +27,12 @@ import com.hazelcast.jet.impl.pipeline.transform.Transform;
 import com.hazelcast.jet.impl.pipeline.transform.WindowGroupTransform;
 import com.hazelcast.jet.pipeline.BatchStage;
 import com.hazelcast.jet.pipeline.BatchStageWithKey;
+import com.hazelcast.jet.pipeline.GroupAggregateBuilder1;
 import com.hazelcast.jet.pipeline.StageWithKeyAndWindow;
 import com.hazelcast.jet.pipeline.StreamStage;
 import com.hazelcast.jet.pipeline.StreamStageWithKey;
 import com.hazelcast.jet.pipeline.WindowDefinition;
+import com.hazelcast.jet.pipeline.WindowGroupAggregateBuilder1;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -43,8 +45,8 @@ import static com.hazelcast.jet.impl.util.Util.checkSerializable;
 import static com.hazelcast.jet.impl.util.Util.toList;
 
 /**
- * Support class for {@link GroupAggregateBuilder1Impl}
- * and {@link WindowGroupAggregateBuilder1Impl}. The
+ * Support class for {@link GroupAggregateBuilder1}
+ * and {@link WindowGroupAggregateBuilder1}. The
  * motivation is to have the ability to specify different output
  * types ({@code Entry<K, R>} vs. {@code TimestampedEntry<K, R>}).
  *

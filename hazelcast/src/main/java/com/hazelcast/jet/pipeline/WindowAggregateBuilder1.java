@@ -19,10 +19,37 @@ package com.hazelcast.jet.pipeline;
 import com.hazelcast.jet.aggregate.AggregateOperation;
 import com.hazelcast.jet.datamodel.Tag;
 import com.hazelcast.jet.datamodel.WindowResult;
+import com.hazelcast.jet.impl.pipeline.AggBuilder;
+import com.hazelcast.jet.impl.pipeline.AggBuilder.CreateOutStageFn;
+import com.hazelcast.jet.impl.pipeline.StreamStageImpl;
+import com.hazelcast.jet.pipeline.StageWithWindow;
+import com.hazelcast.jet.pipeline.StreamStage;
+import com.hazelcast.jet.pipeline.WindowDefinition;
 
 import javax.annotation.Nonnull;
 
-public interface WindowAggregateBuilder1<T0> {
+/**
+ * Offers a step-by-step fluent API to build a pipeline stage that
+ * performs a windowed co-aggregation of the data from several input stages.
+ * To obtain it, call {@link StageWithWindow#aggregateBuilder()} on one of
+ * the stages to co-aggregate and refer to that method's Javadoc for
+ * further details.
+ * <p>
+ * <strong>Note:</strong> this is not a builder of {@code
+ * AggregateOperation}. If that' s what you are looking for, go {@link
+ * AggregateOperation#withCreate here}.
+ *
+ * @param <T0> the type of the stream-0 item
+ *
+ * @since 3.0
+ */
+public class WindowAggregateBuilder1<T0> {
+    @Nonnull
+    private final AggBuilder aggBuilder;
+
+    WindowAggregateBuilder1(@Nonnull StreamStage<T0> s, @Nonnull WindowDefinition wDef) {
+        this.aggBuilder = new AggBuilder(s, wDef);
+    }
 
     /**
      * Returns the tag corresponding to the pipeline stage this builder
@@ -31,7 +58,9 @@ public interface WindowAggregateBuilder1<T0> {
      * build(aggrOp)}.
      */
     @Nonnull
-    Tag<T0> tag0();
+    public Tag<T0> tag0() {
+        return Tag.tag0();
+    }
 
     /**
      * Adds another stage that will contribute its data to the aggregate
@@ -40,7 +69,9 @@ public interface WindowAggregateBuilder1<T0> {
      * {@link #build build()}.
      */
     @Nonnull
-    <E> Tag<E> add(StreamStage<E> stage);
+    public <E> Tag<E> add(StreamStage<E> stage) {
+        return aggBuilder.add(stage);
+    }
 
     /**
      * Creates and returns a pipeline stage that performs a windowed
@@ -53,5 +84,8 @@ public interface WindowAggregateBuilder1<T0> {
      * @return a new stage representing the co-aggregation
      */
     @Nonnull
-    <A, R> StreamStage<WindowResult<R>> build(@Nonnull AggregateOperation<A, R> aggrOp);
+    public <A, R> StreamStage<WindowResult<R>> build(@Nonnull AggregateOperation<A, R> aggrOp) {
+        CreateOutStageFn<WindowResult<R>, StreamStage<WindowResult<R>>> createOutStageFn = StreamStageImpl::new;
+        return aggBuilder.build(aggrOp, createOutStageFn);
+    }
 }

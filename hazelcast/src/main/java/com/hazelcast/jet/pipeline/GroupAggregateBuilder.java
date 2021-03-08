@@ -16,14 +16,49 @@
 
 package com.hazelcast.jet.pipeline;
 
+import com.hazelcast.jet.Util;
+import com.hazelcast.jet.aggregate.AggregateOperation;
 import com.hazelcast.jet.aggregate.AggregateOperation1;
+import com.hazelcast.jet.aggregate.CoAggregateOperationBuilder;
 import com.hazelcast.jet.datamodel.ItemsByTag;
 import com.hazelcast.jet.datamodel.Tag;
+import com.hazelcast.jet.impl.pipeline.GrAggBuilder;
+import com.hazelcast.jet.pipeline.BatchStage;
+import com.hazelcast.jet.pipeline.BatchStageWithKey;
+import com.hazelcast.jet.pipeline.GroupAggregateBuilder;
 
 import javax.annotation.Nonnull;
-import java.util.Map;
+import java.util.Map.Entry;
 
-public interface GroupAggregateBuilder<K, R0> {
+import static com.hazelcast.jet.aggregate.AggregateOperations.coAggregateOperationBuilder;
+
+/**
+ * Offers a step-by-step API to build a pipeline stage that co-groups and
+ * aggregates the data from several input stages. To obtain it, call {@link
+ * BatchStageWithKey#aggregateBuilder(AggregateOperation1)
+ * stage.aggregateBuilder(aggrOp)} on one of the stages to co-group and
+ * refer to that method's Javadoc for further details.
+ * <p>
+ * <strong>Note:</strong> this is not a builder of {@code
+ * AggregateOperation}. If that' s what you are looking for, go {@link
+ * AggregateOperation#withCreate here}.
+ *
+ * @param <K> type of the grouping key
+ * @param <R0> type of the aggregation result for stream-0
+ *
+ * @since 3.0
+ */
+public class GroupAggregateBuilder<K, R0> {
+    private final GrAggBuilder<K> grAggBuilder;
+    private final CoAggregateOperationBuilder aggrOpBuilder = coAggregateOperationBuilder();
+
+    <T0> GroupAggregateBuilder(
+            @Nonnull BatchStageWithKey<T0, K> stage0,
+            @Nonnull AggregateOperation1<? super T0, ?, ? extends R0> aggrOp0
+    ) {
+        grAggBuilder = new GrAggBuilder<>(stage0);
+        aggrOpBuilder.add(Tag.tag0(), aggrOp0);
+    }
 
     /**
      * Returns the tag corresponding to the pipeline stage this builder
@@ -32,7 +67,9 @@ public interface GroupAggregateBuilder<K, R0> {
      * build(aggrOp)}.
      */
     @Nonnull
-    Tag<R0> tag0();
+    public Tag<R0> tag0() {
+        return Tag.tag0();
+    }
 
     /**
      * Adds another stage that will contribute its data to the aggregate
@@ -41,10 +78,13 @@ public interface GroupAggregateBuilder<K, R0> {
      * {@link #build build()}.
      */
     @Nonnull
-    <T, R> Tag<R> add(
+    public <T, R> Tag<R> add(
             @Nonnull BatchStageWithKey<T, K> stage,
             @Nonnull AggregateOperation1<? super T, ?, ? extends R> aggrOp
-    );
+    ) {
+        Tag<T> tag = grAggBuilder.add(stage);
+        return aggrOpBuilder.add(tag, aggrOp);
+    }
 
     /**
      * Creates and returns a pipeline stage that performs the co-aggregation
@@ -57,5 +97,8 @@ public interface GroupAggregateBuilder<K, R0> {
      * @return a new stage representing the co-aggregation
      */
     @Nonnull
-    BatchStage<Map.Entry<K, ItemsByTag>> build();
+    public BatchStage<Entry<K, ItemsByTag>> build() {
+        AggregateOperation<Object[], ItemsByTag> aggrOp = aggrOpBuilder.build();
+        return grAggBuilder.buildBatch(aggrOp, Util::entry);
+    }
 }

@@ -25,9 +25,6 @@ import com.hazelcast.jet.datamodel.WindowResult;
 import com.hazelcast.jet.impl.pipeline.AggBuilder;
 import com.hazelcast.jet.impl.pipeline.AggBuilder.CreateOutStageFn;
 import com.hazelcast.jet.impl.pipeline.StreamStageImpl;
-import com.hazelcast.jet.pipeline.StageWithWindow;
-import com.hazelcast.jet.pipeline.StreamStage;
-import com.hazelcast.jet.pipeline.WindowDefinition;
 
 import javax.annotation.Nonnull;
 

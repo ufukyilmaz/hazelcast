@@ -23,9 +23,6 @@ import com.hazelcast.jet.datamodel.ItemsByTag;
 import com.hazelcast.jet.datamodel.KeyedWindowResult;
 import com.hazelcast.jet.datamodel.Tag;
 import com.hazelcast.jet.impl.pipeline.GrAggBuilder;
-import com.hazelcast.jet.pipeline.StageWithKeyAndWindow;
-import com.hazelcast.jet.pipeline.StreamStage;
-import com.hazelcast.jet.pipeline.StreamStageWithKey;
 
 import javax.annotation.Nonnull;
 

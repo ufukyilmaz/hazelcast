@@ -41,7 +41,7 @@ import java.util.function.Supplier;
 import static com.hazelcast.jet.impl.util.ExceptionUtil.peel;
 import static com.hazelcast.jet.impl.util.ExceptionUtil.rethrow;
 import static com.hazelcast.jet.impl.util.Util.memoizeConcurrent;
-import static com.hazelcast.jet.impl.util.DateUtil.toLocalDateTime;
+import static com.hazelcast.jet.impl.util.Util.toLocalDateTime;
 
 /**
  * Base {@link Job} implementation for both client and member proxy.

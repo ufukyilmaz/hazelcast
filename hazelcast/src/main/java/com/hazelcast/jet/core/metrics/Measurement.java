@@ -16,7 +16,7 @@
 
 package com.hazelcast.jet.core.metrics;
 
-import com.hazelcast.jet.impl.util.DateUtil;
+import com.hazelcast.jet.impl.util.Util;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
@@ -165,7 +165,7 @@ public final class Measurement implements IdentifiedDataSerializable {
 
         sb.append(String.format("%s %,5d", metric, value))
                 .append(" ")
-                .append(DateUtil.toLocalTime(timestamp))
+                .append(Util.toLocalTime(timestamp))
                 .append(" [");
 
         String tags = this.tags.entrySet().stream()

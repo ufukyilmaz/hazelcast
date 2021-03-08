@@ -27,7 +27,6 @@ import com.hazelcast.jet.impl.JobResult;
 import com.hazelcast.jet.impl.JobSummary;
 import com.hazelcast.jet.impl.JobSuspensionCauseImpl;
 import com.hazelcast.jet.impl.SnapshotValidationRecord;
-import com.hazelcast.jet.impl.aggregate.AggregateOpAggregator;
 import com.hazelcast.jet.impl.connector.WriteFileP;
 import com.hazelcast.jet.impl.operation.CompleteExecutionOperation;
 import com.hazelcast.jet.impl.operation.GetJobConfigOperation;

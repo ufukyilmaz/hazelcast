@@ -34,7 +34,6 @@ import com.hazelcast.jet.impl.pipeline.transform.AggregateTransform;
 import com.hazelcast.jet.impl.pipeline.transform.Transform;
 import com.hazelcast.jet.pipeline.BatchStage;
 import com.hazelcast.jet.pipeline.BatchStageWithKey;
-import com.hazelcast.jet.pipeline.HashJoinBuilder;
 import com.hazelcast.jet.pipeline.JoinClause;
 import com.hazelcast.jet.pipeline.ServiceFactory;
 
@@ -298,11 +297,5 @@ public class BatchStageImpl<T> extends ComputeStageImplBase<T> implements BatchS
     @SuppressWarnings("unchecked")
     <RET> RET newStage(@Nonnull AbstractTransform transform, @Nonnull FunctionAdapter fnAdapter) {
         return (RET) new BatchStageImpl<>(transform, pipelineImpl);
-    }
-
-    @Nonnull
-    @Override
-    public HashJoinBuilder<T> hashJoinBuilder() {
-        return new HashJoinBuilderImpl<>(this);
     }
 }

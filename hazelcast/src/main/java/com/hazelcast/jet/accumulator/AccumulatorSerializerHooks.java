@@ -16,6 +16,7 @@
 
 package com.hazelcast.jet.accumulator;
 
+import com.hazelcast.jet.impl.serialization.SerializerHookConstants;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Serializer;
@@ -30,13 +31,6 @@ import java.math.BigInteger;
  * com.hazelcast.jet.accumulator} package. This is not a public-facing API.
  */
 final class AccumulatorSerializerHooks {
-
-    public static final int LONG_ACC = -303;
-    public static final int DOUBLE_ACC = -304;
-    public static final int MUTABLE_REFERENCE = -305;
-    public static final int LIN_TREND_ACC = -306;
-    public static final int LONG_LONG_ACC = -307;
-    public static final int LONG_DOUBLE_ACC = -308;
 
     /**
      * Private constructor
@@ -56,7 +50,7 @@ final class AccumulatorSerializerHooks {
             return new StreamSerializer<LongAccumulator>() {
                 @Override
                 public int getTypeId() {
-                    return LONG_ACC;
+                    return SerializerHookConstants.LONG_ACC;
                 }
 
                 @Override
@@ -89,7 +83,7 @@ final class AccumulatorSerializerHooks {
             return new StreamSerializer<DoubleAccumulator>() {
                 @Override
                 public int getTypeId() {
-                    return DOUBLE_ACC;
+                    return SerializerHookConstants.DOUBLE_ACC;
                 }
 
                 @Override
@@ -122,7 +116,7 @@ final class AccumulatorSerializerHooks {
             return new StreamSerializer<MutableReference>() {
                 @Override
                 public int getTypeId() {
-                    return MUTABLE_REFERENCE;
+                    return SerializerHookConstants.MUTABLE_REFERENCE;
                 }
 
                 @Override
@@ -155,7 +149,7 @@ final class AccumulatorSerializerHooks {
             return new StreamSerializer<LinTrendAccumulator>() {
                 @Override
                 public int getTypeId() {
-                    return LIN_TREND_ACC;
+                    return SerializerHookConstants.LIN_TREND_ACC;
                 }
 
                 @Override
@@ -197,7 +191,7 @@ final class AccumulatorSerializerHooks {
             return new StreamSerializer<LongLongAccumulator>() {
                 @Override
                 public int getTypeId() {
-                    return LONG_LONG_ACC;
+                    return SerializerHookConstants.LONG_LONG_ACC;
                 }
 
                 @Override
@@ -231,7 +225,7 @@ final class AccumulatorSerializerHooks {
             return new StreamSerializer<LongDoubleAccumulator>() {
                 @Override
                 public int getTypeId() {
-                    return LONG_DOUBLE_ACC;
+                    return SerializerHookConstants.LONG_DOUBLE_ACC;
                 }
 
                 @Override

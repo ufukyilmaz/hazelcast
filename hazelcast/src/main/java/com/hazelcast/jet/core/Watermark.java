@@ -18,6 +18,7 @@ package com.hazelcast.jet.core;
 
 import com.hazelcast.jet.impl.execution.BroadcastItem;
 
+import static com.hazelcast.jet.impl.execution.WatermarkCoalescer.IDLE_MESSAGE;
 import static com.hazelcast.jet.impl.util.DateUtil.toLocalTime;
 
 /**
@@ -62,7 +63,7 @@ public final class Watermark implements BroadcastItem {
 
     @Override
     public String toString() {
-        return timestamp == Long.MAX_VALUE
+        return timestamp == IDLE_MESSAGE.timestamp
                 ? "Watermark{IDLE_MESSAGE}"
                 : "Watermark{ts=" + toLocalTime(timestamp) + '}';
     }

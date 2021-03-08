@@ -19,7 +19,6 @@ package com.hazelcast.jet.pipeline;
 import com.hazelcast.function.BiFunctionEx;
 import com.hazelcast.function.FunctionEx;
 import com.hazelcast.function.PredicateEx;
-import com.hazelcast.jet.DAGInterface;
 import com.hazelcast.jet.Traversers;
 import com.hazelcast.jet.Util;
 import com.hazelcast.jet.accumulator.LongAccumulator;
@@ -309,9 +308,9 @@ public class StreamStageTest extends PipelineStreamTestSupport {
                 streamToString(sinkList.stream(), Object::toString));
     }
 
-    private void assertVertexCount(DAGInterface dag, int expectedCount) {
+    private void assertVertexCount(DAG dag, int expectedCount) {
         int[] count = {0};
-        ((DAG) dag).iterator().forEachRemaining(v -> count[0]++);
+        dag.iterator().forEachRemaining(v -> count[0]++);
         assertEquals("unexpected vertex count in DAG:\n" + dag.toDotString(), expectedCount, count[0]);
     }
 

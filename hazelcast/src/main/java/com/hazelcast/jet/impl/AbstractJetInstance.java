@@ -19,7 +19,6 @@ package com.hazelcast.jet.impl;
 import com.hazelcast.cluster.Cluster;
 import com.hazelcast.collection.IList;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.jet.DAGInterface;
 import com.hazelcast.jet.JetCacheManager;
 import com.hazelcast.jet.JetInstance;
 import com.hazelcast.jet.Job;
@@ -72,13 +71,13 @@ public abstract class AbstractJetInstance implements JetInstance {
     }
 
     @Nonnull @Override
-    public Job newJob(@Nonnull DAGInterface dag, @Nonnull JobConfig config) {
+    public Job newJob(@Nonnull DAG dag, @Nonnull JobConfig config) {
         long jobId = newJobId();
         return newJob(jobId, dag, config);
     }
 
     @Nonnull
-    public Job newJob(long jobId, @Nonnull DAGInterface dag, @Nonnull JobConfig config) {
+    public Job newJob(long jobId, @Nonnull DAG dag, @Nonnull JobConfig config) {
         uploadResources(jobId, config);
         return newJobProxy(jobId, dag, config);
     }
@@ -126,7 +125,7 @@ public abstract class AbstractJetInstance implements JetInstance {
     }
 
     @Nonnull @Override
-    public Job newJobIfAbsent(@Nonnull DAGInterface dag, @Nonnull JobConfig config) {
+    public Job newJobIfAbsent(@Nonnull DAG dag, @Nonnull JobConfig config) {
         return newJobIfAbsent((Object) dag, config);
     }
 

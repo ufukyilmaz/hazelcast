@@ -18,7 +18,6 @@ package com.hazelcast.jet.testjob;
 
 import com.hazelcast.jet.Jet;
 import com.hazelcast.jet.JetInstance;
-import com.hazelcast.jet.DAGInterface;
 import com.hazelcast.jet.core.AbstractProcessor;
 import com.hazelcast.jet.core.DAG;
 
@@ -28,7 +27,7 @@ public class TestJob {
         DAG dag = new DAG();
         dag.newVertex("v", StreamNoopProcessor::new);
         JetInstance instance = Jet.bootstrappedInstance();
-        instance.newJob((DAGInterface) dag);
+        instance.newJob(dag);
     }
 
     private static class StreamNoopProcessor extends AbstractProcessor {

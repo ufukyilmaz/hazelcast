@@ -83,7 +83,7 @@ public class RebalanceBatchStageTest extends PipelineTestSupport {
 
         // Then
         mapped.writeTo(sink);
-        DAG dag = (DAG) p.toDag();
+        DAG dag = p.toDag();
         Edge srcToMap = dag.getInboundEdges("map").get(0);
         assertTrue("Rebalancing should make the edge distributed", srcToMap.isDistributed());
         assertNull("Didn't rebalance by key, the edge must not be partitioned", srcToMap.getPartitioner());
@@ -104,7 +104,7 @@ public class RebalanceBatchStageTest extends PipelineTestSupport {
 
         // Then
         mapped.writeTo(sink);
-        DAG dag = (DAG) p.toDag();
+        DAG dag = p.toDag();
         Edge srcToMap = dag.getInboundEdges("map").get(0);
         assertTrue("Rebalancing should make the edge distributed", srcToMap.isDistributed());
         assertNotNull("Rebalancing by key, the edge must be partitioned", srcToMap.getPartitioner());
@@ -125,7 +125,7 @@ public class RebalanceBatchStageTest extends PipelineTestSupport {
 
         // Then
         mapped.writeTo(sink);
-        DAG dag = (DAG) p.toDag();
+        DAG dag = p.toDag();
         Edge srcToMap = dag.getInboundEdges("map").get(0);
         assertTrue("Rebalancing should make the edge distributed", srcToMap.isDistributed());
         assertNull("Didn't rebalance by key, the edge must not be partitioned", srcToMap.getPartitioner());
@@ -146,7 +146,7 @@ public class RebalanceBatchStageTest extends PipelineTestSupport {
 
         // Then
         mapped.writeTo(sink);
-        DAG dag = (DAG) p.toDag();
+        DAG dag = p.toDag();
         Edge srcToMap = dag.getInboundEdges("map").get(0);
         assertTrue("Rebalancing should make the edge distributed", srcToMap.isDistributed());
         assertNotNull("Rebalancing by key, the edge must be partitioned", srcToMap.getPartitioner());
@@ -192,7 +192,7 @@ public class RebalanceBatchStageTest extends PipelineTestSupport {
         // Then
         merged.writeTo(assertAnyOrder(IntStream.range(0, 2 * itemCount).boxed().collect(toList())));
 
-        DAG dag = (DAG) p.toDag();
+        DAG dag = p.toDag();
         List<Edge> intoMerge = dag.getInboundEdges("merge");
         assertFalse("Didn't rebalance this stage, why is its edge distributed?", intoMerge.get(0).isDistributed());
         assertTrue("Rebalancing should make the edge distributed", intoMerge.get(1).isDistributed());
@@ -216,7 +216,7 @@ public class RebalanceBatchStageTest extends PipelineTestSupport {
         // Then
         merged.writeTo(assertAnyOrder(IntStream.range(0, 2 * itemCount).boxed().collect(toList())));
 
-        DAG dag = (DAG) p.toDag();
+        DAG dag = p.toDag();
         List<Edge> intoMerge = dag.getInboundEdges("merge");
         assertFalse("Didn't rebalance this stage, why is its edge distributed?", intoMerge.get(0).isDistributed());
         assertNull("Didn't rebalance by key, the edge must not be partitioned", intoMerge.get(0).getPartitioner());
@@ -241,7 +241,7 @@ public class RebalanceBatchStageTest extends PipelineTestSupport {
         // Then
         merged.writeTo(assertAnyOrder(IntStream.range(0, 2 * itemCount).boxed().collect(toList())));
 
-        DAG dag = (DAG) p.toDag();
+        DAG dag = p.toDag();
         List<Edge> intoMerge = dag.getInboundEdges("merge");
         assertTrue("Rebalancing should make the edge distributed", intoMerge.get(0).isDistributed());
         assertNull("Didn't rebalance by key, the edge must not be partitioned", intoMerge.get(0).getPartitioner());
@@ -268,7 +268,7 @@ public class RebalanceBatchStageTest extends PipelineTestSupport {
 
         // Then
         joined.writeTo(sink);
-        DAG dag = (DAG) p.toDag();
+        DAG dag = p.toDag();
         Edge stage0ToJoin = dag.getInboundEdges("2-way hash-join-joiner").get(0);
         assertTrue("Rebalancing should make the edge distributed", stage0ToJoin.isDistributed());
         assertNull("Didn't rebalance by key, the edge must not be partitioned", stage0ToJoin.getPartitioner());
@@ -299,7 +299,7 @@ public class RebalanceBatchStageTest extends PipelineTestSupport {
 
         // Then
         joined.writeTo(sink);
-        DAG dag = (DAG) p.toDag();
+        DAG dag = p.toDag();
         Edge mapToJoin = dag.getInboundEdges("2-way hash-join-collector1").get(0);
         assertTrue("Edge into a hash-join collector vertex must be distributed", mapToJoin.isDistributed());
         assertNull("Didn't rebalance by key, the edge must not be partitioned", mapToJoin.getPartitioner());
@@ -332,7 +332,7 @@ public class RebalanceBatchStageTest extends PipelineTestSupport {
 
         // Then
         joined.writeTo(sink);
-        DAG dag = (DAG) p.toDag();
+        DAG dag = p.toDag();
         Edge stage0ToJoin = dag.getInboundEdges("2-way hash-join-joiner").get(0);
         assertTrue("Rebalancing should make the edge distributed", stage0ToJoin.isDistributed());
         assertNull("Didn't rebalance by key, the edge must not be partitioned", stage0ToJoin.getPartitioner());
@@ -376,7 +376,7 @@ public class RebalanceBatchStageTest extends PipelineTestSupport {
 
         // Then
         aggregated.writeTo(sink);
-        DAG dag = (DAG) p.toDag();
+        DAG dag = p.toDag();
         try {
             Edge srcToAggregate = dag.getOutboundEdges("items").get(0);
             assertNotNull("Rebalanced edge to grouped aggregation must be partitioned", srcToAggregate.getPartitioner());
@@ -632,7 +632,7 @@ public class RebalanceBatchStageTest extends PipelineTestSupport {
     }
 
     private void assertSingleStageAggregation() {
-        DAG dag = (DAG) p.toDag();
+        DAG dag = p.toDag();
         try {
             Edge srcToAggregate = dag.getOutboundEdges("items").get(0);
             assertTrue("Outbound edge after rebalancing must be distributed", srcToAggregate.isDistributed());
@@ -646,7 +646,7 @@ public class RebalanceBatchStageTest extends PipelineTestSupport {
     }
 
     private void assertTwoStageGlobalAggregation(int i) {
-        DAG dag = (DAG) p.toDag();
+        DAG dag = p.toDag();
         try {
             Edge srcToAggregate = dag.getOutboundEdges("items" + (i == 1 ? "" : "-" + i)).get(0);
             assertNull("Rebalanced edge to global aggregation must be unicast", srcToAggregate.getPartitioner());

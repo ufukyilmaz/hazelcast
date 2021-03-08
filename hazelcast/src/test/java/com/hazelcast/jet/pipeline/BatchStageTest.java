@@ -84,18 +84,18 @@ public class BatchStageTest extends PipelineTestSupport {
 
     @Test(expected = IllegalArgumentException.class)
     public void when_emptyPipelineToDag_then_exceptionInIterator() {
-        ((DAG) Pipeline.create().toDag()).iterator();
+        (Pipeline.create().toDag()).iterator();
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void when_missingSink_then_exceptionInDagIterator() {
-        ((DAG) p.toDag()).iterator();
+        (p.toDag()).iterator();
     }
 
     @Test
     public void when_minimalPipeline_then_validDag() {
         batchStageFromList(emptyList()).writeTo(sink);
-        assertTrue(((DAG) p.toDag()).iterator().hasNext());
+        assertTrue((p.toDag()).iterator().hasNext());
     }
 
     @Test
@@ -1322,7 +1322,7 @@ public class BatchStageTest extends PipelineTestSupport {
                 ProcessorMetaSupplier.of(lp, ProcessorSupplier.of(noopP()))))
                 .addTimestamps(o -> 0L, 0)
                 .writeTo(Sinks.noop());
-        DAG dag = (DAG) p.toDag();
+        DAG dag = p.toDag();
 
         // Then
         Vertex tsVertex = dag.getVertex("add-timestamps");
@@ -1339,7 +1339,7 @@ public class BatchStageTest extends PipelineTestSupport {
                 .setLocalParallelism(lp)
                 .addTimestamps(t -> System.currentTimeMillis(), 1000)
                 .writeTo(Sinks.noop());
-        DAG dag = (DAG) p.toDag();
+        DAG dag = p.toDag();
 
         // Then
         Vertex tsVertex = dag.getVertex("add-timestamps");

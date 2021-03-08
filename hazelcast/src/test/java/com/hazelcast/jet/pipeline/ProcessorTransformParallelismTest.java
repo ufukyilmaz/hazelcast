@@ -241,9 +241,9 @@ public class ProcessorTransformParallelismTest {
     private DAG applyTransformAndGetDag(FunctionEx<StreamStage<Integer>, StreamStage<Integer>> transform) {
         Pipeline p = Pipeline.create();
         StreamStage<Integer> source = p.readFrom(TestSources.items(1))
-                                       .addTimestamps(t -> 0, 0);
+                .addTimestamps(t -> 0, 0);
         StreamStage<Integer> applied = source.apply(transform);
         applied.writeTo(Sinks.noop());
-        return (DAG) p.toDag();
+        return p.toDag();
     }
 }

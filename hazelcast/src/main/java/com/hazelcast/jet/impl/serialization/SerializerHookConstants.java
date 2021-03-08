@@ -41,18 +41,15 @@ public final class SerializerHookConstants {
 //    public static final int LONG_LONG_ACC = -307;
 //    public static final int LONG_DOUBLE_ACC = -308;
 
-    /**
-     * See {@link com.hazelcast.jet.datamodel.DataModelSerializerHooks} for usage
-     */
-//    public static final int TUPLE2 = -309;
-//    public static final int TUPLE3 = -310;
-//    public static final int TUPLE4 = -311;
-//    public static final int TUPLE5 = -312;
-//    public static final int TAG = -313;
-//    public static final int ITEMS_BY_TAG = -314;
-//    public static final int WINDOW_RESULT = -320;
-//    public static final int KEYED_WINDOW_RESULT = -321;
-//    public static final int TIMESTAMPED_ITEM = -325;
+    public static final int TUPLE2 = -309;
+    public static final int TUPLE3 = -310;
+    public static final int TUPLE4 = -311;
+    public static final int TUPLE5 = -312;
+    public static final int TAG = -313;
+    public static final int ITEMS_BY_TAG = -314;
+    public static final int WINDOW_RESULT = -320;
+    public static final int KEYED_WINDOW_RESULT = -321;
+    public static final int TIMESTAMPED_ITEM = -325;
 
     public static final int WATERMARK = -315;
     public static final int SNAPSHOT_BARRIER = -316;

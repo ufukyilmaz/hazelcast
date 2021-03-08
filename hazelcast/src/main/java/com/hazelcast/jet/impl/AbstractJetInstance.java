@@ -24,7 +24,6 @@ import com.hazelcast.jet.JetCacheManager;
 import com.hazelcast.jet.JetInstance;
 import com.hazelcast.jet.Job;
 import com.hazelcast.jet.JobAlreadyExistsException;
-import com.hazelcast.jet.JobStateSnapshot;
 import com.hazelcast.jet.Observable;
 import com.hazelcast.jet.config.JobConfig;
 import com.hazelcast.jet.core.DAG;
@@ -36,14 +35,12 @@ import com.hazelcast.jet.impl.util.Util;
 import com.hazelcast.jet.pipeline.Pipeline;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.IMap;
-import com.hazelcast.map.impl.MapService;
 import com.hazelcast.replicatedmap.ReplicatedMap;
 import com.hazelcast.ringbuffer.impl.RingbufferService;
 import com.hazelcast.sql.SqlService;
 import com.hazelcast.topic.ITopic;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +48,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static com.hazelcast.jet.impl.JobRepository.exportedSnapshotMapName;
 import static com.hazelcast.jet.impl.util.ExceptionUtil.peel;
 import static com.hazelcast.jet.impl.util.ExceptionUtil.rethrow;
 import static com.hazelcast.jet.impl.util.LoggingUtil.logFine;
@@ -244,32 +240,4 @@ public abstract class AbstractJetInstance implements JetInstance {
     public abstract Job newJobProxy(long jobId, Object jobDefinition, JobConfig config);
 
     public abstract List<Long> getJobIdsByName(String name);
-
-    @Nullable
-    @Override
-    public JobStateSnapshot getJobStateSnapshot(@Nonnull String name) {
-        String mapName = exportedSnapshotMapName(name);
-        if (!existsDistributedObject(MapService.SERVICE_NAME, mapName)) {
-            return null;
-        }
-        IMap<Object, Object> map = getMap(mapName);
-        Object validationRecord = map.get(SnapshotValidationRecord.KEY);
-        if (validationRecord instanceof SnapshotValidationRecord) {
-            // update the cache - for robustness. For example after the map was copied
-            getMap(JobRepository.EXPORTED_SNAPSHOTS_DETAIL_CACHE).set(name, validationRecord);
-            return new JobStateSnapshotImpl(this, name, (SnapshotValidationRecord) validationRecord);
-        } else {
-            return null;
-        }
-    }
-
-    @Nonnull
-    @Override
-    public Collection<JobStateSnapshot> getJobStateSnapshots() {
-        return getHazelcastInstance().getMap(JobRepository.EXPORTED_SNAPSHOTS_DETAIL_CACHE)
-                .entrySet().stream()
-                .map(entry -> new JobStateSnapshotImpl(this, (String) entry.getKey(),
-                        (SnapshotValidationRecord) entry.getValue()))
-                .collect(Collectors.toList());
-    }
 }

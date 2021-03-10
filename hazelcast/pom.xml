@@ -247,6 +247,10 @@
                             <artifactSet>
                                 <includes>
                                     <include>com.fasterxml.jackson.core:jackson-core</include>
+                                    <include>com.fasterxml.jackson.core:jackson-databind</include>
+                                    <include>com.fasterxml.jackson.jr:jackson-jr-objects</include>
+                                    <include>com.fasterxml.jackson.jr:jackson-jr-annotation-support</include>
+                                    <include>com.fasterxml.jackson.dataformat:jackson-dataformat-csv</include>
                                     <include>org.snakeyaml:snakeyaml-engine</include>
                                     <include>io.github.classgraph:classgraph</include>
                                 </includes>
@@ -396,6 +400,40 @@
             <version>${classgraph.version}</version>
             <scope>compile</scope>
         </dependency>
+
+        <!-- JetCommandLine dependencies - optional, packaged in server distribution -->
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>${picocli.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-terminal</artifactId>
+            <version>${jline.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-reader</artifactId>
+            <version>${jline.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <!-- for windows -->
+        <dependency>
+            <groupId>org.fusesource.jansi</groupId>
+            <artifactId>jansi</artifactId>
+            <version>1.18</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-terminal-jansi</artifactId>
+            <version>${jline.version}</version>
+            <optional>true</optional>
+        </dependency>
+
         <dependency>
             <groupId>com.github.stefanbirkner</groupId>
             <artifactId>system-lambda</artifactId>

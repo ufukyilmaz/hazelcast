@@ -22,10 +22,12 @@ import com.hazelcast.sql.impl.type.QueryDataType;
 import com.hazelcast.sql.impl.type.QueryDataTypeFamily;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlCallBinding;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlFunction;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
@@ -56,7 +58,7 @@ public final class HazelcastTypeCoercion extends TypeCoercionImpl {
 
     @Override
     public boolean coerceOperandType(SqlValidatorScope scope, SqlCall call, int index, RelDataType targetType) {
-        SqlNode operand = call.getOperandList().get(index);
+        SqlNode operand = call.operand(index);
         return coerceNode(scope, operand, targetType, cast -> call.setOperand(index, cast));
     }
 
@@ -84,13 +86,29 @@ public final class HazelcastTypeCoercion extends TypeCoercionImpl {
             targetTypeSpec = SqlTypeUtil.convertTypeToSpec(targetType);
         }
 
-        SqlNode cast = HazelcastSqlOperatorTable.CAST.createCall(SqlParserPos.ZERO, node, targetTypeSpec);
+        SqlNode cast = cast(node, targetTypeSpec);
 
         replaceFn.accept(cast);
 
         validator.deriveType(scope, cast);
 
         return true;
+    }
+
+    private static SqlNode cast(SqlNode node, SqlDataTypeSpec targetTypeSpec) {
+        if (node.getKind() == SqlKind.ARGUMENT_ASSIGNMENT) {
+            // transform name => 'value' into name => cast('value')
+            SqlBasicCall call = (SqlBasicCall) node;
+
+            SqlNode value = call.getOperandList().get(0);
+            SqlNode name = call.getOperandList().get(1);
+
+            SqlNode cast = cast(value, targetTypeSpec);
+
+            return call.getOperator().createCall(SqlParserPos.ZERO, cast, name);
+        } else {
+            return HazelcastSqlOperatorTable.CAST.createCall(SqlParserPos.ZERO, node, targetTypeSpec);
+        }
     }
 
     @Override
@@ -228,7 +246,28 @@ public final class HazelcastTypeCoercion extends TypeCoercionImpl {
 
     @Override
     public boolean userDefinedFunctionCoercion(SqlValidatorScope scope, SqlCall call, SqlFunction function) {
-        throw new UnsupportedOperationException("Should not be called");
+        // the code below is copied from superclass implementation, added here to ensure that we never rely on Calcite's
+        // coercion logic, but instead provide our own, to fully control operator behavior
+        final List<RelDataType> paramTypes = function.getParamTypes();
+        assert paramTypes != null;
+        boolean coerced = false;
+        for (int i = 0; i < call.operandCount(); i++) {
+            SqlNode operand = call.operand(i);
+            if (operand.getKind() == SqlKind.ARGUMENT_ASSIGNMENT) {
+                final List<SqlNode> operandList = ((SqlCall) operand).getOperandList();
+                String name = ((SqlIdentifier) operandList.get(1)).getSimple();
+                int formalIndex = function.getParamNames().indexOf(name);
+                if (formalIndex < 0) {
+                    return false;
+                }
+                // Column list operand type is not supported now.
+                coerced = coerceOperandType(scope, (SqlCall) operand, 0,
+                        paramTypes.get(formalIndex)) || coerced;
+            } else {
+                coerced = coerceOperandType(scope, call, i, paramTypes.get(i)) || coerced;
+            }
+        }
+        return coerced;
     }
 
     /**

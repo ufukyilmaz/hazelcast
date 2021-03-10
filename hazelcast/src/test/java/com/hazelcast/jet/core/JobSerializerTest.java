@@ -109,7 +109,7 @@ public class JobSerializerTest extends SimpleTestInClusterSupport {
         client().newJob(pipeline, jobConfig()).join();
 
         IMap<Integer, Value> map = client().getMap(SINK_MAP_NAME);
-        assertThat(map).containsExactlyInAnyOrderEntriesOf(
+        assertThat((Map<Integer, Value>) map).containsExactlyInAnyOrderEntriesOf(
                 ImmutableMap.of(1, new Value(1), 2, new Value(2))
         );
     }

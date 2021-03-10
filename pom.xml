@@ -63,7 +63,7 @@
         <maven.source.plugin.version>2.2.1</maven.source.plugin.version>
         <maven.javadoc.plugin.version>3.2.0</maven.javadoc.plugin.version>
         <maven.javadoc.plugin.excludePackageNames>
-            *.impl:*.impl.*:*.internal:*.internal.*:*.operations:*.proxy:*.util:
+            *.impl:*.impl.*:*.internal:*.internal.*:*.operations:*.proxy:
             com.hazelcast.aws.security:*.handlermigration:*.client.connection.nio:
             *.client.console:*.client.protocol.generator:*.cluster.client:
             *.concurrent:*.nio.ascii:*.nio.ssl:*.nio.tcp:*.partition.client:
@@ -92,7 +92,7 @@
 
         <log4j.version>1.2.17</log4j.version>
 
-        <log4j2.version>2.13.3</log4j2.version>
+        <log4j2.version>2.14.0</log4j2.version>
         <slf4j.api.version>1.7.30</slf4j.api.version>
 
         <jms.api.version>2.0.1</jms.api.version>
@@ -1517,7 +1517,7 @@
         <dependency>
             <groupId>nl.jqno.equalsverifier</groupId>
             <artifactId>equalsverifier</artifactId>
-            <version>3.5.5</version>
+            <version>1.7.8</version>
             <scope>test</scope>
         </dependency>
         <dependency>

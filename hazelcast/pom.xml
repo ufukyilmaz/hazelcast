@@ -406,18 +406,21 @@
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
             <version>${picocli.version}</version>
+            <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.jline</groupId>
             <artifactId>jline-terminal</artifactId>
             <version>${jline.version}</version>
+            <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.jline</groupId>
             <artifactId>jline-reader</artifactId>
             <version>${jline.version}</version>
+            <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <!-- for windows -->
@@ -425,12 +428,14 @@
             <groupId>org.fusesource.jansi</groupId>
             <artifactId>jansi</artifactId>
             <version>1.18</version>
+            <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.jline</groupId>
             <artifactId>jline-terminal-jansi</artifactId>
             <version>${jline.version}</version>
+            <scope>provided</scope>
             <optional>true</optional>
         </dependency>
 

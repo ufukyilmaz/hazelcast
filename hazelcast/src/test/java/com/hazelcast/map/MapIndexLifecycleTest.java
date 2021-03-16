@@ -208,7 +208,10 @@ public class MapIndexLifecycleTest extends HazelcastTestSupport {
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
             assertTrue("record stores not empty", maps.isEmpty());
 
-            ConcurrentMap<String, Indexes> indexes = container.getIndexes();
+            Map<String, Indexes> indexes = container.getIndexes()
+                    .entrySet().stream()
+                    .filter(e -> !e.getKey().startsWith(JobRepository.INTERNAL_JET_OBJECTS_PREFIX))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
             assertTrue("indexes not empty", indexes.isEmpty());
         }
     }

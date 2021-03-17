@@ -87,8 +87,7 @@ public class JetService implements ManagedService, MembershipAwareService, LiveO
     public JetService(Node node) {
         this.logger = node.getLogger(getClass());
         this.liveOperationRegistry = new LiveOperationRegistry();
-        this.config = node.config.getJetConfig();
-
+        this.config = node.getConfig().getJetConfig();
 
         JetSqlCoreBackend sqlCoreBackend;
         try {

@@ -48,6 +48,7 @@ import com.hazelcast.internal.serialization.impl.DefaultSerializationServiceBuil
 import com.hazelcast.internal.util.JVMUtil;
 import com.hazelcast.internal.util.MapUtil;
 import com.hazelcast.jet.JetInstance;
+import com.hazelcast.jet.impl.JetClientInstanceImpl;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.map.impl.MapService;
@@ -77,11 +78,13 @@ public class DefaultClientExtension implements ClientExtension {
     protected static final ILogger LOGGER = Logger.getLogger(ClientExtension.class);
 
     protected volatile HazelcastClientInstanceImpl client;
+    protected JetClientInstanceImpl jetClient;
 
     private final MemoryStats memoryStats = new DefaultMemoryStats();
 
     @Override
     public void beforeStart(HazelcastClientInstanceImpl client) {
+        this.jetClient = new JetClientInstanceImpl(client);
         this.client = client;
     }
 
@@ -227,6 +230,6 @@ public class DefaultClientExtension implements ClientExtension {
 
     @Override
     public JetInstance getJetInstance() {
-        throw new IllegalArgumentException();
+        return jetClient;
     }
 }

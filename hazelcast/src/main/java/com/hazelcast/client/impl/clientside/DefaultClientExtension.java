@@ -84,12 +84,12 @@ public class DefaultClientExtension implements ClientExtension {
 
     @Override
     public void beforeStart(HazelcastClientInstanceImpl client) {
-        this.jetClient = new JetClientInstanceImpl(client);
         this.client = client;
     }
 
     @Override
     public void afterStart(HazelcastClientInstanceImpl client) {
+        this.jetClient = new JetClientInstanceImpl(client);
     }
 
     @Override

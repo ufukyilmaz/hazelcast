@@ -259,6 +259,9 @@
                                 <relocation>
                                     <pattern>com.fasterxml.jackson</pattern>
                                     <shadedPattern>${relocation.root}.com.fasterxml.jackson</shadedPattern>
+                                    <excludes>
+                                        <exclude>com.fasterxml.jackson.annotation.*</exclude>
+                                    </excludes>
                                 </relocation>
                                 <relocation>
                                     <pattern>org.snakeyaml</pattern>

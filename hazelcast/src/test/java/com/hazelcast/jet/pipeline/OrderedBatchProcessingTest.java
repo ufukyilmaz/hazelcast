@@ -68,7 +68,7 @@ public class OrderedBatchProcessingTest extends JetTestSupport {
 
     @BeforeClass
     public static void setupClass() {
-        jet = Hazelcast.newHazelcastInstance().getJetInstance();
+        jet = Hazelcast.newHazelcastInstance(smallInstanceConfig()).getJetInstance();
     }
 
     @Before

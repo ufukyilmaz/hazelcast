@@ -98,7 +98,7 @@ public class StreamKafkaPTest extends SimpleTestInClusterSupport {
     public static void beforeClass() throws IOException {
         kafkaTestSupport = new KafkaTestSupport();
         kafkaTestSupport.createKafkaCluster();
-        initialize(2, null);
+        initialize(2, smallInstanceConfig());
     }
 
     @Before

@@ -73,7 +73,7 @@ public class ReadMapOrCacheP_ConsistencyTest extends JetTestSupport {
 
     @Before
     public void setup() {
-        jet = createJetMember();
+        jet = createJetMember(smallInstanceConfig());
 
         processedCount = new AtomicInteger();
         startLatch = new CountDownLatch(1);

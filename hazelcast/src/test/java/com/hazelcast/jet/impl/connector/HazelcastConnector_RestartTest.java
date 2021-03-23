@@ -63,7 +63,7 @@ public class HazelcastConnector_RestartTest extends JetTestSupport {
 
     @Before
     public void setup() {
-        Config config = smallInstanceConfig();
+        Config config = new Config();
         CacheSimpleConfig cacheConfig = new CacheSimpleConfig().setName("*");
         cacheConfig.getEventJournalConfig().setEnabled(true);
         config.addCacheConfig(cacheConfig);

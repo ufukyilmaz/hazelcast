@@ -69,7 +69,7 @@ public class MetricsTest extends SimpleTestInClusterSupport {
 
     @BeforeClass
     public static void beforeClass() {
-        Config config = new Config();
+        Config config = smallInstanceConfig();
         config.setProperty("hazelcast.jmx", "true");
         config.getMetricsConfig().setCollectionFrequencySeconds(1);
         initialize(1, config);
